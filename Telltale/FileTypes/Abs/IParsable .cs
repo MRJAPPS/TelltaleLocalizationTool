@@ -2,5 +2,5 @@
 
 internal interface IParsable
 {
-    public void Parse(Stream reader);
+    public void Parse(BinaryReader reader);
 }
