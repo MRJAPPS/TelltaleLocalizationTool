@@ -6,6 +6,8 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
 public class TString(string value, bool readCpacity, int FixedLength, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable, ICpacity
 {
+    const uint StringLenCap = 4;
+
     public uint Length => (uint)Encoding.GetBytes(Value).Length;
     public int FixedLength { get; private set; } = FixedLength;
     public bool IsFixed => FixedLength >= 0;
@@ -14,7 +16,7 @@ public class TString(string value, bool readCpacity, int FixedLength, Encoding? 
 
     public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
 
-    public uint Cpacity => Length + ICpacity.FOUR_ADD * 2/*8 for strings*/;
+    public uint Cpacity => Length + ICpacity.FOUR_ADD + StringLenCap;
 
     public int Count => Value.Length;
 
