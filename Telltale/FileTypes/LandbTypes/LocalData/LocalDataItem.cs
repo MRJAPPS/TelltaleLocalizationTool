@@ -8,6 +8,8 @@ public class LocalDataItem : IParsable
 
     public TString mText { get; set; } = [];
 
+    public uint Size => throw new NotImplementedException();
+
     public LocalizeInfo mLocalInfo = new();
 
     public void Parse(BinaryReader reader)

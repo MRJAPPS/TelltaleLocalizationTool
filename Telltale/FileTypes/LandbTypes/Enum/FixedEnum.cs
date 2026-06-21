@@ -7,7 +7,7 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
 
 using Enum = System.Enum;
 
-public class FixedEnum<T> : IParsable, ICpacity
+public class FixedEnum<T> : IParsable
     where T : struct, Enum
 {
     public FixedEnum(T enumItem)
@@ -18,11 +18,11 @@ public class FixedEnum<T> : IParsable, ICpacity
 
     public T EnumItem { get; set; } = default;
 
-    public uint Cpacity => (uint)(sizeof(int) + Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))));
+    public uint Size => (uint)(sizeof(int) + Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))));
 
     public void Parse(BinaryReader reader)
     {
-        _ = reader.ReadInt32(); //skip cpa
+        _ = reader.ReadInt32(); //skip size
 
         Type underlyingType = Enum.GetUnderlyingType(typeof(T));
 

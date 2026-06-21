@@ -18,6 +18,8 @@ public class TextItem : IParsable
     public FixedEnum<Enums.ERecordingStatus> mRecordingStatus { get; set; } = new(Enums.ERecordingStatus.eRecordingStatus_None);
     public FixedEnum<Enums.ETextItemFlags> mFlags { get; set; } = new(Enums.ETextItemFlags.Unknown);
 
+    public uint Size => throw new NotImplementedException();
+
     public void Parse(BinaryReader reader)
     {
         TextId = reader.ReadUInt32();

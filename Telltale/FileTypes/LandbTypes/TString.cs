@@ -4,7 +4,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
-public class TString(string value, bool readCpacity, int FixedLength, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable, ICpacity
+public class TString(string value, bool readSize, int FixedLength, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
 {
     const uint StringLenCap = 4;
 
@@ -12,11 +12,11 @@ public class TString(string value, bool readCpacity, int FixedLength, Encoding? 
     public int FixedLength { get; private set; } = FixedLength;
     public bool IsFixed => FixedLength >= 0;
     private string Value { get; set; } = value ?? string.Empty;
-    private readonly bool readCpacity = readCpacity;
+    private readonly bool readSize = readSize;
 
     public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
 
-    public uint Cpacity => Length + ICpacity.FOUR_ADD + StringLenCap;
+    public uint Size => Length + ISize.FOUR_ADD + StringLenCap;
 
     public int Count => Value.Length;
 
@@ -28,11 +28,11 @@ public class TString(string value, bool readCpacity, int FixedLength, Encoding? 
 
     public TString(string value, int fixedLength) : this(value, true, fixedLength) { }
 
-    public TString(string value, bool readCpacity, int fixedLength) : this(value, readCpacity, fixedLength, null) { }
+    public TString(string value, bool readSize, int fixedLength) : this(value, readSize, fixedLength, null) { }
 
     public void Parse(BinaryReader reader)
     {
-        if (readCpacity)
+        if (readSize)
         {
             _ = reader.ReadInt32();//skip cap
         }

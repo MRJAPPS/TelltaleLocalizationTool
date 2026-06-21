@@ -2,9 +2,9 @@
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
-public class ResolvedLocalData : IParsable, ICpacity
+public class ResolvedLocalData : IParsable
 {
-    public uint Cpacity => throw new NotImplementedException("ResolvedLocalData.Cpacity");
+    public uint Size => throw new NotImplementedException("ResolvedLocalData.Size");
     public TString mPrefix { get; set; } = [];
     public TString mText { get; set; } = [];
     public LocalizeInfo mLocalInfo { get; set; } = new();

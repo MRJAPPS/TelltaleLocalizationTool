@@ -1,17 +1,17 @@
 ﻿
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
 public class LanguageDB : IParsable
 {
-    const int HEADER_SIZE = 140;
+    private const int HEADER_SIZE = 140;
     private byte[] msv6Header = [];
 
     public Owner mOwner { get; set; } = new();
     public Generator mGenerator { get; set; } = new();
 
+    public uint Size => throw new NotImplementedException();
 
     public void Parse(BinaryReader reader)
     {

@@ -3,10 +3,10 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
-public class Owner : ICpacity, IParsable
+public class Owner : IParsable
 {
     public uint miUniqueID { get; set; }
-    public uint Cpacity => sizeof(uint) + ICpacity.FOUR_ADD;
+    public uint Size => sizeof(uint) + ISize.FOUR_ADD;
 
 
     public void Parse(BinaryReader reader)

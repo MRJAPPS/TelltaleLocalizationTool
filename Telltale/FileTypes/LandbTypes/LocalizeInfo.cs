@@ -2,15 +2,15 @@
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
-public class LocalizeInfo : IParsable, ICpacity
+public class LocalizeInfo : IParsable
 {
     public uint Flags { get; set; }
 
-    public uint Cpacity => 8;/*4 for flags and 4 for cpacity*/
+    public uint Size => 8;/*4 for flags and 4 for size*/
 
     public void Parse(BinaryReader reader)
     {
-        _ = reader.ReadUInt32();//skip cpa
+        _ = reader.ReadUInt32();//skip size
         Flags = reader.ReadUInt32();
     }
 }

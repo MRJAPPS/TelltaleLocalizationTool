@@ -5,5 +5,11 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 public class SymbolValue : IParsable
 {
     public ulong Value { get; set; }
-    public void Parse(BinaryReader reader) => Value = reader.ReadUInt64();
+
+    public uint Size => throw new NotImplementedException();
+
+    public void Parse(BinaryReader reader)
+    {
+        Value = reader.ReadUInt64();
+    }
 }

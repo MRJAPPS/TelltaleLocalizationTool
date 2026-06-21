@@ -2,12 +2,12 @@
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
-public class Generator : IParsable, ICpacity
+public class Generator : IParsable
 {
 
     public uint miNextUniqueID { get; set; }
 
-    public uint Cpacity => sizeof(uint) + ICpacity.FOUR_ADD;
+    public uint Size => sizeof(uint) + ISize.FOUR_ADD;
 
     public void Parse(BinaryReader reader)
     {

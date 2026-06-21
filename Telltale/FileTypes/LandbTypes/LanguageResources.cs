@@ -3,21 +3,15 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Text;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
-public class LanguageResources : ICpacity, IParsable
+public class LanguageResources : IParsable
 {
-    public uint Cpacity
-    {
-        get
-        {
-            throw new NotImplementedException("LanguageResources.Cpacity");
-        }
-    }
+    public uint Size => throw new NotImplementedException();
 
-    public TextCollection mIds { get; set; } = [];
+    public TextCollection TextItems { get; set; } = [];
 
     public void Parse(BinaryReader reader)
     {
-        reader.ReadInt32();//TODO: CPA IS HERE
-        mIds.Parse(reader);
+        reader.ReadInt32();//TODO: size IS HERE
+        TextItems.Parse(reader);
     }
 }
