@@ -4,9 +4,9 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
 public class THandle : IParsable
 {
-    const uint SymbolSize = sizeof(ulong);
-    public uint Size => SymbolSize + ISize.FOUR_ADD;
     public SymbolValue hSymbolValue { get; set; } = new();
+
+    public uint Size => hSymbolValue.Size + ISize.FOUR_ADD;
 
     public void Parse(BinaryReader reader)
     {

@@ -4,15 +4,26 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LocalData;
 
 public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
 {
-    const uint DcArrayLenCap = 4;
-    public uint Size => throw new NotImplementedException();
+    const uint DcArrayLen = sizeof(uint);
+    const uint DcArraySizeInFile = sizeof(uint);
+    public uint Size
+    {
+        get
+        {
+            uint size = DcArrayLen + DcArraySizeInFile;
+            foreach (LocalDataItem localData in Items)
+            {
+                size += localData.Size;
+            }
+            return size;
+        }
+    }
 
     public void Parse(BinaryReader reader)
     {
         _ = reader.ReadInt32();//skip size
-        int capacity = reader.ReadInt32();
-        Items = new(capacity);
-        for (int i = 0; i < capacity; ++i)
+        Items = new(reader.ReadInt32());
+        for (int i = 0; i < Capacity; ++i)
         {
             LocalDataItem localDataItem = new();
             localDataItem.Parse(reader);

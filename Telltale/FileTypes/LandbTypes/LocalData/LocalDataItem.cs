@@ -8,9 +8,11 @@ public class LocalDataItem : IParsable
 
     public TString mText { get; set; } = [];
 
-    public uint Size => throw new NotImplementedException();
-
     public LocalizeInfo mLocalInfo = new();
+
+    public SymbolValue hSymbolValue { get; set; } = new();
+
+    public uint Size => mPrefix.Size + mText.Size + mLocalInfo.Size;
 
     public void Parse(BinaryReader reader)
     {

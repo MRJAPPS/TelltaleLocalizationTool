@@ -4,19 +4,25 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Text;
 
 public class TextCollection : TCollectionBase<TextItem>, IParsable
 {
+    private const uint TextCollectionSizeInFile = sizeof(uint);
+    private const uint TextCollectionLenSize = sizeof(uint);
     public uint Size
     {
         get
         {
-            throw new NotImplementedException();
+            uint size = TextCollectionSizeInFile + TextCollectionLenSize;
+            foreach (TextItem textItem in Items)
+            {
+                size += textItem.Size;
+            }
+            return size;
         }
     }
 
     public void Parse(BinaryReader reader)
     {
-        int capacity = reader.ReadInt32();
-        Items = new(capacity);
-        for (int i = 0; i < capacity; ++i)
+        Items = new(reader.ReadInt32());
+        for (int i = 0; i < Capacity; ++i)
         {
             TextItem textItem = new();
             textItem.Parse(reader);

@@ -11,6 +11,8 @@ public abstract class TCollectionBase<T> : ICollection<T>
 
     public void Add(T item) => Items.Add(item);
 
+    public int Capacity => Items.Capacity;
+
     public void Clear() => Items.Clear();
 
     public bool Contains(T item) => Items.Contains(item);

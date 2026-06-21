@@ -6,7 +6,7 @@ public class SymbolValue : IParsable
 {
     public ulong Value { get; set; }
 
-    public uint Size => throw new NotImplementedException();
+    public uint Size => sizeof(ulong);
 
     public void Parse(BinaryReader reader)
     {

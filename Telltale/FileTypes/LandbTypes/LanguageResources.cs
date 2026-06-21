@@ -5,7 +5,7 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
 
 public class LanguageResources : IParsable
 {
-    public uint Size => throw new NotImplementedException();
+    public uint Size => TextItems.Size;
 
     public TextCollection TextItems { get; set; } = [];
 

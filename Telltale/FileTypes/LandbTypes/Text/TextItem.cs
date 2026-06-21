@@ -16,9 +16,10 @@ public class TextItem : IParsable
     public float mLengthOverride { get; set; }
     public ResolvedLocalData mResolvedLocalData { get; set; } = new();
     public FixedEnum<Enums.ERecordingStatus> mRecordingStatus { get; set; } = new(Enums.ERecordingStatus.eRecordingStatus_None);
-    public FixedEnum<Enums.ETextItemFlags> mFlags { get; set; } = new(Enums.ETextItemFlags.Unknown);
+    public Enums.ETextItemFlags mFlags { get; set; } = Enums.ETextItemFlags.Unknown;
 
-    public uint Size => throw new NotImplementedException();
+    public uint Size => sizeof(uint) * 3 + sizeof(float)+ sizeof(Enums.ETextItemFlags)
+        + mResName.Size + mhAnimation.Size + mhVoiceData.Size + mLocalData.Size + mResolvedLocalData.Size + mRecordingStatus.Size ;
 
     public void Parse(BinaryReader reader)
     {
@@ -32,7 +33,6 @@ public class TextItem : IParsable
         mLengthOverride = reader.ReadSingle();
         mResolvedLocalData.Parse(reader);
         mRecordingStatus.Parse(reader);
-        reader.BaseStream.Position -= 4;//"I escaped from changing FixedEnum! LOL"
-        mFlags.Parse(reader);
+        mFlags = (Enums.ETextItemFlags)reader.ReadUInt32();
     }
 }
