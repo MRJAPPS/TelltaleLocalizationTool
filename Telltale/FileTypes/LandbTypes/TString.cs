@@ -14,7 +14,7 @@ public class TString(string value, bool readCpacity, int FixedLength, Encoding? 
 
     public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
 
-    public uint Cpacity => Length + ICpacity.FOUR_ADD;
+    public uint Cpacity => Length + ICpacity.FOUR_ADD * 2/*8 for strings*/;
 
     public int Count => Value.Length;
 
