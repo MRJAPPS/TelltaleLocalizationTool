@@ -2,7 +2,7 @@
 using System.Text;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 public class TString(string value, bool readSize, int FixedLength, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
 {

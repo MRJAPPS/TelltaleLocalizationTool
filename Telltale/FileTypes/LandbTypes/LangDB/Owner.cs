@@ -1,7 +1,6 @@
-﻿
-using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
 
 public class Owner : IParsable
 {

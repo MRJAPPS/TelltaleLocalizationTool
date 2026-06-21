@@ -1,6 +1,7 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LocalData;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
 public class LocalDataItem : IParsable
 {
@@ -10,7 +11,7 @@ public class LocalDataItem : IParsable
 
     public LocalizeInfo mLocalInfo = new();
 
-    public SymbolValue hSymbolValue { get; set; } = new();
+    public TSymbolValue hSymbolValue { get; set; } = new();
 
     public uint Size => mPrefix.Size + mText.Size + mLocalInfo.Size;
 

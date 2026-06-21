@@ -1,11 +1,11 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LocalData;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
 public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
 {
-    const uint DcArrayLen = sizeof(uint);
-    const uint DcArraySizeInFile = sizeof(uint);
+    private const uint DcArrayLen = sizeof(uint);
+    private const uint DcArraySizeInFile = sizeof(uint);
     public uint Size
     {
         get

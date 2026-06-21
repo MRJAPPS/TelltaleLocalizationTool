@@ -1,10 +1,11 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
 public class ResolvedLocalData : IParsable
 {
-    const uint ResolvedLocalDataSizeInFile = sizeof(uint);
+    private const uint ResolvedLocalDataSizeInFile = sizeof(uint);
 
     public TString mPrefix { get; set; } = [];
 

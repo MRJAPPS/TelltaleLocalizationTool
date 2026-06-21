@@ -1,10 +1,10 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 public class THandle : IParsable
 {
-    public SymbolValue hSymbolValue { get; set; } = new();
+    public TSymbolValue hSymbolValue { get; set; } = new();
 
     public uint Size => hSymbolValue.Size + ISize.FOUR_ADD;
 

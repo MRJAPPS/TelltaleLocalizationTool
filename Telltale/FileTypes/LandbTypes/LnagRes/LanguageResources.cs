@@ -1,7 +1,7 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Text;
+using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes;
 
 public class LanguageResources : IParsable
 {

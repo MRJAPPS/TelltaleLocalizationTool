@@ -1,13 +1,14 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LocalData;
+using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
+using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Text;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
 public class TextItem : IParsable
 {
     public uint TextId { get; set; }
-    public SymbolValue mResName { get; set; } = new();
+    public TSymbolValue mResName { get; set; } = new();
     public uint mId { get; set; }
     public uint mIDAlias { get; set; }
     public THandle mhAnimation { get; set; } = new();

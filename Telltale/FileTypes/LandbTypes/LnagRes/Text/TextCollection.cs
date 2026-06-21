@@ -1,6 +1,6 @@
 ﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Text;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
 public class TextCollection : TCollectionBase<TextItem>, IParsable
 {
