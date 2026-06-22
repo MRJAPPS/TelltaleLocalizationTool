@@ -27,7 +27,7 @@ public abstract class ReportBase
 
     #region Public Methods
 
-    public void Report(IParsable parsable, bool write = false, string extra = "")
+    public void Report(ITelltaleFile parsable, bool write = false, string extra = "")
     {
         if (!ReportMode)
             return;

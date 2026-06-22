@@ -5,7 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 
 [Description("Processing Owner and Generator info")]
-public class LanguageDB : ReportBase, IParsable
+public class LanguageDB : ReportBase, ITelltaleFile
 {
     #region Constants
 

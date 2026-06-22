@@ -5,7 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPairs;
 
 [Description("Processing a collection of ProjectDatabase that contains mProjectID and mDBID.")]
-public class ProjectDatabaseIDPair : ReportBase, IParsable
+public class ProjectDatabaseIDPair : ReportBase, ITelltaleFile
 {
     #region Fields
 

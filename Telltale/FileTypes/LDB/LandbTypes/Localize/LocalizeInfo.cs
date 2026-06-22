@@ -5,7 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
 [Description("Processing the localize info flag")]
-public class LocalizeInfo : ReportBase, IParsable
+public class LocalizeInfo : ReportBase, ITelltaleFile
 {
     #region Constants
 

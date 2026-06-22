@@ -5,7 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 
 [Description("Processing Generator section")]
-public class Generator : ReportBase, IParsable
+public class Generator : ReportBase, ITelltaleFile
 {
     #region Fields
 

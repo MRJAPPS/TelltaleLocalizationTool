@@ -7,7 +7,7 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 using Enum = System.Enum;
 
 [Description("Processing an Enum (probably, but I don't think so) with a fixed size")]
-public class FixedEnum<T> : ReportBase, IParsable
+public class FixedEnum<T> : ReportBase, ITelltaleFile
     where T : struct, Enum
 {
     #region Private Fields

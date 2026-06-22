@@ -5,7 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.DData;
 
 [Description("Process the debug section of the file")]
-public class DebugDataList : TCollectionBase<TString>, IParsable
+public class DebugDataList : TCollectionBase<TString>, ITelltaleFile
 {
     #region Private Fields
 

@@ -8,7 +8,7 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
 [Description("processing a string(Telltale string)")]
 public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding)
-    : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
+    : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, ITelltaleFile
 {
     #region Constants
 

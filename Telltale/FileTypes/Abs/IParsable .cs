@@ -1,6 +1,6 @@
 ﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-public interface IParsable : ISize, IWriteable, IPosition
+public interface IParsable
 {
     #region Properties
 

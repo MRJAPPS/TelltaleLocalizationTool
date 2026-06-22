@@ -5,7 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
 [Description("Processing THandle(a wrapper for TSymbolValue + 4 byte extra)")]
-public class THandle : ReportBase, IParsable
+public class THandle : ReportBase, ITelltaleFile
 {
     #region Private Fields
 

@@ -7,7 +7,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
 [Description("Processing the text section")]
-public class TextItem : ReportBase, IParsable
+public class TextItem : ReportBase, ITelltaleFile
 {
     #region Private Fields
 
