@@ -2,7 +2,7 @@
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.ProjDataBIDPairs;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPairs;
 
 [Description("Processing a collection of ProjectDatabaseIDPair objects that have mProjectID and mDBID. No idea what this is, honestly.")]
 public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IParsable
@@ -26,7 +26,7 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IP
     #region Properties
 
     public uint Size =>
-        ((uint)Items.Count * ItemSize) + ProjectDatabaseIDPairsSizeInFile + ProjectDatabaseIDPairsLenInFile;
+        (uint)Items.Count * ItemSize + ProjectDatabaseIDPairsSizeInFile + ProjectDatabaseIDPairsLenInFile;
 
     public long Position { get; private set; }
 

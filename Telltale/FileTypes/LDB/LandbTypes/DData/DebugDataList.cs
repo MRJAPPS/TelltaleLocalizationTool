@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.DData;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.DData;
 
 [Description("Process the debug section of the file")]
 public class DebugDataList : TCollectionBase<TString>, IParsable

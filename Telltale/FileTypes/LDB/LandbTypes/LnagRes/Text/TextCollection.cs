@@ -2,7 +2,7 @@
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
 [Description("Processing the text collection")]
 public class TextCollection : TCollectionBase<TextItem>, IParsable

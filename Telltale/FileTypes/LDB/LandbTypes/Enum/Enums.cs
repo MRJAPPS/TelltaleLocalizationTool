@@ -1,4 +1,4 @@
-﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
+﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 
 public static class Enums
 {

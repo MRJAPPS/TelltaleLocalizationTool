@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 
 [Description("Processing a FlagIndexMap structure that includes keys, symbols")]
 public class FlagIndexMap : ReportBase, IParsable
@@ -29,7 +29,7 @@ public class FlagIndexMap : ReportBase, IParsable
 
     public uint Size =>
         // The extra entry only contributes a uint, not a full ItemSize.
-        ((uint)(KeyValues.Count - 1) * ItemSize) + FlagIndexMapSizeInFile + sizeof(uint);
+        (uint)(KeyValues.Count - 1) * ItemSize + FlagIndexMapSizeInFile + sizeof(uint);
 
     public long Position { get; private set; }
 

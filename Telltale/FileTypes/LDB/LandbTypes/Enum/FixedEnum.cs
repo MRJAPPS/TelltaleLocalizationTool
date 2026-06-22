@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 
 using Enum = System.Enum;
 

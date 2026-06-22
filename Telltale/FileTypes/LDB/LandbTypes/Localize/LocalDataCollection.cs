@@ -2,7 +2,7 @@
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
 [Description("Processing the localization collection (texts and prefixes are localized, I think)")]
 public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable

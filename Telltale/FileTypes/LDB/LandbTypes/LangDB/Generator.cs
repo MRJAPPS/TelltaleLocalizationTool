@@ -2,10 +2,10 @@
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 
-[Description("Processing Owner section")]
-public class Owner : ReportBase, IParsable
+[Description("Processing Generator section")]
+public class Generator : ReportBase, IParsable
 {
     #region Fields
 
@@ -13,7 +13,7 @@ public class Owner : ReportBase, IParsable
 
     #region Properties
 
-    public uint miUniqueID { get; set; }
+    public uint miNextUniqueID { get; set; }
 
     public uint Size => sizeof(uint) + ISize.FOUR_ADD;
 
@@ -27,10 +27,11 @@ public class Owner : ReportBase, IParsable
     {
         Position = reader.BaseStream.Position;
 
-        // This uint is just a size marker – we already know it's 4, so we read and forget it.
+        // Skip the size cap – it's just telling us what we already know.
         _ = reader.ReadUInt32();
 
-        miUniqueID = reader.ReadUInt32();
+        miNextUniqueID = reader.ReadUInt32();
+
         Report(this);
     }
 
@@ -39,7 +40,7 @@ public class Owner : ReportBase, IParsable
         Position = writer.BaseStream.Position;
 
         writer.Write(Size);
-        writer.Write(miUniqueID);
+        writer.Write(miNextUniqueID);
 
         Report(this, true);
     }

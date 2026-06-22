@@ -2,7 +2,7 @@
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 
 [Description("Processing a Registry object that includes a normal FlagIndexMap(and a reverse FlagIndexMap)")]
 public class Registry : ReportBase, IParsable

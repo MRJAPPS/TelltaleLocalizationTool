@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
 [Description("Processing the text section")]
 public class TextItem : ReportBase, IParsable
@@ -38,7 +38,7 @@ public class TextItem : ReportBase, IParsable
     public Enums.ETextItemFlags mFlags { get; set; } = Enums.ETextItemFlags.Unknown;
 
     public uint Size =>
-        (sizeof(uint) * 3) + sizeof(float) + sizeof(Enums.ETextItemFlags)
+        sizeof(uint) * 3 + sizeof(float) + sizeof(Enums.ETextItemFlags)
         + mResName.Size + mhAnimation.Size + mhVoiceData.Size + mLocalData.Size + mResolvedLocalData.Size + mRecordingStatus.Size;
 
     public long Position { get; private set; }

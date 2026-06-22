@@ -2,7 +2,7 @@
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 
 [Description("Processing Owner and Generator info")]
 public class LanguageDB : ReportBase, IParsable

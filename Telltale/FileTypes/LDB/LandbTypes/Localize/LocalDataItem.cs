@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
 [Description("Processing the localization data section")]
 public class LocalDataItem : ReportBase, IParsable

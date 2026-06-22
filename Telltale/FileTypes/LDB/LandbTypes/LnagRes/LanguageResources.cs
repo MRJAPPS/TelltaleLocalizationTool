@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes;
 
 [Description("Processing the game text stuff (subtitles, menus, etc.)")]
 public class LanguageResources : ReportBase, IParsable
