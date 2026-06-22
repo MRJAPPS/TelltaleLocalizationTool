@@ -7,6 +7,8 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
 public class TextItem : IParsable
 {
+    private long _ParsePos;
+
     public uint TextId { get; set; }
     public TSymbolValue mResName { get; set; } = new();
     public uint mId { get; set; }
@@ -19,11 +21,14 @@ public class TextItem : IParsable
     public FixedEnum<Enums.ERecordingStatus> mRecordingStatus { get; set; } = new(Enums.ERecordingStatus.eRecordingStatus_None);
     public Enums.ETextItemFlags mFlags { get; set; } = Enums.ETextItemFlags.Unknown;
 
-    public uint Size => sizeof(uint) * 3 + sizeof(float)+ sizeof(Enums.ETextItemFlags)
-        + mResName.Size + mhAnimation.Size + mhVoiceData.Size + mLocalData.Size + mResolvedLocalData.Size + mRecordingStatus.Size ;
+    public uint Size => (sizeof(uint) * 3) + sizeof(float) + sizeof(Enums.ETextItemFlags)
+        + mResName.Size + mhAnimation.Size + mhVoiceData.Size + mLocalData.Size + mResolvedLocalData.Size + mRecordingStatus.Size;
+
+    public long ParsePosition => _ParsePos;
 
     public void Parse(BinaryReader reader)
     {
+        _ParsePos = reader.BaseStream.Position;
         TextId = reader.ReadUInt32();
         mResName.Parse(reader);
         mId = reader.ReadUInt32();

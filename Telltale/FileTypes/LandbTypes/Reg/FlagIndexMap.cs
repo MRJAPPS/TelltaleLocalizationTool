@@ -8,6 +8,7 @@ public class FlagIndexMap : IParsable
 {
     private const uint FlagIndexMapSizeInFile = sizeof(uint);
 
+    private long _ParsePos;
     private readonly bool reverce = false;
     private readonly uint ItemSize = sizeof(uint) + new TSymbolValue().Size;
 
@@ -26,8 +27,11 @@ public class FlagIndexMap : IParsable
 
     public uint Size => ((uint)(KeyValues.Count - 1) * ItemSize) + FlagIndexMapSizeInFile + sizeof(uint);//forextra
 
+    public long ParsePosition => _ParsePos;
+
     public void Parse(BinaryReader reader)
     {
+        _ParsePos = reader.BaseStream.Position;
         long readerFirstPos = reader.BaseStream.Position;
         uint size = reader.ReadUInt32() /*Skip Size*/;
         uint len = size / ItemSize;

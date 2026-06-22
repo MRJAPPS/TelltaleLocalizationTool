@@ -5,6 +5,8 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.DData;
 
 public class DebugDataList : TCollectionBase<TString>, IParsable
 {
+    private long _ParsePos;
+
     public uint Size
     {
         get
@@ -18,8 +20,13 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
         }
     }
 
+    long IParsable.ParsePosition => _ParsePos;
+
+    uint ISize.Size => throw new NotImplementedException();
+
     public void Parse(BinaryReader reader)
     {
+        _ParsePos = reader.BaseStream.Position;
         Items = [];
         while (reader.PeekChar() != -1)
         {
@@ -27,5 +34,10 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
             ddata.Parse(reader);
             Items.Add(ddata);
         }
+    }
+
+    void IParsable.Parse(BinaryReader reader)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -10,6 +10,9 @@ using Enum = System.Enum;
 public class FixedEnum<T> : IParsable
     where T : struct, Enum
 {
+
+    private long _ParsePos;
+
     public FixedEnum(T enumItem)
     {
         EnumItem = enumItem;
@@ -20,8 +23,11 @@ public class FixedEnum<T> : IParsable
 
     public uint Size => (uint)(sizeof(int) + Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))));
 
+    long IParsable.ParsePosition => _ParsePos;
+
     public void Parse(BinaryReader reader)
     {
+        _ParsePos = reader.BaseStream.Position;
         _ = reader.ReadInt32(); //skip size
 
         Type underlyingType = Enum.GetUnderlyingType(typeof(T));

@@ -2,7 +2,7 @@
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-public abstract class TCollectionBase<T> : ICollection<T>
+public abstract class TCollectionBase<T> : ReportBase, ICollection<T>
 {
     protected List<T> Items { get; set; } = [];
     public int Count => Items.Count;

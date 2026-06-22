@@ -5,6 +5,8 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
 public class LocalDataItem : IParsable
 {
+    private long _ParsePos;
+
     public TString mPrefix { get; set; } = [];
 
     public TString mText { get; set; } = [];
@@ -15,8 +17,11 @@ public class LocalDataItem : IParsable
 
     public uint Size => mPrefix.Size + mText.Size + mLocalInfo.Size;
 
+    public long ParsePosition => _ParsePos;
+
     public void Parse(BinaryReader reader)
     {
+        _ParsePos = reader.BaseStream.Position;
         mPrefix.Parse(reader);
         mText.Parse(reader);
         mLocalInfo.Parse(reader);

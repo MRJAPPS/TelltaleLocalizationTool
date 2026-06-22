@@ -17,14 +17,17 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     private string Value { get; set; } = value ?? string.Empty;
     private readonly bool readSize = readSize;
     private readonly bool skipZero = skipZero;
+    private long _ParsePos;
 
     public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
 
-    public uint Size => Length + ISize.FOUR_ADD + ( skipZero ? (uint)ZeroCount : StringLenCap);
+    public uint Size => Length + ISize.FOUR_ADD + (skipZero ? (uint)ZeroCount : StringLenCap);
 
     public int Count => Value.Length;
 
     public bool IsReadOnly => true;
+
+    long IParsable.ParsePosition => _ParsePos;
 
     public TString() : this(VarLength, false) { }
 
@@ -38,6 +41,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     public void Parse(BinaryReader reader)
     {
+        _ParsePos = reader.BaseStream.Position;
         if (readSize)
         {
             _ = reader.ReadInt32();//skip size
@@ -46,7 +50,9 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         byte[] stringBytes = reader.ReadBytes(length);
         Value = Encoding.GetString(stringBytes);
         if (skipZero)
+        {
             SkipZeros(reader);
+        }
     }
 
     // Friendly note: Since ints are Little-Endian (LSB first), 0x00000012 is stored as 0x12000000 in the file, so a leading 0 byte is just upper padding, not a zero-length string value. We safely skip zeros until we hit the actual LSB to read the integer!

@@ -2,5 +2,6 @@
 
 public interface IParsable : ISize
 {
-    public void Parse(BinaryReader reader);
+    long ParsePosition { get; }
+    void Parse(BinaryReader reader);
 }
