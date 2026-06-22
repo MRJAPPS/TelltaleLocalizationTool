@@ -4,41 +4,67 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
-public class TString(string value, bool readSize, int FixedLength, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
+public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
 {
-    const uint StringLenCap = 4;
+    private const uint StringLenCap = 4;
+    public const int VarLength = -1;
 
     public uint Length => (uint)Encoding.GetBytes(Value).Length;
     public int FixedLength { get; private set; } = FixedLength;
     public bool IsFixed => FixedLength >= 0;
+    public int ZeroCount { get; private set; }
+
     private string Value { get; set; } = value ?? string.Empty;
     private readonly bool readSize = readSize;
+    private readonly bool skipZero = skipZero;
 
     public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
 
-    public uint Size => Length + ISize.FOUR_ADD + StringLenCap;
+    public uint Size => Length + ISize.FOUR_ADD + ( skipZero ? (uint)ZeroCount : StringLenCap);
 
     public int Count => Value.Length;
 
     public bool IsReadOnly => true;
 
-    public TString() : this(-1) { }
+    public TString() : this(VarLength, false) { }
 
-    public TString(int fixedLength) : this(string.Empty, true, fixedLength) { }
+    public TString(bool skipZero) : this(VarLength, skipZero) { }
 
-    public TString(string value, int fixedLength) : this(value, true, fixedLength) { }
+    public TString(int fixedLength, bool skipZero) : this(string.Empty, true, fixedLength, skipZero) { }
 
-    public TString(string value, bool readSize, int fixedLength) : this(value, readSize, fixedLength, null) { }
+    public TString(string value, int fixedLength, bool skipZero) : this(value, true, fixedLength, skipZero) { }
+
+    public TString(string value, bool readSize, int fixedLength, bool skipZero) : this(value, readSize, fixedLength, skipZero, null) { }
 
     public void Parse(BinaryReader reader)
     {
         if (readSize)
         {
-            _ = reader.ReadInt32();//skip cap
+            _ = reader.ReadInt32();//skip size
         }
         int length = IsFixed ? FixedLength : reader.ReadInt32();
         byte[] stringBytes = reader.ReadBytes(length);
         Value = Encoding.GetString(stringBytes);
+        if (skipZero)
+            SkipZeros(reader);
+    }
+
+    // Friendly note: Since ints are Little-Endian (LSB first), 0x00000012 is stored as 0x12000000 in the file, so a leading 0 byte is just upper padding, not a zero-length string value. We safely skip zeros until we hit the actual LSB to read the integer!
+    private void SkipZeros(BinaryReader reader)
+    {
+        while (reader.PeekChar() != -1)
+        {
+            byte b = reader.ReadByte();
+            if (b != 0)
+            {
+                reader.BaseStream.Position -= 1;
+                break;
+            }
+            else
+            {
+                ZeroCount++;
+            }
+        }
     }
 
     public static implicit operator string(TString t)
