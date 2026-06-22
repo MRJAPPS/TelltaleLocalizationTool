@@ -5,60 +5,164 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
+/// <summary>
+/// A Telltale-style string that reads itself from a binary stream.  
+/// Supports variable‑length, fixed‑length, and zero‑skipping shenanigans.  
+/// Basically a turbo‑charged <c>string</c> with extra metadata.
+/// </summary>
 [Description("processing a string(Telltale string)")]
-public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding) : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
+public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding)
+    : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
 {
+    #region Constants
+
+    // Always 4 – the standard "I'm a string" header cap. No cap.
     private const uint StringLenCap = 4;
+
+    /// <summary>
+    /// Sentinel value that means "hey, figure out the length yourself, I'm not fixed".
+    /// </summary>
     public const int VarLength = -1;
 
-    public uint Length => (uint)Encoding.GetBytes(Value).Length;
-    public int FixedLength { get; private set; } = FixedLength;
-    public bool IsFixed => FixedLength >= 0;
-    public int ZeroCount { get; private set; }
+    #endregion
 
-    private string Value { get; set; } = value ?? string.Empty;
+    #region Private Fields
+
+    // Did we read a prefixed size field? (some strings have it, some don't – Telltale logic)
     private readonly bool readSize = readSize;
+    // Should we munch trailing zero‑bytes after the string?
     private readonly bool skipZero = skipZero;
+    // Where the stream was when we started parsing – needed for the geek report.
     private long _ParsePos;
 
-    public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
+    #endregion
 
-    public uint Size => Length + ISize.FOUR_ADD + (skipZero ? (uint)ZeroCount : StringLenCap);
+    #region Constructors
 
-    public int Count => Value.Length;
-
-    public bool IsReadOnly => true;
-
-    long IParsable.ParsePosition => _ParsePos;
-
+    /// <summary>
+    /// Creates a new variable‑length TString without zero‑skipping.
+    /// </summary>
     public TString() : this(VarLength, false) { }
 
+    /// <summary>
+    /// Creates a new variable‑length TString with explicit zero‑skipping preference.
+    /// </summary>
+    /// <param name="skipZero">If <c>true</c>, trailing zeros will be gobbled up after the string.</param>
     public TString(bool skipZero) : this(VarLength, skipZero) { }
 
+    /// <summary>
+    /// Creates a new fixed‑length TString with a predetermined byte count and zero‑skipping.
+    /// </summary>
+    /// <param name="fixedLength">The exact number of bytes to read, no questions asked.</param>
+    /// <param name="skipZero">If <c>true</c>, zeros after the fixed block get skipped.</param>
     public TString(int fixedLength, bool skipZero) : this(string.Empty, true, fixedLength, skipZero) { }
 
+    /// <summary>
+    /// Creates a new fixed‑length TString with an initial value.
+    /// </summary>
+    /// <param name="value">The string content.</param>
+    /// <param name="fixedLength">The fixed byte count when reading/writing.</param>
+    /// <param name="skipZero">Zero‑skipping mode.</param>
     public TString(string value, int fixedLength, bool skipZero) : this(value, true, fixedLength, skipZero) { }
 
+    /// <summary>
+    /// Creates a new TString without specifying an explicit encoding (UTF‑8 by default).
+    /// </summary>
     public TString(string value, bool readSize, int fixedLength, bool skipZero) : this(value, readSize, fixedLength, skipZero, null) { }
 
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets the byte length of the string value after encoding.
+    /// </summary>
+    public uint Length => (uint)Encoding.GetBytes(Value).Length;
+
+    /// <summary>
+    /// The fixed byte count when in fixed‑mode; negative means variable length.
+    /// </summary>
+    public int FixedLength { get; private set; } = FixedLength;
+
+    /// <summary>
+    /// <c>true</c> if this string has a fixed byte length, <c>false</c> if it’s flexible.
+    /// </summary>
+    public bool IsFixed => FixedLength >= 0;
+
+    /// <summary>
+    /// How many trailing zero bytes we snacked on. Zero if not skipping.
+    /// </summary>
+    public int ZeroCount { get; private set; }
+
+    /// <summary>
+    /// The actual string goodness.
+    /// </summary>
+    private string Value { get; set; } = value ?? string.Empty;
+
+    /// <summary>
+    /// The encoding used to convert bytes ↔ characters. Defaults to UTF‑8 if nobody told us otherwise.
+    /// </summary>
+    public Encoding Encoding { get; set; } = encoding ?? Encoding.UTF8;
+
+    /// <summary>
+    /// Total byte size of the structure as it appears in the file.  
+    /// (Yeah, the formula looks like someone doubled the cap, but that’s the Telltale way.)
+    /// </summary>
+    public uint Size =>
+        Length + ISize.FOUR_ADD + (skipZero ? (uint)ZeroCount : StringLenCap);
+
+    /// <summary>
+    /// Number of <c>char</c>s in the string – required by <see cref="ICollection{T}"/>.
+    /// </summary>
+    public int Count => Value.Length;
+
+    /// <summary>
+    /// Always <c>true</c> – you can’t push new chars into this string, it’s set in stone.
+    /// </summary>
+    public bool IsReadOnly => true;
+
+    /// <summary>
+    /// Where the reader was before we touched it, used for debug reports.
+    /// </summary>
+    long IParsable.ParsePosition => _ParsePos;
+
+    #endregion
+
+    #region Parsing
+
+    /// <summary>
+    /// Reads the string from the binary stream according to all the rules:  
+    /// optional length prefix, fixed/variable length, optional zero‑skipping.
+    /// </summary>
     public void Parse(BinaryReader reader)
     {
         _ParsePos = reader.BaseStream.Position;
+
         if (readSize)
         {
-            _ = reader.ReadInt32();//skip size
+            _ = reader.ReadInt32(); // Skip the redundant size field – we'll compute length ourselves.
         }
+
         int length = IsFixed ? FixedLength : reader.ReadInt32();
         byte[] stringBytes = reader.ReadBytes(length);
         Value = Encoding.GetString(stringBytes);
+
         if (skipZero)
         {
             SkipZeros(reader);
         }
+
         Report(this, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
     }
 
-    // Friendly note: Since ints are Little-Endian (LSB first), 0x00000012 is stored as 0x12000000 in the file, so a leading 0 byte is just upper padding, not a zero-length string value. We safely skip zeros until we hit the actual LSB to read the integer!
+    #endregion
+
+    #region Private Helpers
+
+    /// <summary>
+    /// Chomps through trailing zero‑bytes so the next integer starts on a clean alignment.  
+    /// Little‑endian junk: the zeros are just padding, not data – we skip ’em and count ’em.
+    /// </summary>
     private void SkipZeros(BinaryReader reader)
     {
         while (reader.PeekChar() != -1)
@@ -66,123 +170,122 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
             byte b = reader.ReadByte();
             if (b != 0)
             {
+                // Oops, that's actual data – step back so it can be read properly.
                 reader.BaseStream.Position -= 1;
                 break;
             }
-            else
-            {
-                ZeroCount++;
-            }
+            // Nom nom, another zero byte.
+            ZeroCount++;
         }
     }
 
-    public static implicit operator string(TString t)
-    {
-        return t?.Value ?? string.Empty;
-    }
+    #endregion
 
-    public static implicit operator TString(string s)
-    {
-        return [.. s];
-    }
+    #region Equality & Comparison
 
-    public bool Equals(TString? other)
-    {
-        return other is not null && Value == other.Value;
-    }
+    /// <inheritdoc/>
+    public bool Equals(TString? other) => other is not null && Value == other.Value;
 
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as TString);
-    }
+    /// <inheritdoc/>
+    public override bool Equals(object? obj) => Equals(obj as TString);
 
-    public override int GetHashCode()
-    {
-        return Value?.GetHashCode() ?? 0;
-    }
+    /// <inheritdoc/>
+    public override int GetHashCode() => Value?.GetHashCode() ?? 0;
 
-    public override string ToString()
-    {
-        return Value ?? string.Empty;
-    }
+    /// <inheritdoc/>
+    public override string ToString() => Value ?? string.Empty;
 
-    public int CompareTo(TString? other)
-    {
-        return other is null ? 1 : string.Compare(Value, other.Value, StringComparison.Ordinal);
-    }
+    /// <inheritdoc/>
+    public int CompareTo(TString? other) =>
+        other is null ? 1 : string.Compare(Value, other.Value, StringComparison.Ordinal);
 
+    /// <inheritdoc/>
     public int CompareTo(object? obj)
     {
-        return obj is TString ts ? CompareTo(ts) : throw new ArgumentException($"Object({obj?.GetType()?.Name}) is not a {nameof(TString)}");
+        if (obj is TString ts)
+            return CompareTo(ts);
+
+        throw new ArgumentException(
+            $"Object({obj?.GetType()?.Name}) is not a {nameof(TString)}");
     }
 
-    public static bool operator ==(TString left, TString right)
-    {
-        return left?.Value == right?.Value;
-    }
+    #endregion
 
-    public static bool operator !=(TString left, TString right)
-    {
-        return !(left == right);
-    }
+    #region Operators
 
-    public static bool operator <(TString left, TString right)
-    {
-        return left is null ? right is not null : left.CompareTo(right) < 0;
-    }
+    public static bool operator ==(TString left, TString right) => left?.Value == right?.Value;
+    public static bool operator !=(TString left, TString right) => !(left == right);
 
-    public static bool operator <=(TString left, TString right)
-    {
-        return left is null || left.CompareTo(right) <= 0;
-    }
+    public static bool operator <(TString left, TString right) =>
+        left is null ? right is not null : left.CompareTo(right) < 0;
 
-    public static bool operator >(TString left, TString right)
-    {
-        return left is not null && left.CompareTo(right) > 0;
-    }
+    public static bool operator <=(TString left, TString right) =>
+        left is null || left.CompareTo(right) <= 0;
 
-    public static bool operator >=(TString left, TString right)
-    {
-        return left is null ? right is null : left.CompareTo(right) >= 0;
-    }
+    public static bool operator >(TString left, TString right) =>
+        left is not null && left.CompareTo(right) > 0;
 
-    public static TString FromValue(string value)
-    {
-        return [.. value];
-    }
+    public static bool operator >=(TString left, TString right) =>
+        left is null ? right is null : left.CompareTo(right) >= 0;
 
-    public void Add(char item)
-    {
+    #endregion
+
+    #region Implicit Conversions
+
+    /// <summary>
+    /// Unwraps a TString back into a plain old string.
+    /// </summary>
+    public static implicit operator string(TString t) => t?.Value ?? string.Empty;
+
+    /// <summary>
+    /// Wraps a plain string into a TString.  
+    /// (Uses the collection expression syntax – don't look too closely, it works™)
+    /// </summary>
+    public static implicit operator TString(string s) => [.. s];
+
+    #endregion
+
+    #region Static Factory
+
+    /// <summary>
+    /// Creates a TString from a plain string, same as the implicit conversion but explicit.
+    /// </summary>
+    public static TString FromValue(string value) => [.. value];
+
+    #endregion
+
+    #region ICollection<char> Implementation
+
+    /// <summary>
+    /// Not supported – this collection is read‑only.
+    /// </summary>
+    public void Add(char item) =>
         throw new NotSupportedException("Collection is read-only.");
-    }
 
-    public void Clear()
-    {
+    /// <summary>
+    /// Not supported – you can't wipe a TString.
+    /// </summary>
+    public void Clear() =>
         throw new NotSupportedException("Collection is read-only.");
-    }
 
-    public bool Contains(char item)
-    {
-        return Value.Contains(item);
-    }
+    /// <inheritdoc/>
+    public bool Contains(char item) => Value.Contains(item);
 
-    public void CopyTo(char[] array, int arrayIndex)
-    {
+    /// <inheritdoc/>
+    public void CopyTo(char[] array, int arrayIndex) =>
         Value.CopyTo(0, array, arrayIndex, Value.Length);
-    }
 
-    public bool Remove(char item)
-    {
+    /// <summary>
+    /// Not supported – once a character is there, it stays there.
+    /// </summary>
+    public bool Remove(char item) =>
         throw new NotSupportedException("Collection is read-only.");
-    }
 
-    public IEnumerator<char> GetEnumerator()
-    {
-        return Value.GetEnumerator();
-    }
+    /// <inheritdoc/>
+    public IEnumerator<char> GetEnumerator() => Value.GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    /// <inheritdoc/>
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    #endregion
 }
