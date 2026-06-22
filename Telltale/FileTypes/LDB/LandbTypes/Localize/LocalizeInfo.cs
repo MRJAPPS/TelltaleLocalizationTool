@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
@@ -42,6 +43,12 @@ public class LocalizeInfo : ReportBase, ITelltaleFile
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(LocalizeInfo), name);
+        Flags = uint.Parse(myElement.GetAttribute(nameof(Flags)));
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -50,6 +57,19 @@ public class LocalizeInfo : ReportBase, ITelltaleFile
         writer.Write(Flags);
 
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(LocalizeInfo));
+        myElement.SetAttribute(nameof(name), name);
+
+        XmlAttribute Flags = myElement.OwnerDocument.CreateAttribute(nameof(Flags));
+        Flags.Value = this.Flags.ToString();
+        
+        myElement.Attributes.Append(Flags);
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

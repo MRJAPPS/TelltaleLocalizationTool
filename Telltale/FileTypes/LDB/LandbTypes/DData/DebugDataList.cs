@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
@@ -56,6 +58,31 @@ public class DebugDataList : TCollectionBase<TString>, ITelltaleFile
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(DebugDataList), name);
+
+        Items = [];
+
+        foreach (XmlNode node in myElement.ChildNodes)
+        {
+            if (node is not XmlElement itemElement)
+                continue;
+
+            if (itemElement.Name != nameof(TString))
+                continue;
+
+            string itemName = itemElement.GetAttribute(nameof(name));
+
+            TString item = new(string.Empty, false, TString.VarLength, true);
+            item.Parse(myElement, itemName);
+
+            Items.Add(item);
+        }
+
+        Report(this);
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -64,6 +91,16 @@ public class DebugDataList : TCollectionBase<TString>, ITelltaleFile
         {
             item.Write(writer);
         }
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(DebugDataList));
+        myElement.SetAttribute(nameof(name), name);
+        int counter = 0;
+        foreach (TString item in Items)
+            item.Write(myElement, $"{nameof(item)}_{counter++}");
+        element.AppendChild(myElement);
     }
 
     #endregion

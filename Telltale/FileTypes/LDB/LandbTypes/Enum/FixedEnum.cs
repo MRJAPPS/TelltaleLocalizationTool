@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
@@ -11,7 +13,7 @@ public class FixedEnum<T> : ReportBase, ITelltaleFile
     where T : struct, Enum
 {
     #region Private Fields
-
+    private readonly string TypeName = $"FixedEnum_{typeof(T).Name}_";
     #endregion
 
     #region Constructors
@@ -33,7 +35,7 @@ public class FixedEnum<T> : ReportBase, ITelltaleFile
 
     #endregion
 
-    #region Base Members
+    #region Implement
 
     public long Position { get; private set; }
 
@@ -95,6 +97,29 @@ public class FixedEnum<T> : ReportBase, ITelltaleFile
         }
 
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(TypeName);
+        myElement.SetAttribute(nameof(name), name);
+
+        XmlAttribute EnumItem = myElement.OwnerDocument.CreateAttribute(nameof(EnumItem));
+        EnumItem.Value = this.EnumItem.ToString();
+        myElement.Attributes.Append(EnumItem);
+
+        element.AppendChild(myElement);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(TypeName, name);
+
+        string value = myElement.GetAttribute(nameof(EnumItem));
+
+        EnumItem = Enum.Parse<T>(value);
+
+        Report(this);
     }
 
     #endregion

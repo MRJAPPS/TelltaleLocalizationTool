@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.DData;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
@@ -38,14 +40,14 @@ public class Landb : ReportBase, ITelltaleFile
     public uint Size => mLanguageDB.Size +
         mLanguageResources.Size +
         mRegistry.Size +
-        sizeof(uint) * 2 +            
+        (sizeof(uint) * 2) +
         mExpandedIDRanges.Size + mDebugDatas.Size;
 
     public long Position { get; private set; }
 
     #endregion
 
-    #region Public Methods
+    #region Implement
 
     public void Parse(BinaryReader reader)
     {
@@ -62,6 +64,20 @@ public class Landb : ReportBase, ITelltaleFile
         mDebugDatas.Parse(reader);
 
         Report(this);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(Landb), name);
+
+        mLanguageDB.Parse(myElement, nameof(mLanguageDB));
+        mLanguageResources.Parse(myElement, nameof(mLanguageResources));
+        mRegistry.Parse(myElement, nameof(mRegistry));
+
+        ParseBasicTypes(myElement);
+
+        mExpandedIDRanges.Parse(myElement, nameof(mExpandedIDRanges));
+        mDebugDatas.Parse(myElement, nameof(mDebugDatas));
     }
 
     public void Write(BinaryWriter writer)
@@ -83,6 +99,44 @@ public class Landb : ReportBase, ITelltaleFile
         writer.Write(Size - mDebugDatas.Size - 140);
         _ = writer.Seek(OffsetDefDebugDataLen, SeekOrigin.Begin);
         writer.Write(mDebugDatas.Size);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Landb));
+        myElement.SetAttribute(nameof(name), name);
+        mLanguageDB.Write(myElement, nameof(mLanguageDB));
+        mLanguageResources.Write(myElement, nameof(mLanguageResources));
+        mRegistry.Write(myElement, nameof(mRegistry));
+        AppendBasicTypes(myElement);
+        mExpandedIDRanges.Write(myElement, nameof(mExpandedIDRanges));
+        mDebugDatas.Write(myElement, nameof(mDebugDatas));
+
+        _ = element.AppendChild(myElement);
+    }
+
+    #endregion
+
+    #region XML
+
+    private void ParseBasicTypes(XmlElement element)
+    {
+        mFlags = uint.Parse(element.GetAttribute(nameof(mFlags)));
+        mProjectID = uint.Parse(element.GetAttribute(nameof(mProjectID)));
+    }
+
+
+    private void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute mFlags, mProjectID;
+        mFlags = element.OwnerDocument.CreateAttribute(nameof(this.mFlags));
+        mProjectID = element.OwnerDocument.CreateAttribute(nameof(this.mProjectID));
+
+        mFlags.Value = this.mFlags.ToString();
+        mProjectID.Value = this.mProjectID.ToString();
+
+        _ = element.Attributes.Append(mFlags);
+        _ = element.Attributes.Append(mProjectID);
     }
 
     #endregion

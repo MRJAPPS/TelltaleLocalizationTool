@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
@@ -61,6 +63,17 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, ITelltaleFile
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(LocalDataCollection), name);
+        for (int i = 0; i < myElement.ChildNodes.Count; ++i)
+        {
+            LocalDataItem localDataItem = new();
+            localDataItem.Parse(myElement, $"{nameof(Items)}_{i}");
+            Items.Add(localDataItem);
+        }
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -68,8 +81,24 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, ITelltaleFile
 
         writer.Write(Items.Count);
         for (int i = 0; i < Capacity; ++i)
+        {
             Items[i].Write(writer);
+        }
+
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(LocalDataCollection));
+        myElement.SetAttribute(nameof(name), name);
+
+        for (int i = 0; i < Items.Count; ++i)
+        {
+            Items[i].Write(myElement, $"{nameof(Items)}_{i}");
+        }
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

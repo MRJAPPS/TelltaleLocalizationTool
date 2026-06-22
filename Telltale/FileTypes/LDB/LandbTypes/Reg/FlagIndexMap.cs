@@ -1,4 +1,7 @@
 ﻿using System.ComponentModel;
+using System.Globalization;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
@@ -29,7 +32,7 @@ public class FlagIndexMap : ReportBase, ITelltaleFile
 
     public uint Size =>
         // The extra entry only contributes a uint, not a full ItemSize.
-        (uint)(KeyValues.Count - 1) * ItemSize + FlagIndexMapSizeInFile + sizeof(uint);
+        ((uint)(KeyValues.Count - 1) * ItemSize) + FlagIndexMapSizeInFile + sizeof(uint);
 
     public long Position { get; private set; }
 
@@ -66,6 +69,52 @@ public class FlagIndexMap : ReportBase, ITelltaleFile
         Report(this, false, $"(reverce = {reverce})");
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(FlagIndexMap), name);
+
+        KeyValues.Clear();
+
+        foreach (XmlNode node in myElement.ChildNodes)
+        {
+            if (node is not XmlElement itemElement)
+                continue;
+
+            if (itemElement.Name != "KeyValueItem")
+                continue;
+
+            uint key = uint.Parse(itemElement.GetAttribute(nameof(key)));
+
+            bool isNull = itemElement.HasAttribute("isNull") && bool.Parse(itemElement.GetAttribute("isNull"));
+
+            if (isNull)
+            {
+                KeyValues[key] = null;
+                continue;
+            }
+
+            XmlElement? symbolElement = null;
+            foreach (XmlNode child in itemElement.ChildNodes)
+            {
+                if (child is XmlElement childElement)
+                {
+                    symbolElement = childElement;
+                    break;
+                }
+            }
+
+            if (symbolElement is null)
+                throw new InvalidDataException($"I can't find symbol element for key '{key}'.");
+
+            TSymbolValue symbol = new();
+
+            symbol.Parse(itemElement, nameof(symbol));
+            KeyValues[key] = symbol;
+        }
+
+        Report(this, false, $"(reverce = {reverce})");
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -78,6 +127,33 @@ public class FlagIndexMap : ReportBase, ITelltaleFile
 
         Report(this, true, $"(reverce = {reverce})");
     }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(FlagIndexMap));
+        myElement.SetAttribute(nameof(name), name);
+
+        foreach (uint key in KeyValues.Keys)
+        {
+            XmlElement itemElement = myElement.OwnerDocument.CreateElement("KeyValueItem");
+            itemElement.SetAttribute(nameof(key), key.ToString(CultureInfo.InvariantCulture));
+
+            TSymbolValue? symbol = KeyValues[key];
+            if (symbol is not null)
+            {
+                symbol.Write(itemElement, nameof(symbol));
+            }
+            else
+            {
+                itemElement.SetAttribute("isNull", "true");
+            }
+
+            myElement.AppendChild(itemElement);
+        }
+
+        _ = element.AppendChild(myElement);
+    }
+
     #endregion
 
     #region Private Helpers

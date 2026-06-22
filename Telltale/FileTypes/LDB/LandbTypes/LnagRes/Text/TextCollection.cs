@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
@@ -65,11 +66,33 @@ public class TextCollection : TCollectionBase<TextItem>, ITelltaleFile
 
         writer.Write(Items.Count);
 
-        for (int i = 0; i < Capacity; ++i)
+        for (int i = 0; i < Items.Count; ++i)
         {
             Items[i].Write(writer);
         }
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(TextCollection));
+        for (int i = 0; i < Items.Count; ++i)
+        {
+            Items[i].Write(myElement, $"{nameof(Items)}_{i}");
+        }
+        _ = element.AppendChild(myElement);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(TextCollection));
+
+        for (int i = 0; i < myElement.ChildNodes.Count; ++i)
+        {
+            TextItem textItem = new();
+            textItem.Parse(myElement, $"{nameof(Items)}_{i}");
+            Items.Add(textItem);
+        }
     }
 
     #endregion

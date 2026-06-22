@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
@@ -32,8 +33,14 @@ public class THandle : ReportBase, ITelltaleFile
         _ = reader.ReadUInt32();
 
         hSymbolValue.Parse(reader);
-        
+
         Report(this);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(THandle), name);
+        hSymbolValue.Parse(myElement, nameof(hSymbolValue));
     }
 
     public void Write(BinaryWriter writer)
@@ -44,6 +51,16 @@ public class THandle : ReportBase, ITelltaleFile
         hSymbolValue.Write(writer);
 
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(THandle));
+        myElement.SetAttribute(nameof(name), name);
+
+        hSymbolValue.Write(myElement, nameof(hSymbolValue));
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

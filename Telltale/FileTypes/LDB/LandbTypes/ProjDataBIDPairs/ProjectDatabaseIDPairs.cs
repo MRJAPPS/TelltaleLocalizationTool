@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPairs;
@@ -26,7 +27,7 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IT
     #region Properties
 
     public uint Size =>
-        (uint)Items.Count * ItemSize + ProjectDatabaseIDPairsSizeInFile + ProjectDatabaseIDPairsLenInFile;
+        ((uint)Items.Count * ItemSize) + ProjectDatabaseIDPairsSizeInFile + ProjectDatabaseIDPairsLenInFile;
 
     public long Position { get; private set; }
 
@@ -53,6 +54,35 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IT
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement =
+            reader.GetSingleElement(nameof(ProjectDatabaseIDPairs), name);
+
+        Items.Clear();
+
+        int index = 0;
+
+        while (true)
+        {
+            try
+            {
+                ProjectDatabaseIDPair pair = new();
+
+                pair.Parse(
+                    myElement,
+                    $"{nameof(Items)}_{index}");
+
+                Items.Add(pair);
+
+                index++;
+            }
+            catch (InvalidDataException)
+            {
+                break;
+            }
+        }
+    }
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -66,6 +96,19 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IT
         }
 
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(ProjectDatabaseIDPairs));
+        myElement.SetAttribute(nameof(name), name);
+
+        for (int i = 0; i < Items.Count; ++i)
+        {
+            Items[i].Write(myElement, $"{nameof(Items)}_{i}");
+        }
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

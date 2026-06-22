@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPairs;
@@ -43,7 +44,43 @@ public class ProjectDatabaseIDPair : ReportBase, ITelltaleFile
         writer.Write(mProjectID);
         writer.Write(mDBID);
 
-        Report(this,true);
+        Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(ProjectDatabaseIDPair));
+
+        myElement.SetAttribute(nameof(name), name);
+
+        AppendBasicTypes(element);
+
+        _ = element.AppendChild(myElement);
+    }
+
+    #endregion
+
+    #region XML
+
+    public void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute mProjectID, mDBID;
+
+        mProjectID = element.OwnerDocument.CreateAttribute(nameof(this.mProjectID));
+        mDBID = element.OwnerDocument.CreateAttribute(nameof(this.mDBID));
+
+        mProjectID.Value = this.mProjectID.ToString();
+        mDBID.Value = this.mDBID.ToString();
+
+        _ = element.Attributes.Append(mProjectID);
+        _ = element.Attributes.Append(mDBID);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(ProjectDatabaseIDPair), name);
+        mProjectID = uint.Parse( myElement.GetAttribute(nameof(mProjectID)));
+        mDBID = uint.Parse( myElement.GetAttribute(nameof(mDBID)));
     }
 
     #endregion

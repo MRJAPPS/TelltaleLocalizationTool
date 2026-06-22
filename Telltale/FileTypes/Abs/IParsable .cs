@@ -1,14 +1,15 @@
-﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.Xml;
+
+namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 public interface IParsable
 {
-    #region Properties
-
-    #endregion
 
     #region Methods
 
     void Parse(BinaryReader reader);
+
+    void Parse(XmlElement reader, string name);
 
     #endregion
 }

@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Globalization;
 using System.Text;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
@@ -22,9 +24,9 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     #region Private Fields
 
     // Did we read a prefixed size field? (some strings have it, some don't – Telltale logic)
-    private readonly bool readSize = readSize;
+    private bool readSize = readSize;
     // Should we munch trailing zero‑bytes after the string?
-    private readonly bool skipZero = skipZero;
+    private bool skipZero = skipZero;
 
     #endregion
 
@@ -90,6 +92,14 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         Report(this, false, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement element = reader.GetSingleElement(nameof(TString), name);
+
+        ParseBasicTypes(element);
+
+        Value = element.InnerText;
+    }
 
     public void Write(BinaryWriter writer)
     {
@@ -105,11 +115,65 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         if (skipZero && ZeroCount > 0)
         {
             for (int i = 0; i < ZeroCount; ++i)
+            {
                 writer.Write((byte)0);
+            }
         }
 
         Report(this, true, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
 
+    }
+
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(TString));
+        myElement.SetAttribute(nameof(name), name);
+
+        AppendBasicTypes(myElement);
+        myElement.InnerText = Value;
+
+        _ = element.AppendChild(myElement);
+    }
+
+    #endregion
+
+    #region XML
+
+    public void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute readSize, FixedLength, ZeroCount, Encoding, skipZero;
+
+        readSize = element.OwnerDocument.CreateAttribute(nameof(readSize));
+        FixedLength = element.OwnerDocument.CreateAttribute(nameof(FixedLength));
+        ZeroCount = element.OwnerDocument.CreateAttribute(nameof(ZeroCount));
+        Encoding = element.OwnerDocument.CreateAttribute(nameof(Encoding));
+        skipZero = element.OwnerDocument.CreateAttribute(nameof(skipZero));
+
+        readSize.Value = this.readSize.ToString();
+        FixedLength.Value = this.FixedLength.ToString();
+        ZeroCount.Value = this.ZeroCount.ToString();
+        Encoding.Value = this.Encoding.CodePage.ToString();
+        skipZero.Value = this.skipZero.ToString();
+
+        _ = element.Attributes.Append(readSize);
+        _ = element.Attributes.Append(FixedLength);
+        _ = element.Attributes.Append(ZeroCount);
+        _ = element.Attributes.Append(Encoding);
+        _ = element.Attributes.Append(skipZero);
+    }
+
+    private void ParseBasicTypes(XmlElement element)
+    {
+        readSize = bool.Parse(element.GetAttribute(nameof(readSize)));
+
+        FixedLength = int.Parse(element.GetAttribute(nameof(FixedLength)));
+
+        ZeroCount = int.Parse(element.GetAttribute(nameof(ZeroCount)));
+
+        Encoding = Encoding.GetEncoding(int.Parse(element.GetAttribute(nameof(Encoding))));
+
+        skipZero = bool.Parse(element.GetAttribute(nameof(skipZero)));
     }
 
     #endregion

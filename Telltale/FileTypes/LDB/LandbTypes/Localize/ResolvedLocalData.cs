@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
@@ -51,6 +53,15 @@ public class ResolvedLocalData : ReportBase, ITelltaleFile
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(ResolvedLocalData), name);
+
+        mPrefix.Parse(myElement, nameof(mPrefix));
+        mText.Parse(myElement, nameof(mText));
+        mLocalInfo.Parse(myElement, nameof(mLocalInfo));
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -61,6 +72,17 @@ public class ResolvedLocalData : ReportBase, ITelltaleFile
         mLocalInfo.Write(writer);
 
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(ResolvedLocalData));
+        myElement.SetAttribute(nameof(name), name);
+        mPrefix.Write(myElement, nameof(mPrefix));
+        mText.Write(myElement, nameof(mText));
+        mLocalInfo.Write(myElement, nameof(mLocalInfo));
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

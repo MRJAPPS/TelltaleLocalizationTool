@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
@@ -40,15 +41,33 @@ public class Registry : ReportBase, ITelltaleFile
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(Registry), name);
+        mFlagIndexMap.Parse(myElement, nameof(mFlagIndexMap));
+        mFlagIndexMapReverse.Parse(myElement, nameof(mFlagIndexMapReverse));
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
 
         writer.Write(Size);
-
         mFlagIndexMap.Write(writer);
         mFlagIndexMapReverse.Write(writer);
+
         Report(this);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Registry));
+        myElement.SetAttribute(nameof(name), name);
+
+        mFlagIndexMap.Write(myElement, nameof(mFlagIndexMap));
+        mFlagIndexMapReverse.Write(myElement, nameof(mFlagIndexMapReverse));
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

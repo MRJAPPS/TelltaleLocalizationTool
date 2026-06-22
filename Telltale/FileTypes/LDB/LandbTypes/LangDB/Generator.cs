@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
@@ -35,6 +36,12 @@ public class Generator : ReportBase, ITelltaleFile
         Report(this);
     }
 
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(Generator), name);
+        miNextUniqueID = uint.Parse(myElement.GetAttribute(nameof(miNextUniqueID)));
+    }
+
     public void Write(BinaryWriter writer)
     {
         Position = writer.BaseStream.Position;
@@ -43,6 +50,19 @@ public class Generator : ReportBase, ITelltaleFile
         writer.Write(miNextUniqueID);
 
         Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Generator));
+
+        myElement.SetAttribute(nameof(name), name);
+
+        XmlAttribute miNextUniqueID = myElement.OwnerDocument.CreateAttribute(nameof(miNextUniqueID));
+        miNextUniqueID.Value = this.miNextUniqueID.ToString();
+        _ = myElement.Attributes.Append(miNextUniqueID);
+
+        _ = element.AppendChild(myElement);
     }
 
     #endregion
