@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.ProjDataBIDPairs;
@@ -34,21 +35,33 @@ public class ProjectDatabaseIDPair : ReportBase, IParsable
     /// <summary>
     /// The stream position where parsing started.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable
+    #region Implement
 
     /// <summary>
     /// Reads the two uint fields directly from the stream.
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
+
         mProjectID = reader.ReadUInt32();
         mDBID = reader.ReadUInt32();
+
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(mProjectID);
+        writer.Write(mDBID);
+
+        Report(this,true);
     }
 
     #endregion

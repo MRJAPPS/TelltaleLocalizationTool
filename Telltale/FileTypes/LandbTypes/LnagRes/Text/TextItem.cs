@@ -84,11 +84,11 @@ public class TextItem : ReportBase, IParsable
     /// <summary>
     /// The stream offset where parsing started. Used by the report to log the exact file position.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads all fields from the binary stream in the precise order they appear:
@@ -97,7 +97,7 @@ public class TextItem : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         TextId = reader.ReadUInt32();
         mResName.Parse(reader);
@@ -112,6 +112,25 @@ public class TextItem : ReportBase, IParsable
         mFlags = (Enums.ETextItemFlags)reader.ReadUInt32();
 
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(TextId);
+        mResName.Write(writer);
+        writer.Write(mId);
+        writer.Write(mIDAlias);
+        mhAnimation.Write(writer);
+        mhVoiceData.Write(writer);
+        mLocalData.Write(writer);
+        writer.Write(mLengthOverride);
+        mResolvedLocalData.Write(writer);
+        mRecordingStatus.Write(writer);
+        writer.Write((uint)mFlags);
+
+        Report(this, true);
     }
 
     #endregion

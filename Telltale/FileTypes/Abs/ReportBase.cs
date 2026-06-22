@@ -59,7 +59,7 @@ public abstract class ReportBase
                 $"Did you forget to add {nameof(DescriptionAttribute)} to type {typeName}?");
 
         string message =
-            $"{(write ? "W" : "R" )} \"{{[{typeName}], [0X{parsable.ParsePosition:X}], [{parsable.Size:X}({parsable.Size})] }}\" " +
+            $"{(write ? "W" : "R" )} \"{{[{typeName}], [0X{parsable.Position:X}], [{parsable.Size:X}({parsable.Size})] }}\" " +
             $"=> \"[{description}]\" {extra}{Environment.NewLine}";
 
         reportStream.WriteLine(message);

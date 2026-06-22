@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
@@ -122,11 +123,11 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// <summary>
     /// Where the reader was before we touched it, used for debug reports.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region Parsing
+    #region Parse/Write
 
     /// <summary>
     /// Reads the string from the binary stream according to all the rules:  
@@ -134,7 +135,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         if (readSize)
         {
@@ -150,7 +151,29 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
             SkipZeros(reader);
         }
 
-        Report(this, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
+        Report(this, false, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
+    }
+
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        if (readSize)
+        {
+            writer.Write(Size);
+        }
+        writer.Write(Length);
+        writer.Write(Encoding.GetBytes(Value)); ;
+
+        if (skipZero && ZeroCount > 0)
+        {
+            for (int i = 0; i < ZeroCount; ++i)
+                writer.Write((byte)0);
+        }
+
+        Report(this, true, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
+
     }
 
     #endregion
@@ -182,28 +205,41 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     #region Equality & Comparison
 
     /// <inheritdoc/>
-    public bool Equals(TString? other) => other is not null && Value == other.Value;
+    public bool Equals(TString? other)
+    {
+        return other is not null && Value == other.Value;
+    }
 
     /// <inheritdoc/>
-    public override bool Equals(object? obj) => Equals(obj as TString);
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as TString);
+    }
 
     /// <inheritdoc/>
-    public override int GetHashCode() => Value?.GetHashCode() ?? 0;
+    public override int GetHashCode()
+    {
+        return Value?.GetHashCode() ?? 0;
+    }
 
     /// <inheritdoc/>
-    public override string ToString() => Value ?? string.Empty;
+    public override string ToString()
+    {
+        return Value ?? string.Empty;
+    }
 
     /// <inheritdoc/>
-    public int CompareTo(TString? other) =>
-        other is null ? 1 : string.Compare(Value, other.Value, StringComparison.Ordinal);
+    public int CompareTo(TString? other)
+    {
+        return other is null ? 1 : string.Compare(Value, other.Value, StringComparison.Ordinal);
+    }
 
     /// <inheritdoc/>
     public int CompareTo(object? obj)
     {
-        if (obj is TString ts)
-            return CompareTo(ts);
-
-        throw new ArgumentException(
+        return obj is TString ts
+            ? CompareTo(ts)
+            : throw new ArgumentException(
             $"Object({obj?.GetType()?.Name}) is not a {nameof(TString)}");
     }
 
@@ -211,20 +247,35 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     #region Operators
 
-    public static bool operator ==(TString left, TString right) => left?.Value == right?.Value;
-    public static bool operator !=(TString left, TString right) => !(left == right);
+    public static bool operator ==(TString left, TString right)
+    {
+        return left?.Value == right?.Value;
+    }
 
-    public static bool operator <(TString left, TString right) =>
-        left is null ? right is not null : left.CompareTo(right) < 0;
+    public static bool operator !=(TString left, TString right)
+    {
+        return !(left == right);
+    }
 
-    public static bool operator <=(TString left, TString right) =>
-        left is null || left.CompareTo(right) <= 0;
+    public static bool operator <(TString left, TString right)
+    {
+        return left is null ? right is not null : left.CompareTo(right) < 0;
+    }
 
-    public static bool operator >(TString left, TString right) =>
-        left is not null && left.CompareTo(right) > 0;
+    public static bool operator <=(TString left, TString right)
+    {
+        return left is null || left.CompareTo(right) <= 0;
+    }
 
-    public static bool operator >=(TString left, TString right) =>
-        left is null ? right is null : left.CompareTo(right) >= 0;
+    public static bool operator >(TString left, TString right)
+    {
+        return left is not null && left.CompareTo(right) > 0;
+    }
+
+    public static bool operator >=(TString left, TString right)
+    {
+        return left is null ? right is null : left.CompareTo(right) >= 0;
+    }
 
     #endregion
 
@@ -233,13 +284,19 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// <summary>
     /// Unwraps a TString back into a plain old string.
     /// </summary>
-    public static implicit operator string(TString t) => t?.Value ?? string.Empty;
+    public static implicit operator string(TString t)
+    {
+        return t?.Value ?? string.Empty;
+    }
 
     /// <summary>
     /// Wraps a plain string into a TString.  
     /// (Uses the collection expression syntax – don't look too closely, it works™)
     /// </summary>
-    public static implicit operator TString(string s) => [.. s];
+    public static implicit operator TString(string s)
+    {
+        return [.. s];
+    }
 
     #endregion
 
@@ -248,7 +305,10 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// <summary>
     /// Creates a TString from a plain string, same as the implicit conversion but explicit.
     /// </summary>
-    public static TString FromValue(string value) => [.. value];
+    public static TString FromValue(string value)
+    {
+        return [.. value];
+    }
 
     #endregion
 
@@ -257,33 +317,50 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// <summary>
     /// Not supported – this collection is read‑only.
     /// </summary>
-    public void Add(char item) =>
+    public void Add(char item)
+    {
         throw new NotSupportedException("Collection is read-only.");
+    }
 
     /// <summary>
     /// Not supported – you can't wipe a TString.
     /// </summary>
-    public void Clear() =>
+    public void Clear()
+    {
         throw new NotSupportedException("Collection is read-only.");
+    }
 
     /// <inheritdoc/>
-    public bool Contains(char item) => Value.Contains(item);
+    public bool Contains(char item)
+    {
+        return Value.Contains(item);
+    }
 
     /// <inheritdoc/>
-    public void CopyTo(char[] array, int arrayIndex) =>
+    public void CopyTo(char[] array, int arrayIndex)
+    {
         Value.CopyTo(0, array, arrayIndex, Value.Length);
+    }
 
     /// <summary>
     /// Not supported – once a character is there, it stays there.
     /// </summary>
-    public bool Remove(char item) =>
+    public bool Remove(char item)
+    {
         throw new NotSupportedException("Collection is read-only.");
+    }
 
     /// <inheritdoc/>
-    public IEnumerator<char> GetEnumerator() => Value.GetEnumerator();
+    public IEnumerator<char> GetEnumerator()
+    {
+        return Value.GetEnumerator();
+    }
 
     /// <inheritdoc/>
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 
     #endregion
 }

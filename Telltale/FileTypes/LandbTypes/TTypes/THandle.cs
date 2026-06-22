@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
@@ -28,7 +29,7 @@ public class THandle : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when we started parsing. For debug bragging.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
@@ -41,13 +42,24 @@ public class THandle : ReportBase, IParsable
     public void Parse(BinaryReader reader)
     {
         // Stash the start pos for the report – gotta flex that offset later.
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // Those first 4 bytes are just a duplicate size we can figure out ourselves. Nom them and move on.
         _ = reader.ReadUInt32();
 
         hSymbolValue.Parse(reader);
+        
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+        writer.Write(Size);
+
+        hSymbolValue.Write(writer);
+
+        Report(this, true);
     }
 
     #endregion

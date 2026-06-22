@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
@@ -29,11 +30,11 @@ public class Generator : ReportBase, IParsable
     /// <summary>
     /// The stream offset where we started reading.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the Generator block: the first uint is a redundant size (always 4), so we skip it.
@@ -41,13 +42,24 @@ public class Generator : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // Skip the size cap – it's just telling us what we already know.
         _ = reader.ReadUInt32();
 
         miNextUniqueID = reader.ReadUInt32();
+
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+        writer.Write(miNextUniqueID);
+
+        Report(this, true);
     }
 
     #endregion

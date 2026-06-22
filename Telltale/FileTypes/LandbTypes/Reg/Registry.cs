@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
@@ -36,24 +37,35 @@ public class Registry : ReportBase, IParsable
     /// <summary>
     /// Stream offset where parsing started — for the report.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable
+    #region Implement
 
     /// <summary>
     /// Reads the registry: skips the redundant size word, then parses both maps in order.
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // The first 4 bytes are just a size value we can calculate ourselves — skip 'em.
         _ = reader.ReadUInt32();
 
         mFlagIndexMap.Parse(reader);
         mFlagIndexMapReverse.Parse(reader);
+        Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+
+        mFlagIndexMap.Write(writer);
+        mFlagIndexMapReverse.Write(writer);
         Report(this);
     }
 

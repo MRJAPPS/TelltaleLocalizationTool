@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
@@ -44,11 +45,11 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
     /// <summary>
     /// The stream offset where parsing began.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the collection from the binary stream: grabs the item count first,
@@ -56,7 +57,7 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // The first integer is the number of items that follow.
         int count = reader.ReadInt32();
@@ -67,10 +68,22 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
             TextItem textItem = new();
             textItem.Parse(reader);
             Items.Add(textItem);
-
-            // Report after each item so the log shows incremental progress.
-            Report(this);
         }
+        // Report after each item so the log shows incremental progress.
+        Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Items.Count);
+
+        for (int i = 0; i < Capacity; ++i)
+        {
+            Items[i].Write(writer);
+        }
+        Report(this, true);
     }
 
     #endregion

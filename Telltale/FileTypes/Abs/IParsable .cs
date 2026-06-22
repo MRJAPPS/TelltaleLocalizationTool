@@ -4,14 +4,9 @@
 /// Marks a type as "hey, I can read myself from a binary stream!" 
 /// Also inherits <see cref="ISize"/> because you gotta know your byte footprint.
 /// </summary>
-public interface IParsable : ISize
+public interface IParsable : ISize, IWriteable, IPosition
 {
     #region Properties
-
-    /// <summary>
-    /// Gets the stream position where the parsing started. Super handy for debug reports.
-    /// </summary>
-    long ParsePosition { get; }
 
     #endregion
 

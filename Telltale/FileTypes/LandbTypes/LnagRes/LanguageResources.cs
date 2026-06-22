@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
@@ -31,11 +32,11 @@ public class LanguageResources : ReportBase, IParsable
     /// <summary>
     /// Where the reader's head was when we began parsing.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the LanguageResources from the stream: skips a redundant capacity int,
@@ -43,7 +44,7 @@ public class LanguageResources : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // The first int is just a size that we can calculate ourselves from the TextItems.
         // So we read it and throw it away – it's basically a byte version of a ditto mark.
@@ -51,6 +52,16 @@ public class LanguageResources : ReportBase, IParsable
 
         TextItems.Parse(reader);
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+        TextItems.Write(writer);
+
+        Report(this, true);
     }
 
     #endregion

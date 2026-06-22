@@ -49,11 +49,11 @@ public class ResolvedLocalData : ReportBase, IParsable
     /// <summary>
     /// Where we were in the stream when parsing kicked off.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the resolved data from the binary stream: skips the redundant capacity field,
@@ -61,7 +61,7 @@ public class ResolvedLocalData : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // The first int is just a capacity/size value we can compute ourselves,
         // so we read it and throw it away – no point storing it.
@@ -72,6 +72,18 @@ public class ResolvedLocalData : ReportBase, IParsable
         mLocalInfo.Parse(reader);
 
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+        mPrefix.Write(writer);
+        mText.Write(writer);
+        mLocalInfo.Write(writer);
+
+        Report(this, true);
     }
 
     #endregion

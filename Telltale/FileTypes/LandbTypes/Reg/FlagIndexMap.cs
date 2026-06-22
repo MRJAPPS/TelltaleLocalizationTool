@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
@@ -34,7 +33,7 @@ public class FlagIndexMap : ReportBase, IParsable
     /// All the entries read from the stream. The number of entries is always one more than
     /// the number of key‑symbol pairs because an extra key with no value is added.
     /// </summary>
-    public Hashtable KeyValues = [];
+    public OrderedDictionary<uint, TSymbolValue?> KeyValues = [];
 
     /// <summary>
     /// Byte count of the whole map, as it sits in the file.
@@ -46,7 +45,7 @@ public class FlagIndexMap : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when we started parsing.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
@@ -67,7 +66,7 @@ public class FlagIndexMap : ReportBase, IParsable
 
     #endregion
 
-    #region IParsable
+    #region Implement
 
     /// <summary>
     /// Reads the map: a size field, then an optional extra key (depending on mode),
@@ -75,7 +74,7 @@ public class FlagIndexMap : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
         long readerFirstPos = reader.BaseStream.Position;
 
         uint size = reader.ReadUInt32(); // Skip Size
@@ -88,9 +87,21 @@ public class FlagIndexMap : ReportBase, IParsable
         // Make sure we ate exactly as many bytes as the header promised.
         CheckDataMismatch(reader, readerFirstPos, size);
 
-        Report(this, $"(reverce = {reverce})");
+        Report(this, false, $"(reverce = {reverce})");
     }
 
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+
+        CheckReverce(writer, true);
+        WriteReadKeyValues(writer);
+        CheckReverce(writer, false);
+
+        Report(this, true, $"(reverce = {reverce})");
+    }
     #endregion
 
     #region Private Helpers
@@ -122,7 +133,24 @@ public class FlagIndexMap : ReportBase, IParsable
             KeyValues.Add(key, symbol);
         }
     }
+    private void WriteReadKeyValues(BinaryWriter writer)
+    {
+        int nulls = 0;
+        foreach (uint key in KeyValues.Keys)
+        {
+            TSymbolValue? symbol = KeyValues[key];
+            if (symbol == null && ++nulls > 1)
+            {
+                throw new NullReferenceException("There was supposed to be only one null in the list; this was unpredictable! Please report this along with a sample file.");
+            }
 
+            if (symbol is not null)
+            {
+                writer.Write(key);
+                symbol.Write(writer);
+            }
+        }
+    }
     /// <summary>
     /// Adds the extra dummy entry (key only, no symbol) at the right place depending on the mode.
     /// When cond == reverce, we read an extra uint and store it with a null value.
@@ -133,6 +161,21 @@ public class FlagIndexMap : ReportBase, IParsable
         {
             uint extra = reader.ReadUInt32();
             KeyValues.Add(extra, null);
+        }
+    }
+
+    private void CheckReverce(BinaryWriter writer, bool cond)
+    {
+        if (reverce == cond)
+        {
+            foreach (uint key in KeyValues.Keys)
+            {
+                if (KeyValues[key] == null)
+                {
+                    writer.Write(key);
+                    break;
+                }
+            }
         }
     }
 

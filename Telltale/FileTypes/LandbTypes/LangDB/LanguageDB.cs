@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
@@ -45,11 +46,11 @@ public class LanguageDB : ReportBase, IParsable
     /// <summary>
     /// The stream position when parsing began.
     /// </summary>
-    public long ParsePosition { get;private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the LanguageDB block: first the fixed‑size header (raw bytes), then the Owner,
@@ -57,7 +58,7 @@ public class LanguageDB : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // Read the whole header blob – maybe one day we'll care what’s inside.
         msv6Header = reader.ReadBytes(HeaderSize);
@@ -66,6 +67,18 @@ public class LanguageDB : ReportBase, IParsable
         mGenerator.Parse(reader);
 
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(msv6Header);
+
+        mOwner.Write(writer);
+        mGenerator.Write(writer);
+
+        Report(this, true);
     }
 
     #endregion

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.ProjDataBIDPairs;
@@ -37,11 +38,11 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IP
     /// <summary>
     /// Stream position when parsing began.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable
+    #region Implement
 
     /// <summary>
     /// Reads the block: skips the redundant size field, grabs the pair count,
@@ -49,7 +50,7 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IP
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // We don't need the size value because we can compute it from the known structure.
         _ = reader.ReadUInt32();
@@ -64,6 +65,21 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IP
         }
 
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+
+        writer.Write((uint)Items.Count);
+        for (int i = 0; i < Items.Count; ++i)
+        {
+            Items[i].Write(writer);
+        }
+
+        Report(this, true);
     }
 
     #endregion

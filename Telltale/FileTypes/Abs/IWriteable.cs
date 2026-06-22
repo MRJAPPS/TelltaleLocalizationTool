@@ -4,7 +4,7 @@
 /// The opposite of parsing – if you can read, you gotta write back, right? 
 /// Keeps the circle of binary life going.
 /// </summary>
-public interface IWriteable
+public interface IWriteable : IPosition
 {
     #region Methods
 

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
@@ -29,11 +30,11 @@ public class Owner : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when parsing kicked off.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the Owner block: skips the useless size field (it’s always 4, duh),
@@ -41,13 +42,23 @@ public class Owner : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // This uint is just a size marker – we already know it's 4, so we read and forget it.
         _ = reader.ReadUInt32();
 
         miUniqueID = reader.ReadUInt32();
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+        writer.Write(miUniqueID);
+
+        Report(this, true);
     }
 
     #endregion

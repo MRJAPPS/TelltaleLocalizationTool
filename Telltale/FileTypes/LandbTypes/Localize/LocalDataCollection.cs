@@ -2,6 +2,7 @@
 // File 2: LocalDataCollection.cs
 // ===========================
 using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
@@ -46,11 +47,11 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
     /// <summary>
     /// The stream offset where parsing started.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the entire collection from the binary stream: skips the redundant block size,
@@ -58,7 +59,7 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // The first uint is a block‑size value that we can compute from the item count and structure,
         // so there’s no point keeping it – we read and discard.
@@ -75,6 +76,17 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
         }
 
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+        writer.Write(Size);
+
+        writer.Write(Items.Count);
+        for (int i = 0; i < Capacity; ++i)
+            Items[i].Write(writer);
+        Report(this, true);
     }
 
     #endregion

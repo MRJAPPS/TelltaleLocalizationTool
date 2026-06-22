@@ -43,11 +43,11 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
     /// The stream offset where parsing began. Used by the report to show exactly where
     /// this debug section sits in the file.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the debug section from the binary stream.
@@ -58,7 +58,7 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
     /// <param name="reader">The binary reader positioned at the start of the debug data.</param>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // Start with a clean slate – the underlying Items list gets replaced.
         Items = [];
@@ -77,6 +77,16 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
         }
 
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        foreach (TString item in Items)
+        {
+            item.Write(writer);
+        }
     }
 
     #endregion

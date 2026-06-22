@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
@@ -54,11 +55,11 @@ public class LocalDataItem : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when parsing began.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the prefix, text, and local info from the stream in that exact order.
@@ -66,11 +67,22 @@ public class LocalDataItem : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
         mPrefix.Parse(reader);
         mText.Parse(reader);
         mLocalInfo.Parse(reader);
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        mPrefix.Write(writer);
+        mText.Write(writer);
+        mLocalInfo.Write(writer);
+
+        Report(this,true);
     }
 
     #endregion

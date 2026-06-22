@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
@@ -29,7 +30,7 @@ public class TSymbolValue : ReportBase, IParsable
     /// <summary>
     /// The stream position when parsing kicked off. Used by the report to show where this chunk lived.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
@@ -41,9 +42,16 @@ public class TSymbolValue : ReportBase, IParsable
     /// <param name="reader">The binary reader pointing right at the 8‑byte value.</param>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
         Value = reader.ReadUInt64();
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+        writer.Write(Value);
+        Report(this, true);
     }
 
     #endregion

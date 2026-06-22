@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
@@ -35,11 +36,11 @@ public class LocalizeInfo : ReportBase, IParsable
     /// <summary>
     /// The stream offset where parsing started.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     #endregion
 
-    #region IParsable Implementation
+    #region Implementation
 
     /// <summary>
     /// Reads the localisation info from the stream: skips the size field we don’t need,
@@ -47,7 +48,7 @@ public class LocalizeInfo : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // This 4‑byte value is just a duplicate of the block size – we already know it’s 4.
         // Read it and toss it so the stream pointer lands on the flags.
@@ -55,6 +56,16 @@ public class LocalizeInfo : ReportBase, IParsable
 
         Flags = reader.ReadUInt32();
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        writer.Write(Size);
+        writer.Write(Flags);
+
+        Report(this, true);
     }
 
     #endregion

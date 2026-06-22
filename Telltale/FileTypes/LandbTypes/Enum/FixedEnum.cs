@@ -51,19 +51,19 @@ public class FixedEnum<T> : ReportBase, IParsable
 
     #endregion
 
-    #region IParsable Members
+    #region Base Members
 
     /// <summary>
     /// The stream offset when parsing began. Needed for the report.
     /// </summary>
-    public long ParsePosition { get; private set; }
+    public long Position { get; private set; }
 
     /// <summary>
     /// Skips the useless size int, then reads the enum’s backing value and converts it to <typeparamref name="T"/>.
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        ParsePosition = reader.BaseStream.Position;
+        Position = reader.BaseStream.Position;
 
         // This int is just a size marker that echoes the value’s length – we don’t need it.
         _ = reader.ReadInt32();
@@ -87,6 +87,38 @@ public class FixedEnum<T> : ReportBase, IParsable
 
         EnumItem = (T)Enum.ToObject(typeof(T), rawValue);
         Report(this);
+    }
+
+    public void Write(BinaryWriter writer)
+    {
+        Position = writer.BaseStream.Position;
+
+        Type underlyingType = Enum.GetUnderlyingType(typeof(T));
+
+        int size = underlyingType switch
+        {
+            Type t when t == typeof(byte) || t == typeof(sbyte) => 1,
+            Type t when t == typeof(short) || t == typeof(ushort) => 2,
+            Type t when t == typeof(int) || t == typeof(uint) => 4,
+            Type t when t == typeof(long) || t == typeof(ulong) => 8,
+            _ => throw new NotSupportedException($"Enum underlying type {underlyingType} is not supported")
+        };
+        writer.Write(size + sizeof(uint));
+
+        dynamic rawValue = Convert.ChangeType(EnumItem, underlyingType);
+        switch (underlyingType)
+        {
+            case Type t when t == typeof(byte): writer.Write((byte)rawValue); break;
+            case Type t when t == typeof(sbyte): writer.Write((sbyte)rawValue); break;
+            case Type t when t == typeof(short): writer.Write((short)rawValue); break;
+            case Type t when t == typeof(ushort): writer.Write((ushort)rawValue); break;
+            case Type t when t == typeof(int): writer.Write((int)rawValue); break;
+            case Type t when t == typeof(uint): writer.Write((uint)rawValue); break;
+            case Type t when t == typeof(long): writer.Write((long)rawValue); break;
+            case Type t when t == typeof(ulong): writer.Write((ulong)rawValue); break;
+        }
+
+        Report(this, true);
     }
 
     #endregion
