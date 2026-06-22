@@ -3,22 +3,64 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
+/// <summary>
+/// Holds the localisation info flags – just a 4‑byte value that sits right after a redundant size field.
+/// </summary>
 [Description("Processing the localize info flag")]
 public class LocalizeInfo : ReportBase, IParsable
 {
+    #region Constants
+
+    // The size field that appears right before the flags – always 4 bytes.
+    private const uint SizeFieldBytes = sizeof(uint);
+
+    #endregion
+
+    #region Private Fields
+
+    /// <summary>
+    /// Stream position when parsing began – saved for the report.
+    /// </summary>
     private long _ParsePos;
 
+    #endregion
+
+    #region Public Properties
+
+    /// <summary>
+    /// The raw flags value. Its meaning is probably buried in some design doc from 2008.
+    /// </summary>
     public uint Flags { get; set; }
 
-    public uint Size => 8;/*4 for flags and 4 for size*/
+    /// <summary>
+    /// Total byte size of this info block: 4 bytes for the size field (skipped) + 4 bytes for the flags.
+    /// </summary>
+    public uint Size => SizeFieldBytes + sizeof(uint);
 
+    /// <summary>
+    /// The stream offset where parsing started.
+    /// </summary>
     public long ParsePosition => _ParsePos;
 
+    #endregion
+
+    #region IParsable Implementation
+
+    /// <summary>
+    /// Reads the localisation info from the stream: skips the size field we don’t need,
+    /// then grabs the flags.
+    /// </summary>
     public void Parse(BinaryReader reader)
     {
         _ParsePos = reader.BaseStream.Position;
-        _ = reader.ReadUInt32();//skip size
+
+        // This 4‑byte value is just a duplicate of the block size – we already know it’s 4.
+        // Read it and toss it so the stream pointer lands on the flags.
+        _ = reader.ReadUInt32();
+
         Flags = reader.ReadUInt32();
         Report(this);
     }
+
+    #endregion
 }
