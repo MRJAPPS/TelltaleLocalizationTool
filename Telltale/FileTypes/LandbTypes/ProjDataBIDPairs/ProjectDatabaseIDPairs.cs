@@ -1,7 +1,9 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.ProjDataBIDPairs;
 
+[Description("Processing a collection of ProjectDatabaseIDPair objects that have mProjectID and mDBID. No idea what this is, honestly.")]
 public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IParsable
 {
     private long _ParsePos;
@@ -24,5 +26,6 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IP
             pair.Parse(reader);
             Items.Add(pair);
         }
+        Report(this);
     }
 }

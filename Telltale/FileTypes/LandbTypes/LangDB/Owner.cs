@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
 
-public class Owner : IParsable
+[Description("Processing Owner section")]
+public class Owner : ReportBase, IParsable
 {
 
     private long _ParsePos;
@@ -16,6 +18,7 @@ public class Owner : IParsable
         _ParsePos = reader.BaseStream.Position;
         _ = reader.ReadUInt32(); //Skip cap
         miUniqueID = reader.ReadUInt32();
+        Report(this);
     }
 
 }

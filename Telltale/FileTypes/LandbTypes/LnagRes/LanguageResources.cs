@@ -1,9 +1,11 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes;
 
-public class LanguageResources : IParsable
+[Description("Processing the game text stuff (subtitles, menus, etc.)")]
+public class LanguageResources : ReportBase, IParsable
 {
     private long _ParsePos;
 
@@ -18,5 +20,6 @@ public class LanguageResources : IParsable
         _ParsePos = reader.BaseStream.Position;
         _ = reader.ReadInt32();
         TextItems.Parse(reader);
+        Report(this);
     }
 }

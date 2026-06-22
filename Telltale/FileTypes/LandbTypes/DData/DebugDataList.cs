@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.DData;
 
+[Description("Process the debug section of the file")]
 public class DebugDataList : TCollectionBase<TString>, IParsable
 {
     private long _ParsePos;
@@ -20,9 +22,7 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
         }
     }
 
-    long IParsable.ParsePosition => _ParsePos;
-
-    uint ISize.Size => throw new NotImplementedException();
+    public long ParsePosition => _ParsePos;
 
     public void Parse(BinaryReader reader)
     {
@@ -34,10 +34,6 @@ public class DebugDataList : TCollectionBase<TString>, IParsable
             ddata.Parse(reader);
             Items.Add(ddata);
         }
-    }
-
-    void IParsable.Parse(BinaryReader reader)
-    {
-        throw new NotImplementedException();
+        Report(this);
     }
 }

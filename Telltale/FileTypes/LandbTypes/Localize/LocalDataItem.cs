@@ -1,9 +1,11 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
-public class LocalDataItem : IParsable
+[Description("Processing the localization data section")]
+public class LocalDataItem :ReportBase, IParsable
 {
     private long _ParsePos;
 
@@ -25,5 +27,6 @@ public class LocalDataItem : IParsable
         mPrefix.Parse(reader);
         mText.Parse(reader);
         mLocalInfo.Parse(reader);
+        Report(this);
     }
 }

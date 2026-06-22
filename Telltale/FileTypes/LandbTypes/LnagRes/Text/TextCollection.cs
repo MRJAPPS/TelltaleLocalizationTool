@@ -1,7 +1,9 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
+[Description("Processing the text collection")]
 public class TextCollection : TCollectionBase<TextItem>, IParsable
 {
     private long _ParsePos;
@@ -31,6 +33,7 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
             TextItem textItem = new();
             textItem.Parse(reader);
             Items.Add(textItem);
+            Report(this);
         }
     }
 }

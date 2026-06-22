@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.ProjDataBIDPairs;
 
-public class ProjectDatabaseIDPair : IParsable
+[Description("Processing a collection of ProjectDatabase that contains mProjectID and mDBID.")]
+public class ProjectDatabaseIDPair : ReportBase, IParsable
 {
     private long _ParsePos;
     private uint mProjectID { get; set; }
@@ -17,5 +19,6 @@ public class ProjectDatabaseIDPair : IParsable
         _ParsePos = reader.BaseStream.Position;
         mProjectID = reader.ReadUInt32();
         mDBID = reader.ReadUInt32();
+        Report(this);
     }
 }

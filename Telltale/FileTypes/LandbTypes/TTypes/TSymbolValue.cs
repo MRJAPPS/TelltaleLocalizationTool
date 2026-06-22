@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
-public class TSymbolValue : IParsable
+[Description("Processing a SymbolValue(8 byte)")]
+public class TSymbolValue : ReportBase, IParsable
 {
     private long _ParsePos;
 
@@ -16,5 +18,6 @@ public class TSymbolValue : IParsable
     {
         _ParsePos = reader.BaseStream.Position;
         Value = reader.ReadUInt64();
+        Report(this);
     }
 }

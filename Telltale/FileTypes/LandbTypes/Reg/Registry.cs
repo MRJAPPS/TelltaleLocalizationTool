@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
 
-public class Registry : IParsable
+[Description("Processing a Registry object that includes a normal FlagIndexMap(and a reverse FlagIndexMap)")]
+public class Registry : ReportBase, IParsable
 {
     private const uint RegistrySizeInFile = sizeof(uint);
 
@@ -20,5 +22,6 @@ public class Registry : IParsable
         _ = reader.ReadUInt32();//skip size
         mFlagIndexMap.Parse(reader);
         mFlagIndexMapReverse.Parse(reader);
+        Report(this);
     }
 }

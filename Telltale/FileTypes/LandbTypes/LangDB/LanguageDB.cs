@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
 
-public class LanguageDB : IParsable
+[Description("Processing Owner and Generator info")]
+public class LanguageDB : ReportBase, IParsable
 {
     private const int HeaderSize = 140;
     private long _ParsePos;
@@ -21,5 +23,6 @@ public class LanguageDB : IParsable
         msv6Header = reader.ReadBytes(HeaderSize);
         mOwner.Parse(reader);
         mGenerator.Parse(reader);
+        Report(this);
     }
 }

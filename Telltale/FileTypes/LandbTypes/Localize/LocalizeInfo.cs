@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
-public class LocalizeInfo : IParsable
+[Description("Processing the localize info flag")]
+public class LocalizeInfo : ReportBase, IParsable
 {
     private long _ParsePos;
 
@@ -17,5 +19,6 @@ public class LocalizeInfo : IParsable
         _ParsePos = reader.BaseStream.Position;
         _ = reader.ReadUInt32();//skip size
         Flags = reader.ReadUInt32();
+        Report(this);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
@@ -7,7 +8,8 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
 
 using Enum = System.Enum;
 
-public class FixedEnum<T> : IParsable
+[Description("Processing an Enum (probably, but I don't think so) with a fixed size")]
+public class FixedEnum<T> : ReportBase, IParsable
     where T : struct, Enum
 {
 
@@ -46,5 +48,7 @@ public class FixedEnum<T> : IParsable
         };
 
         EnumItem = (T)Enum.ToObject(typeof(T), rawValue);
+        
+        Report(this);
     }
 }

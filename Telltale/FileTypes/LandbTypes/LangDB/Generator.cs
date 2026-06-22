@@ -1,8 +1,10 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
 
-public class Generator : IParsable
+[Description("Processing Generator section")]
+public class Generator : ReportBase, IParsable
 {
     public long _ParsePos;
 
@@ -17,5 +19,6 @@ public class Generator : IParsable
         _ParsePos = reader.BaseStream.Position;
         _ = reader.ReadUInt32(); //skip cap
         miNextUniqueID = reader.ReadUInt32();
+        Report(this);
     }
 }

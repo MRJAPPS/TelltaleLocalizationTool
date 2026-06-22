@@ -1,11 +1,13 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
-public class TextItem : IParsable
+[Description("Processing the text section")]
+public class TextItem : ReportBase, IParsable
 {
     private long _ParsePos;
 
@@ -40,5 +42,6 @@ public class TextItem : IParsable
         mResolvedLocalData.Parse(reader);
         mRecordingStatus.Parse(reader);
         mFlags = (Enums.ETextItemFlags)reader.ReadUInt32();
+        Report(this);
     }
 }

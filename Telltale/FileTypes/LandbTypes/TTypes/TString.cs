@@ -1,10 +1,12 @@
 ﻿using System.Collections;
+using System.ComponentModel;
 using System.Text;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
-public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding) : IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
+[Description("processing a string(Telltale string)")]
+public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding) : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, IParsable
 {
     private const uint StringLenCap = 4;
     public const int VarLength = -1;
@@ -53,6 +55,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         {
             SkipZeros(reader);
         }
+        Report(this, $"({nameof(skipZero)} = {skipZero}, {nameof(readSize)} = {readSize}, {nameof(ZeroCount)} = {ZeroCount})");
     }
 
     // Friendly note: Since ints are Little-Endian (LSB first), 0x00000012 is stored as 0x12000000 in the file, so a leading 0 byte is just upper padding, not a zero-length string value. We safely skip zeros until we hit the actual LSB to read the integer!

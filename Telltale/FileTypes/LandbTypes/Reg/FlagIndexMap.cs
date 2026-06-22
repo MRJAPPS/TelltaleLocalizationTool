@@ -1,10 +1,12 @@
 ﻿using System.Collections;
+using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
 
-public class FlagIndexMap : IParsable
+[Description("Processing a FlagIndexMap structure that includes keys, symbols")]
+public class FlagIndexMap : ReportBase, IParsable
 {
     private const uint FlagIndexMapSizeInFile = sizeof(uint);
 
@@ -39,6 +41,7 @@ public class FlagIndexMap : IParsable
         ReadKeyValues(reader, len);
         CheckReverce(reader, false);
         CheckDataMismatch(reader, readerFirstPos, size);
+        Report(this,$"(reverce = {reverce})");
     }
 
     private static void CheckDataMismatch(BinaryReader reader, long readerFirstPos, uint size)
