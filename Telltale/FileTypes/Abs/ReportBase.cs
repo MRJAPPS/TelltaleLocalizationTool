@@ -45,7 +45,7 @@ public abstract class ReportBase
     /// <exception cref="NullReferenceException">
     /// Thrown when someone forgot to slap a <see cref="DescriptionAttribute"/> on the type.
     /// </exception>
-    public void Report(IParsable parsable, string extra = "")
+    public void Report(IParsable parsable, bool write = false, string extra = "")
     {
         if (!ReportMode)
             return;
@@ -59,7 +59,7 @@ public abstract class ReportBase
                 $"Did you forget to add {nameof(DescriptionAttribute)} to type {typeName}?");
 
         string message =
-            $"\"{{[{typeName}], [0X{parsable.ParsePosition:X}], [{parsable.Size:X}({parsable.Size})] }}\" " +
+            $"{(write ? "W" : "R" )} \"{{[{typeName}], [0X{parsable.ParsePosition:X}], [{parsable.Size:X}({parsable.Size})] }}\" " +
             $"=> \"[{description}]\" {extra}{Environment.NewLine}";
 
         reportStream.WriteLine(message);
