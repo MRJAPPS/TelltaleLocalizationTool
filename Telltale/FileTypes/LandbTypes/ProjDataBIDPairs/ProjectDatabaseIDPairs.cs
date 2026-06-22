@@ -4,10 +4,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.ProjDataBIDPairs;
 
-/// <summary>
-/// A collection of <see cref="ProjectDatabaseIDPair"/> objects.  
-/// The file block starts with a redundant size value, then a count, then the actual pairs.
-/// </summary>
 [Description("Processing a collection of ProjectDatabaseIDPair objects that have mProjectID and mDBID. No idea what this is, honestly.")]
 public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IParsable
 {
@@ -29,25 +25,15 @@ public class ProjectDatabaseIDPairs : TCollectionBase<ProjectDatabaseIDPair>, IP
 
     #region Properties
 
-    /// <summary>
-    /// Total byte size of this block in the file.
-    /// </summary>
     public uint Size =>
         ((uint)Items.Count * ItemSize) + ProjectDatabaseIDPairsSizeInFile + ProjectDatabaseIDPairsLenInFile;
 
-    /// <summary>
-    /// Stream position when parsing began.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Implement
 
-    /// <summary>
-    /// Reads the block: skips the redundant size field, grabs the pair count,
-    /// and then reads exactly that many <see cref="ProjectDatabaseIDPair"/> entries.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;

@@ -4,9 +4,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
 
-/// <summary>
-/// Holds a normal FlagIndexMap and its reverse twin, plus a tiny size header.
-/// </summary>
 [Description("Processing a Registry object that includes a normal FlagIndexMap(and a reverse FlagIndexMap)")]
 public class Registry : ReportBase, IParsable
 {
@@ -19,33 +16,18 @@ public class Registry : ReportBase, IParsable
 
     #region Properties
 
-    /// <summary>
-    /// The forward map of flags to symbols.
-    /// </summary>
     public FlagIndexMap mFlagIndexMap { get; set; } = new();
 
-    /// <summary>
-    /// The reverse map, with an extra leading entry.
-    /// </summary>
     public FlagIndexMap mFlagIndexMapReverse { get; set; } = new(true);
 
-    /// <summary>
-    /// Total size of this registry as it appears in the file.
-    /// </summary>
     public uint Size => mFlagIndexMap.Size + mFlagIndexMapReverse.Size + RegistrySizeInFile;
 
-    /// <summary>
-    /// Stream offset where parsing started — for the report.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Implement
 
-    /// <summary>
-    /// Reads the registry: skips the redundant size word, then parses both maps in order.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;

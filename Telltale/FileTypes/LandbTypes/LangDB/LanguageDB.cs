@@ -4,10 +4,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LangDB;
 
-/// <summary>
-/// The main LanguageDB block – a 140‑byte mysterious header, then an Owner, then a Generator.  
-/// Together they define the language database structure.
-/// </summary>
 [Description("Processing Owner and Generator info")]
 public class LanguageDB : ReportBase, IParsable
 {
@@ -28,34 +24,18 @@ public class LanguageDB : ReportBase, IParsable
 
     #region Properties
 
-    /// <summary>
-    /// The Owner part – just a unique ID.
-    /// </summary>
     public Owner mOwner { get; set; } = new();
 
-    /// <summary>
-    /// The Generator part – the next unique ID counter.
-    /// </summary>
     public Generator mGenerator { get; set; } = new();
 
-    /// <summary>
-    /// Total byte size: the 140‑byte header + Owner + Generator.
-    /// </summary>
     public uint Size => HeaderSize + mOwner.Size + mGenerator.Size;
 
-    /// <summary>
-    /// The stream position when parsing began.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Implementation
 
-    /// <summary>
-    /// Reads the LanguageDB block: first the fixed‑size header (raw bytes), then the Owner,
-    /// then the Generator. All in a straight line.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;

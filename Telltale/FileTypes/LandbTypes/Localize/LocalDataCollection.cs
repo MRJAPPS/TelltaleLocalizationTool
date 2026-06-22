@@ -1,16 +1,9 @@
-﻿// ===========================
-// File 2: LocalDataCollection.cs
-// ===========================
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Reflection.PortableExecutable;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
-/// <summary>
-/// Holds a collection of <see cref="LocalDataItem"/> objects – all the localised strings for one
-/// language, with their prefixes, texts, and info flags.
-/// </summary>
 [Description("Processing the localization collection (texts and prefixes are localized, I think)")]
 public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
 {
@@ -28,9 +21,6 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
 
     #region Public Properties
 
-    /// <summary>
-    /// Total byte size of this whole collection block, including the two header fields and all items.
-    /// </summary>
     public uint Size
     {
         get
@@ -44,19 +34,12 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
         }
     }
 
-    /// <summary>
-    /// The stream offset where parsing started.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Implementation
 
-    /// <summary>
-    /// Reads the entire collection from the binary stream: skips the redundant block size,
-    /// grabs the item count, then creates and parses each <see cref="LocalDataItem"/>.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;

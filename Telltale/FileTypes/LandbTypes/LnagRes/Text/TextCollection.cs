@@ -4,10 +4,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.LnagRes.Text;
 
-/// <summary>
-/// A collection of <see cref="TextItem"/> objects – all the dialogue entries for a language.
-/// The file block consists of a count field and then the items themselves.
-/// </summary>
 [Description("Processing the text collection")]
 public class TextCollection : TCollectionBase<TextItem>, IParsable
 {
@@ -26,9 +22,6 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
 
     #region Public Properties
 
-    /// <summary>
-    /// Total byte size of this collection block, including the header (size+count) and all items.
-    /// </summary>
     public uint Size
     {
         get
@@ -42,19 +35,12 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
         }
     }
 
-    /// <summary>
-    /// The stream offset where parsing began.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Implementation
 
-    /// <summary>
-    /// Reads the collection from the binary stream: grabs the item count first,
-    /// then creates and parses each <see cref="TextItem"/>.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;

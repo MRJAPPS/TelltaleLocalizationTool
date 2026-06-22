@@ -4,10 +4,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Localize;
 
-/// <summary>
-/// Contains the resolved localisation data chunk – a prefix string, the actual text,
-/// and extra localisation info. This is where the real words end up.
-/// </summary>
 [Description("Processing the resolved localization data section")]
 public class ResolvedLocalData : ReportBase, IParsable
 {
@@ -25,40 +21,21 @@ public class ResolvedLocalData : ReportBase, IParsable
 
     #region Properties
 
-    /// <summary>
-    /// The prefix string (like a tag or ID prefix). Read from the stream.
-    /// </summary>
     public TString mPrefix { get; set; } = [];
 
-    /// <summary>
-    /// The actual localised text. This is what you're probably looking for.
-    /// </summary>
     public TString mText { get; set; } = [];
 
-    /// <summary>
-    /// Extra localisation metadata (stuff like IDs and flags).
-    /// </summary>
     public LocalizeInfo mLocalInfo { get; set; } = new();
 
-    /// <summary>
-    /// Total byte size of this resolved data block.
-    /// </summary>
     public uint Size =>
         mPrefix.Size + mText.Size + mLocalInfo.Size + ResolvedLocalDataSizeInFile;
 
-    /// <summary>
-    /// Where we were in the stream when parsing kicked off.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Implementation
 
-    /// <summary>
-    /// Reads the resolved data from the binary stream: skips the redundant capacity field,
-    /// then parses prefix, text, and localisation info in that exact order.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;

@@ -4,10 +4,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LandbTypes.Reg;
 
-/// <summary>
-/// A FlagIndexMap reads a sequence of key-symbol pairs from the stream, plus one extra dummy key.
-/// In normal mode the extra key comes at the end, in reverse mode it’s at the beginning.
-/// </summary>
 [Description("Processing a FlagIndexMap structure that includes keys, symbols")]
 public class FlagIndexMap : ReportBase, IParsable
 {
@@ -29,49 +25,29 @@ public class FlagIndexMap : ReportBase, IParsable
 
     #region Properties
 
-    /// <summary>
-    /// All the entries read from the stream. The number of entries is always one more than
-    /// the number of key‑symbol pairs because an extra key with no value is added.
-    /// </summary>
     public OrderedDictionary<uint, TSymbolValue?> KeyValues = [];
 
-    /// <summary>
-    /// Byte count of the whole map, as it sits in the file.
-    /// </summary>
     public uint Size =>
         // The extra entry only contributes a uint, not a full ItemSize.
         ((uint)(KeyValues.Count - 1) * ItemSize) + FlagIndexMapSizeInFile + sizeof(uint);
 
-    /// <summary>
-    /// Where the reader was when we started parsing.
-    /// </summary>
     public long Position { get; private set; }
 
     #endregion
 
     #region Constructors
 
-    /// <summary>
-    /// Creates a reverse‑mode map (extra key at the front).
-    /// </summary>
     public FlagIndexMap(bool reverse)
     {
         reverce = reverse;
     }
 
-    /// <summary>
-    /// Creates a normal‑mode map (extra key at the back).
-    /// </summary>
     public FlagIndexMap() { }
 
     #endregion
 
     #region Implement
 
-    /// <summary>
-    /// Reads the map: a size field, then an optional extra key (depending on mode),
-    /// then the key‑symbol pairs, and finally the other extra key.
-    /// </summary>
     public void Parse(BinaryReader reader)
     {
         Position = reader.BaseStream.Position;
@@ -106,10 +82,6 @@ public class FlagIndexMap : ReportBase, IParsable
 
     #region Private Helpers
 
-    /// <summary>
-    /// Verifies that the number of bytes read matches the declared size.
-    /// If not, somebody messed up the stream alignment.
-    /// </summary>
     private static void CheckDataMismatch(BinaryReader reader, long readerFirstPos, uint size)
     {
         long currentPos = reader.BaseStream.Position;
@@ -120,9 +92,6 @@ public class FlagIndexMap : ReportBase, IParsable
         }
     }
 
-    /// <summary>
-    /// Reads the real key‑symbol pairs. Each one is a uint key followed by a TSymbolValue.
-    /// </summary>
     private void ReadKeyValues(BinaryReader reader, uint len)
     {
         for (int i = 0; i < len; ++i)
@@ -151,10 +120,6 @@ public class FlagIndexMap : ReportBase, IParsable
             }
         }
     }
-    /// <summary>
-    /// Adds the extra dummy entry (key only, no symbol) at the right place depending on the mode.
-    /// When cond == reverce, we read an extra uint and store it with a null value.
-    /// </summary>
     private void CheckReverce(BinaryReader reader, bool cond)
     {
         if (reverce == cond)

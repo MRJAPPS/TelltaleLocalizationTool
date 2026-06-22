@@ -2,11 +2,6 @@
 
 public static class ByteFunctions
 {
-    /// <summary>
-    /// Get the number of all items in a list of byte arrays
-    /// </summary>
-    /// <param name="array"></param>
-    /// <returns></returns>
     public static uint GetByteArrayListElementsCount(List<byte[]> array)
     {
         uint result = 0;
@@ -19,11 +14,6 @@ public static class ByteFunctions
         return result;
     }
 
-    /// <summary>
-    /// Reads a string from the current stream. The string is prefixed with the length, encoded as an integer 32 bits at a time.
-    /// </summary>
-    /// <param name="reader"></param>
-    /// <returns></returns>
     public static string ReadString(BinaryReader reader)
     {
         int stringLength = reader.ReadInt32();
@@ -62,11 +52,6 @@ public static class ByteFunctions
         };
     }
 
-    /// <summary>
-    /// Writes a length-prefixed string (32 bit integer).
-    /// </summary>
-    /// <param name="writer"></param>
-    /// <param name="value"></param>
     public static void WriteString(BinaryWriter writer, string value)
     {
         writer.Write(value.Length);
@@ -77,11 +62,6 @@ public static class ByteFunctions
         }
     }
 
-    /// <summary>
-    /// Writes a string (length specified by the string value itself).
-    /// </summary>
-    /// <param name="writer"></param>
-    /// <param name="value"></param>
     public static void WriteFixedString(BinaryWriter writer, string value)
     {
         foreach (char t in value)
@@ -90,22 +70,11 @@ public static class ByteFunctions
         }
     }
 
-    /// <summary>
-    /// Writes a boolean.
-    /// </summary>
-    /// <param name="writer"></param>
-    /// <param name="value"></param>
     public static void WriteBoolean(BinaryWriter writer, bool value)
     {
         writer.Write(value ? '1' : '0');
     }
 
-    /// <summary>
-    /// Combines two byte arrays into one.
-    /// </summary>
-    /// <param name="first"></param>
-    /// <param name="second"></param>
-    /// <returns></returns>
     public static byte[] Combine(byte[] first, byte[] second)
     {
         //allocate a byte array with both total lengths combined to accommodate both
