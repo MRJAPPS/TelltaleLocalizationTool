@@ -15,9 +15,6 @@ public class TextItem : ReportBase, IParsable
 {
     #region Private Fields
 
-    // Stream position when we started parsing – saved so the report can show where this item lived.
-    private long _ParsePos;
-
     #endregion
 
     #region Public Properties
@@ -87,7 +84,7 @@ public class TextItem : ReportBase, IParsable
     /// <summary>
     /// The stream offset where parsing started. Used by the report to log the exact file position.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -100,7 +97,7 @@ public class TextItem : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         TextId = reader.ReadUInt32();
         mResName.Parse(reader);

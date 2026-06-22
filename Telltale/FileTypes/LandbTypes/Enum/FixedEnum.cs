@@ -17,9 +17,6 @@ public class FixedEnum<T> : ReportBase, IParsable
 {
     #region Private Fields
 
-    // Where the reader was at the start – stored for the report.
-    private long _ParsePos;
-
     #endregion
 
     #region Constructors
@@ -59,14 +56,14 @@ public class FixedEnum<T> : ReportBase, IParsable
     /// <summary>
     /// The stream offset when parsing began. Needed for the report.
     /// </summary>
-    long IParsable.ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     /// <summary>
     /// Skips the useless size int, then reads the enum’s backing value and converts it to <typeparamref name="T"/>.
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // This int is just a size marker that echoes the value’s length – we don’t need it.
         _ = reader.ReadInt32();

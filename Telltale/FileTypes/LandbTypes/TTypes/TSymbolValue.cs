@@ -12,9 +12,6 @@ public class TSymbolValue : ReportBase, IParsable
 {
     #region Private Fields
 
-    // Where the stream was at the start – we'll need this for the report.
-    private long _ParsePos;
-
     #endregion
 
     #region Public Properties
@@ -32,7 +29,7 @@ public class TSymbolValue : ReportBase, IParsable
     /// <summary>
     /// The stream position when parsing kicked off. Used by the report to show where this chunk lived.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -44,7 +41,7 @@ public class TSymbolValue : ReportBase, IParsable
     /// <param name="reader">The binary reader pointing right at the 8‑byte value.</param>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
         Value = reader.ReadUInt64();
         Report(this);
     }

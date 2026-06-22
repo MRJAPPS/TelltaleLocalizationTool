@@ -20,8 +20,7 @@ public class FlagIndexMap : ReportBase, IParsable
     #endregion
 
     #region Fields
-
-    private long _ParsePos;
+    //Do u realy need comment for this?
     private readonly bool reverce = false;
 
     // Each real entry is a uint key followed by a TSymbolValue (8 bytes) — 12 bytes total.
@@ -47,7 +46,7 @@ public class FlagIndexMap : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when we started parsing.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -76,7 +75,7 @@ public class FlagIndexMap : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
         long readerFirstPos = reader.BaseStream.Position;
 
         uint size = reader.ReadUInt32(); // Skip Size

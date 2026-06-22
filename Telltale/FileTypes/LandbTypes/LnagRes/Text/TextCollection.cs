@@ -21,9 +21,6 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
 
     #region Private Fields
 
-    // Stream position captured right before we start reading – for the report.
-    private long _ParsePos;
-
     #endregion
 
     #region Public Properties
@@ -47,7 +44,7 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
     /// <summary>
     /// The stream offset where parsing began.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -59,7 +56,7 @@ public class TextCollection : TCollectionBase<TextItem>, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // The first integer is the number of items that follow.
         int count = reader.ReadInt32();

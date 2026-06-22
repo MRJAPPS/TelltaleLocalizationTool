@@ -12,11 +12,6 @@ public class Generator : ReportBase, IParsable
 {
     #region Fields
 
-    /// <summary>
-    /// Stream position when parsing started. Exposed because some other code might want it, I guess.
-    /// </summary>
-    public long _ParsePos;
-
     #endregion
 
     #region Properties
@@ -34,7 +29,7 @@ public class Generator : ReportBase, IParsable
     /// <summary>
     /// The stream offset where we started reading.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -46,7 +41,7 @@ public class Generator : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // Skip the size cap – it's just telling us what we already know.
         _ = reader.ReadUInt32();

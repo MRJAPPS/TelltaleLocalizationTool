@@ -11,11 +11,6 @@ public class THandle : ReportBase, IParsable
 {
     #region Private Fields
 
-    /// <summary>
-    /// The stream offset where we started reading – saved for the report.
-    /// </summary>
-    private long _ParsePos;
-
     #endregion
 
     #region Public Properties
@@ -33,7 +28,7 @@ public class THandle : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when we started parsing. For debug bragging.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -46,7 +41,7 @@ public class THandle : ReportBase, IParsable
     public void Parse(BinaryReader reader)
     {
         // Stash the start pos for the report – gotta flex that offset later.
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // Those first 4 bytes are just a duplicate size we can figure out ourselves. Nom them and move on.
         _ = reader.ReadUInt32();

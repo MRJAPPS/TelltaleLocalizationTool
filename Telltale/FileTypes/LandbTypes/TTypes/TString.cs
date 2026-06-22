@@ -32,8 +32,6 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     private readonly bool readSize = readSize;
     // Should we munch trailing zero‑bytes after the string?
     private readonly bool skipZero = skipZero;
-    // Where the stream was when we started parsing – needed for the geek report.
-    private long _ParsePos;
 
     #endregion
 
@@ -124,7 +122,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// <summary>
     /// Where the reader was before we touched it, used for debug reports.
     /// </summary>
-    long IParsable.ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -136,7 +134,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         if (readSize)
         {

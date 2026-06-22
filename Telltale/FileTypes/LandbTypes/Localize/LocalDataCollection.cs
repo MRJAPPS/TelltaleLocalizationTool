@@ -23,11 +23,6 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
 
     #region Private Fields
 
-    /// <summary>
-    /// Stream position captured when parsing started – needed for the report.
-    /// </summary>
-    private long _ParsePos;
-
     #endregion
 
     #region Public Properties
@@ -51,7 +46,7 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
     /// <summary>
     /// The stream offset where parsing started.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -63,7 +58,7 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // The first uint is a block‑size value that we can compute from the item count and structure,
         // so there’s no point keeping it – we read and discard.

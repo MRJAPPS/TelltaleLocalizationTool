@@ -18,11 +18,6 @@ public class LocalizeInfo : ReportBase, IParsable
 
     #region Private Fields
 
-    /// <summary>
-    /// Stream position when parsing began – saved for the report.
-    /// </summary>
-    private long _ParsePos;
-
     #endregion
 
     #region Public Properties
@@ -40,7 +35,7 @@ public class LocalizeInfo : ReportBase, IParsable
     /// <summary>
     /// The stream offset where parsing started.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -52,7 +47,7 @@ public class LocalizeInfo : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // This 4‑byte value is just a duplicate of the block size – we already know it’s 4.
         // Read it and toss it so the stream pointer lands on the flags.

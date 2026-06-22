@@ -12,9 +12,6 @@ public class Owner : ReportBase, IParsable
 {
     #region Fields
 
-    // Stream offset when we started parsing – saved for the report.
-    private long _ParsePos;
-
     #endregion
 
     #region Properties
@@ -32,7 +29,7 @@ public class Owner : ReportBase, IParsable
     /// <summary>
     /// Where the reader was when parsing kicked off.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -44,7 +41,7 @@ public class Owner : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // This uint is just a size marker – we already know it's 4, so we read and forget it.
         _ = reader.ReadUInt32();

@@ -20,9 +20,6 @@ public class LanguageDB : ReportBase, IParsable
 
     #region Fields
 
-    // Where the stream was when we started parsing – for the report.
-    private long _ParsePos;
-
     // Raw bytes of the header. We don't parse them, just keep a copy.
     private byte[] msv6Header = [];
 
@@ -48,7 +45,7 @@ public class LanguageDB : ReportBase, IParsable
     /// <summary>
     /// The stream position when parsing began.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get;private set; }
 
     #endregion
 
@@ -60,7 +57,7 @@ public class LanguageDB : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // Read the whole header blob – maybe one day we'll care what’s inside.
         msv6Header = reader.ReadBytes(HeaderSize);

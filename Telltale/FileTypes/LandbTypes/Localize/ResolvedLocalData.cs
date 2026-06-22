@@ -21,8 +21,6 @@ public class ResolvedLocalData : ReportBase, IParsable
 
     #region Fields
 
-    private long _ParsePos;
-
     #endregion
 
     #region Properties
@@ -51,7 +49,7 @@ public class ResolvedLocalData : ReportBase, IParsable
     /// <summary>
     /// Where we were in the stream when parsing kicked off.
     /// </summary>
-    public long ParsePosition => _ParsePos;
+    public long ParsePosition { get; private set; }
 
     #endregion
 
@@ -63,7 +61,7 @@ public class ResolvedLocalData : ReportBase, IParsable
     /// </summary>
     public void Parse(BinaryReader reader)
     {
-        _ParsePos = reader.BaseStream.Position;
+        ParsePosition = reader.BaseStream.Position;
 
         // The first int is just a capacity/size value we can compute ourselves,
         // so we read it and throw it away – no point storing it.
