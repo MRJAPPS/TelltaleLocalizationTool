@@ -1,12 +1,9 @@
-﻿using TelltaleLocalizationTool.Telltale.Meta;
+﻿namespace TelltaleLocalizationTool;
 
-namespace TelltaleLocalizationTool
+internal class Program
 {
-    internal class Program
+    private static void Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            
-        }
+        //WHOOOOOOOOFFFFF....
     }
 }
