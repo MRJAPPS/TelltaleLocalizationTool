@@ -7,7 +7,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
 [Description("Processing the localization collection (texts and prefixes are localized, I think)")]
-public class LocalDataCollection : TCollectionBase<LocalDataItem>, ITelltaleFile
+public class LocalDataCollection : TCollectionBase<LocalDataItem>, ILandb
 {
     #region Constants
 

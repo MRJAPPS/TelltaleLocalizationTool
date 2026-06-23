@@ -6,7 +6,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
 
 [Description("Processing a SymbolValue(8 byte)")]
-public class TSymbolValue : ReportBase, ITelltaleFile
+public class TSymbolValue : ReportBase, ILandb
 {
     #region Private Fields
 

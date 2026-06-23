@@ -11,7 +11,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 
 [Description("Process the whole landb file")]
-public class Landb : ReportBase, ITelltaleFile
+public class Landb : ReportBase, ILandb
 {
     private const int OffsetDefDataLen = 0x4;
     private const int OffsetDefDebugDataLen = OffsetDefDataLen + 0x4;
