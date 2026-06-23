@@ -6,7 +6,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
+namespace TelltaleLocalizationTool.Telltale.TTypes;
 
 [Description("processing a string(Telltale string)")]
 public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding)

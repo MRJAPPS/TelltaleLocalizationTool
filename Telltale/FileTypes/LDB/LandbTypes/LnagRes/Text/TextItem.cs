@@ -4,7 +4,7 @@ using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
-using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
+using TelltaleLocalizationTool.Telltale.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 

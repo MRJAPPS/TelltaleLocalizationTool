@@ -3,7 +3,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.TTypes;
+namespace TelltaleLocalizationTool.Telltale.TTypes;
 
 [Description("Processing THandle(a wrapper for TSymbolValue + 4 byte extra)")]
 public class THandle : ReportBase, ILandb
