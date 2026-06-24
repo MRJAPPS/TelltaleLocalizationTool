@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Localize;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.TTypes;
@@ -98,7 +99,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
         ParseBasicTypes(element);
 
-        Value = element.InnerText;
+        Value = element.InnerText.FixPersian();
     }
 
     public void Write(BinaryWriter writer)
@@ -131,7 +132,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         myElement.SetAttribute(nameof(name), name);
 
         AppendBasicTypes(myElement);
-        myElement.InnerText = Value;
+        myElement.InnerText = Value.NormalizePersian();
 
         _ = element.AppendChild(myElement);
     }
@@ -329,5 +330,13 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         return GetEnumerator();
     }
 
+    #endregion
+
+    #region Public
+    
+    public string NormalizePersian() => Value.NormalizePersian();
+
+    public string FixPersian() => Value.FixPersian();
+    
     #endregion
 }

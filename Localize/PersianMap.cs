@@ -12,7 +12,7 @@ namespace TelltaleLocalizationTool.Localize;
 
 public static class PersianMap
 {
-    private static readonly string PersianChars = "ئءؤرلایيةوزژظشسيبپلاتنمكکگطضصثقفغعهخحچجدذْلآآلأأـلإإًٌٍَُِّْٰ";
+    private static readonly string PersianChars = "ئءؤرلایيةوزژظشسيبپلاتنمكکگطضصثقفغعهخحچجدذْلآآلأأـلإإًٌٍَُِّْٰت";
     private static readonly string Tashkil = "ًٌٍَُِّْٰ";
 
     private static readonly Dictionary<char, char[]> Map = new()
@@ -143,7 +143,7 @@ public static class PersianMap
 
             if (after.HasValue)
             {
-                string pair = new string(new[] { current, after.Value });
+                string pair = new([current, after.Value]);
                 if (DoubleMap.TryGetValue(pair, out var ligatureForms))
                 {
                     result.Append(ligatureForms[glyph]);
@@ -246,31 +246,61 @@ public static class PersianMap
         return false;
     }
 
-    public static string NormalizePersian(this string str)
+    private static readonly HashSet<char> OpeningWrappers = new()
+{
+    '{', '[', '(', '<', '«'
+};
+
+    private static readonly HashSet<char> ClosingWrappers = new()
+{
+    '}', ']', ')', '>', '»'
+};
+
+    private static bool IsOpeningWrapper(char ch) => OpeningWrappers.Contains(ch);
+    private static bool IsClosingWrapper(char ch) => ClosingWrappers.Contains(ch);
+
+    private static string NormalizePersianLine(string str)
     {
         if (string.IsNullOrEmpty(str))
             return str;
 
+        int start = 0;
+        int end = str.Length;
+
+        var prefix = new StringBuilder();
+        var suffix = new StringBuilder();
+
+        while (start < end && IsOpeningWrapper(str[start]))
+        {
+            prefix.Append(str[start]);
+            start++;
+        }
+
+        while (end > start && IsClosingWrapper(str[end - 1]))
+        {
+            suffix.Insert(0, str[end - 1]);
+            end--;
+        }
+
+        string core = str[start..end];
+        if (core.Length == 0)
+            return prefix + suffix.ToString();
+
         var segments = new List<(bool Persian, string Text)>();
 
         int i = 0;
-
-        while (i < str.Length)
+        while (i < core.Length)
         {
-            bool isPersian = IsPresentationForm(str[i]);
+            bool isPersian = IsPresentationForm(core[i]);
+            int segmentStart = i;
 
-            int start = i;
-
-            while (i < str.Length &&
-                   IsPresentationForm(str[i]) == isPersian)
-            {
+            while (i < core.Length && IsPresentationForm(core[i]) == isPersian)
                 i++;
-            }
 
-            segments.Add((isPersian, str[start..i]));
+            segments.Add((isPersian, core[segmentStart..i]));
         }
 
-        var result = new StringBuilder();
+        var result = new StringBuilder(core.Length);
 
         for (int s = segments.Count - 1; s >= 0; s--)
         {
@@ -286,11 +316,23 @@ public static class PersianMap
             Array.Reverse(chars);
 
             foreach (char ch in chars)
-            {
                 result.Append(GetIsolatedChar(ch));
-            }
         }
 
-        return result.ToString();
+        return prefix + result.ToString() + suffix;
+    }
+
+    public static string NormalizePersian(this string str)
+    {
+        if (string.IsNullOrEmpty(str))
+            return str;
+
+        str = str.Replace("\r\n", "\n");
+        string[] lines = str.Split('\n');
+
+        for (int i = 0; i < lines.Length; i++)
+            lines[i] = NormalizePersianLine(lines[i]);
+
+        return string.Join("\n", lines);
     }
 }
