@@ -1,3 +1,3 @@
 ﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-public interface ILandb : ITelltaleFile { }
+public interface ILandb : ITelltaleObject { }
