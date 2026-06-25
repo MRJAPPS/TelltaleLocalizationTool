@@ -1,4 +1,6 @@
 ﻿using System.Xml;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 
 namespace TelltaleLocalizationTool;
@@ -11,6 +13,11 @@ internal class Program
     {
         if (args.Length > 0)
         {
+            if (Path.GetExtension(args[0]).Equals(".d3dtx"))
+            {
+                TestD3dtx(args[0]);
+                return;
+            }
             if ((!Path.GetExtension(args[0]).Equals(".landb", oic) && !Path.GetExtension(args[0]).Equals(".xml", oic)) || !File.Exists(args[0]))
             {
                 Console.WriteLine("A .landb | .xml file must exist to proceed.");
@@ -22,7 +29,111 @@ internal class Program
             ProccessLandbFile(inputLandb, ouputLandb, outoutXmlLandb);
         }
     }
+    private static void TestD3dtx(string inputPath)
+    {
+        string firstOutputPath = Path.ChangeExtension(inputPath, ".first_output.d3dtx");
+        string xmlOutputPath = Path.ChangeExtension(inputPath, ".xml");
+        string secondOutputPath = Path.ChangeExtension(inputPath, ".from_xml.d3dtx");
 
+        // Step 1: Read original, write first binary output
+        D3DTXV9 d3 = new();
+        using (FileStream input = new(inputPath, FileMode.Open, FileAccess.Read))
+        using (FileStream output1 = new(firstOutputPath, FileMode.Create, FileAccess.Write))
+        using (BinaryReader reader = new(input))
+        using (BinaryWriter writer = new(output1))
+        {
+            d3.Parse(reader);
+            d3.Write(writer);
+        }
+
+        // Step 2: Byte-by-byte comparison of original vs first output
+        Console.WriteLine("Comparing original <-> first binary output...");
+        bool firstEqual = CompareFilesByteByByte(inputPath, firstOutputPath);
+        if (!firstEqual)
+        {
+            throw new Exception($"Byte mismatch between original file and first binary output: '{inputPath}' vs '{firstOutputPath}'");
+        }
+
+        // Step 3: Save XML
+        D3DTXV9 d3ForXml = new();
+        using (FileStream input = new(inputPath, FileMode.Open, FileAccess.Read))
+        using (BinaryReader reader = new(input))
+        {
+            d3ForXml.Parse(reader);
+        }
+        XmlDocument doc = new();
+        XmlElement root = doc.CreateElement("Root");
+        doc.AppendChild(root);
+        d3ForXml.Write(root, "Texture");
+        doc.Save(xmlOutputPath);
+        Console.WriteLine($"XML saved to: {xmlOutputPath}");
+
+        // Step 4: Load XML and write second binary output
+        XmlDocument doc2 = new();
+        doc2.Load(xmlOutputPath);
+        D3DTXV9 d3FromXml = new();
+        d3FromXml.Parse(doc2.DocumentElement!, "Texture");
+        using (FileStream output2 = new(secondOutputPath, FileMode.Create, FileAccess.Write))
+        using (BinaryWriter writer2 = new(output2))
+        {
+            d3FromXml.Write(writer2);
+        }
+
+        // Step 5: Compare first output vs second output
+        Console.WriteLine("\nComparing first binary output <-> XML‑roundtripped binary output...");
+        bool secondEqual = CompareFilesByteByByte(firstOutputPath, secondOutputPath);
+        if (!secondEqual)
+        {
+            throw new Exception($"Byte mismatch between first binary output and XML‑roundtripped output: '{firstOutputPath}' vs '{secondOutputPath}'");
+        }
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("\nAll round‑trip tests passed successfully.");
+        Console.ResetColor();
+    }
+    // Helper: compare two files byte by byte, printing colored results
+    private static bool CompareFilesByteByByte(string file1, string file2)
+    {
+        byte[] bytes1 = File.ReadAllBytes(file1);
+        byte[] bytes2 = File.ReadAllBytes(file2);
+
+        int maxLen = Math.Max(bytes1.Length, bytes2.Length);
+        bool identical = true;
+
+        for (int i = 0; i < maxLen; i++)
+        {
+            byte b1 = i < bytes1.Length ? bytes1[i] : (byte)0;
+            byte b2 = i < bytes2.Length ? bytes2[i] : (byte)0;
+
+            if (b1 != b2)
+            {
+                identical = false;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Offset {i:X8}: {b1:X2} != {b2:X2}");
+            }
+            else
+            {
+                // Optional: print progress or only differences
+                // To keep output manageable, we skip printing every equal byte.
+            }
+        }
+
+        Console.ResetColor();
+        if (identical)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Files are identical.");
+            Console.ResetColor();
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Mismatch count: found differences.");
+            Console.ResetColor();
+        }
+
+        return identical;
+    }
     private static void ProccessLandbFile(string inputLandb, string outputLandb, string outputLandbXml)
     {
         string extension = Path.GetExtension(inputLandb);
