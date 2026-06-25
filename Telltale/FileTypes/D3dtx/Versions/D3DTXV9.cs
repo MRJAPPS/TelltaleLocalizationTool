@@ -1,266 +1,411 @@
-﻿using System.Xml;
+﻿using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.T3ToonGraReg;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Structs;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
+using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Versions;
+using TelltaleLocalizationTool.Telltale.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
-public class D3DTXV9 : ID3DTX
+[Description("Reading a D3DTX version 9")]
+public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 {
+    #region Private constants
+
+    private const int Version = 9;
+    private const string PixelData = nameof(PixelData);
+    private const uint Msv6Magic = 0x4d535636;
+
+    private const uint Enums = sizeof(T3SurfaceFormat) + sizeof(T3TextureLayout) + sizeof(T3SurfaceGamma) +
+                 sizeof(T3SurfaceMultisample) + sizeof(T3ResourceUsage) + sizeof(T3TextureType) +
+                sizeof(T3TextureAlphaMode) + sizeof(T3TextureColor);
+    private const int BasicTypes = sizeof(int) + (sizeof(float) * 4);
+
+    #endregion
+
+    #region private fields
+
+    private byte[] msv6Header = [];//Use this for xml export/import
+
+    #endregion
+
+    #region Private props
+
+    private uint DefaultSectionChunkSize => BasicTypes + ClassTypes + Enums + (mAuxilaryData?.Size ?? 0);
+    private uint ClassTypes => mSamplerState.Size + mPlatform.Size + mName.Size + mImportName.Size +
+                 mToolProps.Size + mTextureInfo.Size + mSwizzle.Size +
+                 mUVOffset.Size + mUVScale.Size + mArrayFrameNames.Size +
+                 mToonRegions.Size + mStreamHeader.Size;
+    private uint AsyncSectionChunkSize => (uint)mPixelData.Sum(item => item.Length);
+
+    #endregion
+
     #region Public props
 
-    /// <summary>
-    /// [4 bytes] The header version of this class.
-    /// </summary>
     public int mVersion { get; set; }
 
-    /// <summary>
-    /// [4 bytes] The mSamplerState state block size in bytes. Note: the parsed value is always 8.
-    /// </summary>
-    public int mSamplerState_BlockSize { get; set; }
+    public T3SamplerStateBlock mSamplerState { get; set; } = new();
 
-    /// <summary>
-    /// [4 bytes] The sampler state, bitflag value that contains values from T3SamplerStateValue.
-    /// </summary>
-    public T3SamplerStateBlock mSamplerState { get; set; }
+    public FixedEnum<T3PlatformType> mPlatform { get; set; } = new();//TODO: Move this to TTypes filter
 
-    /// <summary>
-    /// [4 bytes] The mPlatform block size in bytes. Note: the parsed value is always 8.
-    /// </summary>
-    public int mPlatform_BlockSize { get; set; }
+    public TString mName { get; set; } = string.Empty;
 
-    /// <summary>
-    /// [4 bytes] The platform type enum value.
-    /// </summary>
-    public T3PlatformType mPlatform { get; set; }
+    public TString mImportName { get; set; } = string.Empty;
 
-    /// <summary>
-    /// [4 bytes] The mName block size in bytes.
-    /// </summary>
-    public int mName_BlockSize { get; set; }
-
-    /// <summary>
-    /// [mName_StringLength bytes] The string mName.
-    /// </summary>
-    public string mName { get; set; } = string.Empty;
-
-    /// <summary>
-    /// [4 bytes] The mImportName block size in bytes.
-    /// </summary>
-    public int mImportName_BlockSize { get; set; }
-
-    /// <summary>
-    /// [mImportName_StringLength bytes] The mImportName string.
-    /// </summary>
-    public string mImportName { get; set; } = string.Empty;
-
-    /// <summary>
-    /// [4 bytes] The import scale of the texture file.
-    /// </summary>
     public float mImportScale { get; set; }
 
-    /// <summary>
-    /// [1 byte] Whether or not the d3dtx contains a Tool Properties. [PropertySet] (Always false)
-    /// </summary>
-    public ToolProps mToolProps { get; set; }
+    public ToolProps mToolProps { get; set; } = new();
 
-    /// <summary>
-    /// [4 bytes] The number of mip maps in the texture.
-    /// </summary>
-    public uint mNumMipLevels { get; set; }
+    public TextureInfo mTextureInfo { get; set; } = new();
 
-    /// <summary>
-    /// [4 bytes] The pixel width of the texture.
-    /// </summary>
-    public uint mWidth { get; set; }
-
-    /// <summary>
-    /// [4 bytes] The pixel height of the texture.
-    /// </summary>
-    public uint mHeight { get; set; }
-
-    /// <summary>
-    /// [4 bytes] The depth of a volume texture in pixels.
-    /// </summary>
-    public uint mDepth { get; set; }
-
-    /// <summary>
-    /// [4 bytes] mArraySize, not sure what this is for yet.
-    /// </summary>
-    public uint mArraySize { get; set; }
-
-    /// <summary>
-    /// [4 bytes] An enum, defines the compression used for the texture.
-    /// </summary>
     public T3SurfaceFormat mSurfaceFormat { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines the dimension of the texture.
-    /// </summary>
     public T3TextureLayout mTextureLayout { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines the gamma of the texture.
-    /// </summary>
     public T3SurfaceGamma mSurfaceGamma { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines the multisample (anisotropic) level of the texture.
-    /// </summary>
     public T3SurfaceMultisample mSurfaceMultisample { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines the resource type of the texture.
-    /// </summary>
     public T3ResourceUsage mResourceUsage { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines what kind of texture it is.
-    /// </summary>
     public T3TextureType mType { get; set; }
 
-    /// <summary>
-    /// [4 bytes] The size of the mSwizzle block data.
-    /// </summary>
-    public int mSwizzleSize { get; set; }
+    public RenderSwizzleParams mSwizzle { get; set; } = new();
 
-    /// <summary>
-    /// [4 bytes] mSwizzle compression parameters. (usually used for consoles).
-    /// </summary>
-    public RenderSwizzleParams mSwizzle { get; set; }
-
-    /// <summary>
-    /// [4 bytes] Defines how glossy the texture is.
-    /// </summary>
     public float mSpecularGlossExponent { get; set; }
 
-    /// <summary>
-    /// [4 bytes] Defines the brightness scale of the texture. (used for lightmaps)
-    /// </summary>
     public float mHDRLightmapScale { get; set; }
 
-    /// <summary>
-    /// [4 bytes] Defines the toon cutoff gradient of the texture.
-    /// </summary>
     public float mToonGradientCutoff { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines what kind of alpha the texture will have.
-    /// </summary>
     public T3TextureAlphaMode mAlphaMode { get; set; }
 
-    /// <summary>
-    /// [4 bytes] An enum, defines the color range of the texture.
-    /// </summary>
     public T3TextureColor mColorMode { get; set; }
 
-    /// <summary>
-    /// [8 bytes] A vector, defines the UV offset values when the shader on a material samples the texture.
-    /// </summary>
-    public Vector2 mUVOffset { get; set; }
+    public Vector2 mUVOffset { get; set; } = new();
 
-    /// <summary>
-    /// [8 bytes] A vector, defines the UV scale values when the shader on a material samples the texture.
-    /// </summary>
-    public Vector2 mUVScale { get; set; }
+    public Vector2 mUVScale { get; set; } = new();
 
-    /// <summary>
-    /// [4 bytes] The size in bytes of the mArrayFrameNames block.
-    /// </summary>
-    public uint mArrayFrameNames_ArrayCapacity { get; set; }
+    public TSymbolValueCollection mArrayFrameNames { get; set; } = [];
 
-    /// <summary>
-    /// [4 bytes] The amount of elements in the mArrayFrameNames array.
-    /// </summary>
-    public int mArrayFrameNames_ArrayLength { get; set; }
+    public T3ToonGradientRegionCollection mToonRegions { get; set; } = [];
 
-    /// <summary>
-    /// [8 bytes for each element] An array containing frame names. (Usually unused)
-    /// </summary>
-    public Symbol[] mArrayFrameNames { get; set; } = [];
+    public StreamHeaderInfo mStreamHeader { get; set; } = new(Version);
 
-    /// <summary>
-    /// [4 bytes] The size in bytes of the mToonRegions block.
-    /// </summary>
-    public uint mToonRegions_ArrayCapacity { get; set; }
+    public AuxilaryData? mAuxilaryData { get; set; }
 
-    /// <summary>
-    /// [4 bytes] The amount of elements in the mToonRegions array.
-    /// </summary>
-    public int mToonRegions_ArrayLength { get; set; }
-
-    /// <summary>
-    /// [16 bytes for each element] An array containing a toon gradient region. (Usually unused)
-    /// </summary>
-    public T3ToonGradientRegion[] mToonRegions { get; set; } = [];
-
-    /// <summary>
-    /// [12 bytes] A struct for StreamHeader
-    /// </summary>
-    public StreamHeader mStreamHeader { get; set; }
-
-    /// <summary>
-    /// [24 bytes for each element] An array containing each pixel region in the texture.
-    /// </summary>
-    public RegionStreamHeader[] mRegionHeaders { get; set; } = [];
-
-    /// <summary>
-    /// A byte array of the pixel regions in a texture. Starts from smallest mip map to largest mip map.
-    /// </summary>
     public List<byte[]> mPixelData { get; set; } = [];
 
     #endregion
 
-
-    /// <summary>
-    /// D3DTX V9 Header (empty constructor, only used for json deserialization)
-    /// </summary>
-    public D3DTXV9() { }
-
     #region Implement
 
-    public uint Size => throw new NotImplementedException();
+    public uint Size => DefaultSectionChunkSize + AsyncSectionChunkSize;
 
-    public long Position => throw new NotImplementedException();
+    public long Position { get; private set; }
+
+    public IMetaHeader? Header { get; private set; }
 
     public void Parse(BinaryReader reader)
     {
-        throw new NotImplementedException();
+        ParseMetaHeader(reader);
+        mVersion = reader.ReadInt32();
+        mSamplerState.Parse(reader);
+        mPlatform.Parse(reader);
+        mName.Parse(reader);
+        mImportName.Parse(reader);
+        mImportScale = reader.ReadSingle();
+        mToolProps.Parse(reader);
+        mTextureInfo.Parse(reader);
+        mSurfaceFormat = (T3SurfaceFormat)reader.ReadUInt32();
+        mTextureLayout = (T3TextureLayout)reader.ReadUInt32();
+        mSurfaceGamma = (T3SurfaceGamma)reader.ReadUInt32();
+        mSurfaceMultisample = (T3SurfaceMultisample)reader.ReadUInt32();
+        mResourceUsage = (T3ResourceUsage)reader.ReadUInt32();
+        mType = (T3TextureType)reader.ReadUInt32();
+        mSwizzle.Parse(reader);
+        mSpecularGlossExponent = reader.ReadSingle();
+        mHDRLightmapScale = reader.ReadSingle();
+        mToonGradientCutoff = reader.ReadSingle();
+        mAlphaMode = (T3TextureAlphaMode)reader.ReadUInt32();
+        mColorMode = (T3TextureColor)reader.ReadUInt32();
+        mUVOffset.Parse(reader);
+        mUVScale.Parse(reader);
+        mArrayFrameNames.Parse(reader);
+        mToonRegions.Parse(reader);
+        mStreamHeader.Parse(reader);
+        mAuxilaryData = new(mStreamHeader.mAuxDataCount);
+        mAuxilaryData.Parse(reader);
+        if (AutoPixelData)
+        {
+            ParsePixelDatas(reader);
+        }
+
+        Report(this, extra: $"(APD: {AutoPixelData}),(nameof(mSurfaceGamma) => {mSurfaceGamma}, nameof(mSurfaceFormat) => {mSurfaceFormat}, nameof(mTextureLayout) => {mTextureLayout}");
     }
 
     public void Parse(XmlElement reader, string name)
     {
-        throw new NotImplementedException();
+        XmlElement myElement = reader.GetSingleElement(nameof(D3DTXV9), name);
+
+        ParseBasicTypes(myElement);
+
+        ParseHeader(myElement);
+
+        mSamplerState.Parse(myElement, nameof(mSamplerState));
+        mPlatform.Parse(myElement, nameof(mPlatform));
+        mName.Parse(myElement, nameof(mName));
+        mImportName.Parse(myElement, nameof(mImportName));
+        mToolProps.Parse(myElement, nameof(mToolProps));
+        mTextureInfo.Parse(myElement, nameof(mTextureInfo));
+        mSwizzle.Parse(myElement, nameof(mSwizzle));
+        mUVOffset.Parse(myElement, nameof(mUVOffset));
+        mUVScale.Parse(myElement, nameof(mUVScale));
+        mArrayFrameNames.Parse(myElement, nameof(mArrayFrameNames));
+        mToonRegions.Parse(myElement, nameof(mToonRegions));
+        mStreamHeader.Parse(myElement, nameof(mStreamHeader));
+        mAuxilaryData = new(mStreamHeader.mAuxDataCount);
+        mAuxilaryData.Parse(reader, nameof(mAuxilaryData));
+        ParsePixelData(myElement);
     }
 
-    public void ParsePixelData(BinaryReader reader, long size)
+    public void ParsePixelDatas(BinaryReader reader)
     {
-        throw new NotImplementedException();
-    }
-
-    public void ParsePixelData(XmlElement element)
-    {
-        throw new NotImplementedException();
+        mPixelData = [];
+        foreach (RegionStreamHeader item in mStreamHeader)
+        {
+            int dataSize = (int)item.mDataSize;
+            byte[] imageData = reader.ReadBytes(dataSize);
+            mPixelData.Add(imageData);
+        }
     }
 
     public void Write(BinaryWriter writer)
     {
-        throw new NotImplementedException();
+        WriteMetaHeader(writer);
+
+        writer.Write(mVersion);
+        mSamplerState.Write(writer);
+        mPlatform.Write(writer);
+        mName.Write(writer);
+        mImportName.Write(writer);
+        writer.Write(mImportScale);
+        mToolProps.Write(writer);
+        mTextureInfo.Write(writer);
+
+        writer.Write((uint)mSurfaceFormat);
+        writer.Write((uint)mTextureLayout);
+        writer.Write((uint)mSurfaceGamma);
+        writer.Write((uint)mSurfaceMultisample);
+        writer.Write((uint)mResourceUsage);
+        writer.Write((uint)mType);
+
+        mSwizzle.Write(writer);
+
+        writer.Write(mSpecularGlossExponent);
+        writer.Write(mHDRLightmapScale);
+        writer.Write(mToonGradientCutoff);
+
+        writer.Write((uint)mAlphaMode);
+        writer.Write((uint)mColorMode);
+
+        mUVOffset.Write(writer);
+        mUVScale.Write(writer);
+        mArrayFrameNames.Write(writer);
+        mToonRegions.Write(writer);
+        mStreamHeader.Write(writer);
+        mAuxilaryData = new(mStreamHeader.mAuxDataCount);
+        mAuxilaryData.Write(writer);
+
+        if (AutoPixelData)
+        {
+            WritePixelDatas(writer);
+        }
+
+        Report(this, true, $"(APD: {AutoPixelData}),(nameof(mSurfaceGamma) => {mSurfaceGamma}, nameof(mSurfaceFormat) => {mSurfaceFormat}, nameof(mTextureLayout) => {mTextureLayout}");
     }
 
     public void Write(XmlElement element, string name)
     {
-        throw new NotImplementedException();
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(D3DTXV9));
+        myElement.SetAttribute(nameof(name), name);
+
+        AppendBasicTypes(myElement);
+
+        AppendHeader(myElement);
+
+        mSamplerState.Write(myElement, nameof(mSamplerState));
+        mPlatform.Write(myElement, nameof(mPlatform));
+        mName.Write(myElement, nameof(mName));
+        mImportName.Write(myElement, nameof(mImportName));
+        mToolProps.Write(myElement, nameof(mToolProps));
+        mTextureInfo.Write(myElement, nameof(mTextureInfo));
+        mSwizzle.Write(myElement, nameof(mSwizzle));
+        mUVOffset.Write(myElement, nameof(mUVOffset));
+        mUVScale.Write(myElement, nameof(mUVScale));
+        mArrayFrameNames.Write(myElement, nameof(mArrayFrameNames));
+        mToonRegions.Write(myElement, nameof(mToonRegions));
+        mStreamHeader.Write(myElement, nameof(mStreamHeader));
+        mAuxilaryData = new(mStreamHeader.mAuxDataCount);
+        mAuxilaryData.Write(element, nameof(mAuxilaryData));
+
+        AppendPixelData(myElement);
+
+        _ = element.AppendChild(myElement);
     }
 
-    public void WritePixelData(BinaryWriter writer, long size)
+    public void WritePixelDatas(BinaryWriter writer)
     {
-        throw new NotImplementedException();
+        for (int i = 0; i < mPixelData.Count; i++)
+        {
+            writer.Write(mPixelData[i]);
+        }
     }
 
-    public void WritePixelData(XmlElement element)
+    #endregion
+
+    #region Header
+
+    public void WriteMetaHeader(BinaryWriter writer)
     {
-        throw new NotImplementedException();
+        if (Header == null)
+        {
+            throw new NullReferenceException($"{nameof(Header)} is not properly initialized!");
+        }
+
+        uint debugSectionChunkSize = ((MSV6)Header).mDebugSectionChunkSize;
+        Header.SetMetaSectionChunkSizes(DefaultSectionChunkSize, debugSectionChunkSize, AsyncSectionChunkSize);
+        Header.WriteToBinary(writer);
+    }
+
+    public void ParseMetaHeader(BinaryReader reader)
+    {
+        long Position = reader.BaseStream.Position;
+        uint magic = reader.ReadUInt32();
+        if (magic != Msv6Magic)
+        {
+            throw new NotImplementedException("Right now I can only handle MSV6!! I can't deal with the Meta Stream version of the input file!");
+        }
+
+        reader.BaseStream.Position = Position;
+        Header = MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
+        Header.ReadFromBinary(reader);
+        //===========================
+        reader.BaseStream.Position -= Header.GetHeaderByteSize();
+        msv6Header = new byte[Header.GetHeaderByteSize()];
+        _ = reader.Read(msv6Header);
+    }
+
+    #endregion
+
+    #region XML
+
+    public void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute mVersionAttr = element.OwnerDocument.CreateAttribute(nameof(mVersion));
+        XmlAttribute mImportScaleAttr = element.OwnerDocument.CreateAttribute(nameof(mImportScale));
+        XmlAttribute mSpecularGlossExponentAttr = element.OwnerDocument.CreateAttribute(nameof(mSpecularGlossExponent));
+        XmlAttribute mHDRLightmapScaleAttr = element.OwnerDocument.CreateAttribute(nameof(mHDRLightmapScale));
+        XmlAttribute mToonGradientCutoffAttr = element.OwnerDocument.CreateAttribute(nameof(mToonGradientCutoff));
+        XmlAttribute mSurfaceFormatAttr = element.OwnerDocument.CreateAttribute(nameof(mSurfaceFormat));
+        XmlAttribute mTextureLayoutAttr = element.OwnerDocument.CreateAttribute(nameof(mTextureLayout));
+        XmlAttribute mSurfaceGammaAttr = element.OwnerDocument.CreateAttribute(nameof(mSurfaceGamma));
+        XmlAttribute mSurfaceMultisampleAttr = element.OwnerDocument.CreateAttribute(nameof(mSurfaceMultisample));
+        XmlAttribute mResourceUsageAttr = element.OwnerDocument.CreateAttribute(nameof(mResourceUsage));
+        XmlAttribute mTypeAttr = element.OwnerDocument.CreateAttribute(nameof(mType));
+        XmlAttribute mAlphaModeAttr = element.OwnerDocument.CreateAttribute(nameof(mAlphaMode));
+        XmlAttribute mColorModeAttr = element.OwnerDocument.CreateAttribute(nameof(mColorMode));
+
+        mVersionAttr.Value = mVersion.ToString();
+        mImportScaleAttr.Value = mImportScale.ToString();
+        mSpecularGlossExponentAttr.Value = mSpecularGlossExponent.ToString();
+        mHDRLightmapScaleAttr.Value = mHDRLightmapScale.ToString();
+        mToonGradientCutoffAttr.Value = mToonGradientCutoff.ToString();
+        mSurfaceFormatAttr.Value = mSurfaceFormat.ToString();
+        mTextureLayoutAttr.Value = mTextureLayout.ToString();
+        mSurfaceGammaAttr.Value = mSurfaceGamma.ToString();
+        mSurfaceMultisampleAttr.Value = mSurfaceMultisample.ToString();
+        mResourceUsageAttr.Value = mResourceUsage.ToString();
+        mTypeAttr.Value = mType.ToString();
+        mAlphaModeAttr.Value = mAlphaMode.ToString();
+        mColorModeAttr.Value = mColorMode.ToString();
+
+        _ = element.Attributes.Append(mVersionAttr);
+        _ = element.Attributes.Append(mImportScaleAttr);
+        _ = element.Attributes.Append(mSpecularGlossExponentAttr);
+        _ = element.Attributes.Append(mHDRLightmapScaleAttr);
+        _ = element.Attributes.Append(mToonGradientCutoffAttr);
+        _ = element.Attributes.Append(mSurfaceFormatAttr);
+        _ = element.Attributes.Append(mTextureLayoutAttr);
+        _ = element.Attributes.Append(mSurfaceGammaAttr);
+        _ = element.Attributes.Append(mSurfaceMultisampleAttr);
+        _ = element.Attributes.Append(mResourceUsageAttr);
+        _ = element.Attributes.Append(mTypeAttr);
+        _ = element.Attributes.Append(mAlphaModeAttr);
+        _ = element.Attributes.Append(mColorModeAttr);
+    }
+
+    public void ParseBasicTypes(XmlElement element)
+    {
+        mVersion = int.Parse(element.GetAttribute(nameof(mVersion)));
+        mImportScale = float.Parse(element.GetAttribute(nameof(mImportScale)));
+        mSpecularGlossExponent = float.Parse(element.GetAttribute(nameof(mSpecularGlossExponent)));
+        mHDRLightmapScale = float.Parse(element.GetAttribute(nameof(mHDRLightmapScale)));
+        mToonGradientCutoff = float.Parse(element.GetAttribute(nameof(mToonGradientCutoff)));
+        mSurfaceFormat = Enum.Parse<T3SurfaceFormat>(element.GetAttribute(nameof(mSurfaceFormat)));
+        mTextureLayout = Enum.Parse<T3TextureLayout>(element.GetAttribute(nameof(mTextureLayout)));
+        mSurfaceGamma = Enum.Parse<T3SurfaceGamma>(element.GetAttribute(nameof(mSurfaceGamma)));
+        mSurfaceMultisample = Enum.Parse<T3SurfaceMultisample>(element.GetAttribute(nameof(mSurfaceMultisample)));
+        mResourceUsage = Enum.Parse<T3ResourceUsage>(element.GetAttribute(nameof(mResourceUsage)));
+        mType = Enum.Parse<T3TextureType>(element.GetAttribute(nameof(mType)));
+        mAlphaMode = Enum.Parse<T3TextureAlphaMode>(element.GetAttribute(nameof(mAlphaMode)));
+        mColorMode = Enum.Parse<T3TextureColor>(element.GetAttribute(nameof(mColorMode)));
+    }
+
+    public void AppendPixelData(XmlElement element)
+    {
+        foreach (byte[] pixelBytes in mPixelData)
+        {
+            XmlElement pixelElement = element.OwnerDocument.CreateElement(nameof(PixelData));
+            pixelElement.InnerText = Convert.ToBase64String(pixelBytes);
+            _ = element.AppendChild(pixelElement);
+        }
+    }
+
+    public void ParsePixelData(XmlElement element)
+    {
+        mPixelData = [];
+        foreach (XmlNode node in element.ChildNodes)
+        {
+            if (node is XmlElement pixelElement && pixelElement.Name == nameof(PixelData))
+            {
+                byte[] data = Convert.FromBase64String(pixelElement.InnerText);
+                mPixelData.Add(data);
+            }
+        }
+    }
+
+    private void ParseHeader(XmlElement element)
+    {
+        XmlElement msv6H = element.GetSingleElement(nameof(msv6Header));
+        msv6Header = Convert.FromBase64String(msv6H.InnerText);
+        using MemoryStream headerTempStream = new(msv6Header);
+        using BinaryReader reader = new(headerTempStream);
+        Header ??= MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
+        Header.ReadFromBinary(reader);
+    }
+
+    private void AppendHeader(XmlElement element)
+    {
+        string headerB64 = Convert.ToBase64String(msv6Header);
+        XmlElement b64 = element.OwnerDocument.CreateElement(nameof(msv6Header));
+        b64.InnerText = headerB64;
+        _ = element.AppendChild(b64);
     }
 
     #endregion

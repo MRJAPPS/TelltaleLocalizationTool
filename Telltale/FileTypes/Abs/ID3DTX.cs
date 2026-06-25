@@ -1,10 +1,9 @@
 ﻿using System.Xml;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-public interface ID3DTX : ITelltaleObject
+public interface ID3DTX : ITelltaleFile
 {
-    void ParsePixelData(BinaryReader reader, long size);
-    void WritePixelData(BinaryWriter writer, long size);
-    void ParsePixelData(XmlElement element);
-    void WritePixelData(XmlElement element);
+    void ParsePixelDatas(BinaryReader reader);
+    void WritePixelDatas(BinaryWriter writer);
+
 }

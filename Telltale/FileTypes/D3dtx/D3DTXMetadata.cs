@@ -1,5 +1,5 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Structs;
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx;
 

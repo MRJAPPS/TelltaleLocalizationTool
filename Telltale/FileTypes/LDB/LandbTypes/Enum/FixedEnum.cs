@@ -104,22 +104,32 @@ public class FixedEnum<T> : ReportBase, ILandb
         XmlElement myElement = element.OwnerDocument.CreateElement(TypeName);
         myElement.SetAttribute(nameof(name), name);
 
+        AppendBasicTypes(myElement);
+
+        element.AppendChild(myElement);
+    }
+
+    private void AppendBasicTypes(XmlElement myElement)
+    {
         XmlAttribute EnumItem = myElement.OwnerDocument.CreateAttribute(nameof(EnumItem));
         EnumItem.Value = this.EnumItem.ToString();
         myElement.Attributes.Append(EnumItem);
-
-        element.AppendChild(myElement);
     }
 
     public void Parse(XmlElement reader, string name)
     {
         XmlElement myElement = reader.GetSingleElement(TypeName, name);
 
+        ParseBasicTypes(myElement);
+
+        Report(this);
+    }
+
+    private void ParseBasicTypes(XmlElement myElement)
+    {
         string value = myElement.GetAttribute(nameof(EnumItem));
 
         EnumItem = Enum.Parse<T>(value);
-
-        Report(this);
     }
 
     #endregion
