@@ -109,7 +109,7 @@ public class MSV6 : IMetaHeader
 
     public uint GetHeaderByteSize()
     {
-        return 0;
+        return  5 * sizeof(uint) + 12 * mClassNamesLength;
     }
 
     public void PrintConsole()
