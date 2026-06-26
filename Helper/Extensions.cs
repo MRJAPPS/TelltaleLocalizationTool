@@ -6,6 +6,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 
 namespace TelltaleLocalizationTool.Helper;
 
@@ -242,6 +243,7 @@ public static class Extensions
         using BinaryReader reader = new(fileStream);
         d3dtx.Parse(reader);
     }
+
     public static void WriteD3DTX(this ID3DTX d3dtx, string fileName)
     {
         using FileStream fileStream = new(fileName, FileMode.Create, FileAccess.Write);
@@ -294,6 +296,11 @@ public static class Extensions
 
             }
         }
+    }
+
+    public static void ResetForWD3NF_Font(this D3DTXV9 d3dtx)
+    {
+        throw new NotImplementedException($"{nameof(Extensions)}.{nameof(ResetForWD3NF_Font)}");
     }
 
 }
