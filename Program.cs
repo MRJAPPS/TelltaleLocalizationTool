@@ -1,5 +1,6 @@
 ﻿using System.Xml;
-using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 
@@ -31,12 +32,13 @@ internal class Program
             ProccessLandbFile(inputLandb, ouputLandb, outoutXmlLandb);
         }
     }
+
     private static void TestD3dtx(string inputPath)
     {
         string firstOutputPath = Path.ChangeExtension(inputPath, ".first_output.d3dtx");
         string xmlOutputPath = Path.ChangeExtension(inputPath, ".xml");
         string secondOutputPath = Path.ChangeExtension(inputPath, ".from_xml.d3dtx");
-
+        _ = Path.ChangeExtension(inputPath, Formats.ddsExtension);
         // Step 1: Read original, write first binary output
         D3DTXV9 d3 = new();
         using (FileStream input = new(inputPath, FileMode.Open, FileAccess.Read))
@@ -47,7 +49,13 @@ internal class Program
             d3.Parse(reader);
             d3.Write(writer);
         }
-
+        string outputBmp = Path.ChangeExtension(firstOutputPath, Formats.bmpExtension);
+        string outputD3dtxFromBmp = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_bmp{Formats.d3dtxExtension}");
+        string outputDdsFromBmpETC2_RGBA = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_Bmp_ETC2_RGBA{Formats.ddsExtension}");
+        _ = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_dds_ETC2_RGBA{Formats.d3dtxExtension}");
+        Converter.ConvertTextureFromD3DtxToOthersV9(firstOutputPath, outputBmp, new());
+        Converter.ConvertTextureFromOthersToD3DtxV9(outputBmp, outputD3dtxFromBmp, new(), Path.ChangeExtension(firstOutputPath, Formats.xmlExtension));
+        _ = Converter.CompressWithCompressonatorCli(outputBmp, outputDdsFromBmpETC2_RGBA);
         // Step 2: Byte-by-byte comparison of original vs first output
         Console.WriteLine("Comparing original <-> first binary output...");
         bool firstEqual = CompareFilesByteByByte(inputPath, firstOutputPath);
@@ -65,7 +73,7 @@ internal class Program
         }
         XmlDocument doc = new();
         XmlElement root = doc.CreateElement("Root");
-        doc.AppendChild(root);
+        _ = doc.AppendChild(root);
         d3ForXml.Write(root, "Texture");
         doc.Save(xmlOutputPath);
         Console.WriteLine($"XML saved to: {xmlOutputPath}");
@@ -93,6 +101,7 @@ internal class Program
         Console.WriteLine("\nAll round‑trip tests passed successfully.");
         Console.ResetColor();
     }
+
     // Helper: compare two files byte by byte, printing colored results
     private static bool CompareFilesByteByByte(string file1, string file2)
     {
@@ -136,6 +145,7 @@ internal class Program
 
         return identical;
     }
+
     private static void ProccessLandbFile(string inputLandb, string outputLandb, string outputLandbXml)
     {
         string extension = Path.GetExtension(inputLandb);
@@ -185,7 +195,7 @@ internal class Program
         landb.Parse(inputLansbBinStreamReader);
         landb.Write(outputBinStreamWriter);
         XmlDocument doc = new();
-        doc.AppendChild(doc.AppendChild(doc.CreateElement("Root"))!);
+        _ = doc.AppendChild(doc.AppendChild(doc.CreateElement("Root"))!);
         landb.Write(doc.DocumentElement!, nameof(landb));
         doc.Save(outputLandbXml);
     }
@@ -224,6 +234,7 @@ internal class Program
             return true;
         }
     }
+
     private static string GetOutputLandb(string fileName, string? extension = null)
     {
         string name = Path.GetFileNameWithoutExtension(fileName);
