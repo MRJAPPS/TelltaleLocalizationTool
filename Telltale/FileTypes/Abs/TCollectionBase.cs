@@ -37,4 +37,14 @@ public abstract class TCollectionBase<T> : ReportBase, ICollection<T>
     IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
 
     #endregion
+
+    #region INDEX
+    
+    public T this[int index]
+    {
+        get => Items[index];
+        set => Items[index] = value;
+    }
+
+    #endregion
 }
