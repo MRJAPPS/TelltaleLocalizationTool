@@ -374,7 +374,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
         foreach (byte[] pixelBytes in mPixelData)
         {
             XmlElement pixelElement = element.OwnerDocument.CreateElement(nameof(PixelData));
-            pixelElement.InnerText = Convert.ToBase64String(pixelBytes);
+            pixelElement.InnerText = System.Convert.ToBase64String(pixelBytes);
             _ = element.AppendChild(pixelElement);
         }
     }
@@ -386,7 +386,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
         {
             if (node is XmlElement pixelElement && pixelElement.Name == nameof(PixelData))
             {
-                byte[] data = Convert.FromBase64String(pixelElement.InnerText);
+                byte[] data = System.Convert.FromBase64String(pixelElement.InnerText);
                 mPixelData.Add(data);
             }
         }
@@ -395,7 +395,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
     private void ParseHeader(XmlElement element)
     {
         XmlElement msv6H = element.GetSingleElement(nameof(msv6Header));
-        msv6Header = Convert.FromBase64String(msv6H.InnerText);
+        msv6Header = System.Convert.FromBase64String(msv6H.InnerText);
         using MemoryStream headerTempStream = new(msv6Header);
         using BinaryReader reader = new(headerTempStream);
         Header ??= MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
@@ -404,7 +404,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     private void AppendHeader(XmlElement element)
     {
-        string headerB64 = Convert.ToBase64String(msv6Header);
+        string headerB64 = System.Convert.ToBase64String(msv6Header);
         XmlElement b64 = element.OwnerDocument.CreateElement(nameof(msv6Header));
         b64.InnerText = headerB64;
         _ = element.AppendChild(b64);
