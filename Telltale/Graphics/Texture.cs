@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using TelltaleLocalizationTool.Helper;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
@@ -566,7 +565,9 @@ public unsafe partial class Texture
         }
 #if DEBUG
         if (Debugger.IsAttached)
+        {
             Console.WriteLine("Mipmaps generated" + destImage.GetImageCount());
+        }
 #endif
         Image.Release();
         Image = destImage;

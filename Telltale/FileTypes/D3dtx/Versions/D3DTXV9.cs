@@ -267,6 +267,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
     public void ModifyD3DTX(ID3DTX d3dtx, ImageSection[] imageSections)
     {
         mTextureInfo = d3dtx.mTextureInfo;
+        mSurfaceFormat = d3dtx.mSurfaceFormat;
         mSurfaceGamma = d3dtx.mSurfaceGamma;
 
         mPixelData.Clear();
