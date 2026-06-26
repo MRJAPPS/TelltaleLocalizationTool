@@ -778,13 +778,10 @@ public unsafe partial class Texture
         switch (textureType)
         {
             case TextureType.DDS:
-                filePath += ".dds";
                 SaveAsDDS(filePath); break;
             case TextureType.BMP:
-                filePath += ".bmp";
                 SaveAsWIC(filePath); break;
             case TextureType.PNG:
-                filePath += ".png";
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
                     SaveAsWIC(filePath);
@@ -795,20 +792,15 @@ public unsafe partial class Texture
                 }
                 break;
             case TextureType.JPEG:
-                filePath += ".jpeg";
                 SaveAsJPEG(filePath); break;
             case TextureType.HDR:
-                filePath += ".hdr";
                 SaveAsHDR(filePath); break;
             case TextureType.TGA:
-                filePath += ".tga";
                 SaveAsTGA(filePath); break;
             case TextureType.TIFF:
-                filePath += ".tiff";
                 SaveAsWIC(filePath); break;
             default:
-                filePath += ".dds";
-                SaveAsDDS(filePath); break;
+                throw new NotImplementedException("Don't be lazy, enter a valid format! This shouldn't even happen — it was already handled.");
         }
     }
 
