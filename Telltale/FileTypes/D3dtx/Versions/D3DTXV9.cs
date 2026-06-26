@@ -17,7 +17,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 {
     #region Private constants
 
-    private const int Version = 9;
+    private const int MyVersion = 9;
     private const string PixelData = nameof(PixelData);
     private const uint Msv6Magic = 0x4d535636;
 
@@ -95,7 +95,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     public T3ToonGradientRegionCollection mToonRegions { get; set; } = [];
 
-    public StreamHeaderInfo mStreamHeader { get; set; } = new(Version);
+    public StreamHeaderInfo mStreamHeader { get; set; } = new(MyVersion);
 
     public AuxilaryData? mAuxilaryData { get; set; }
 
@@ -104,6 +104,8 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
     #endregion
 
     #region Implement
+
+    public int Version => mVersion;
 
     public uint Size => DefaultSectionChunkSize + AsyncSectionChunkSize;
 
