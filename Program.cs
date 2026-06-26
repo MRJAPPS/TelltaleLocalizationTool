@@ -7,6 +7,8 @@ namespace TelltaleLocalizationTool;
 
 internal class Program
 {
+    public static Config Config { get; } = new Config();
+
     private const StringComparison oic = StringComparison.OrdinalIgnoreCase;
 
     private static void Main(string[] args)//For now, this is for test
