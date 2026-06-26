@@ -1,5 +1,6 @@
 ﻿using System.Xml;
-using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
+using BCnEncoder.Decoder;
+using BCnEncoder.Shared.ImageFiles;
 
 namespace TelltaleLocalizationTool.Helper;
 
@@ -20,5 +21,29 @@ public static class Extensions
             throw new InvalidDataException($"I found more than one <{tagName}> in xml!");
 
         return (XmlElement)(nodes[0] ?? throw new NullReferenceException("WTF!?"));
+    }
+
+    public static byte[] DecodeAsPvr(this byte[] data)
+    {
+        BcDecoder decoder = new();
+
+        DdsFile file = DdsFile.Load(new MemoryStream(data));
+        BCnEncoder.Shared.ColorRgba32[][] images = decoder.DecodeAllMipMaps(file);
+
+        List<byte> ddsData = [];
+
+        foreach (BCnEncoder.Shared.ColorRgba32[]? image in images)
+        {
+
+            foreach (BCnEncoder.Shared.ColorRgba32 pixel in image)
+            {
+                ddsData.Add(pixel.r);
+                ddsData.Add(pixel.g);
+                ddsData.Add(pixel.b);
+                ddsData.Add(pixel.a);
+            }
+
+        }
+        return [.. ddsData];
     }
 }
