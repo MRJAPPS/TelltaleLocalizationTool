@@ -7,6 +7,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderI
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.T3ToonGraReg;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
+using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 using TelltaleLocalizationTool.Telltale.TTypes;
@@ -45,7 +46,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     #endregion
 
-    #region Public props
+    #region Implement
 
     public int mVersion { get; set; }
 
@@ -100,12 +101,6 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
     public AuxilaryData? mAuxilaryData { get; set; }
 
     public List<byte[]> mPixelData { get; set; } = [];
-
-    #endregion
-
-    #region Implement
-
-    public int Version => mVersion;
 
     public uint Size => DefaultSectionChunkSize + AsyncSectionChunkSize;
 
@@ -266,6 +261,91 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
         for (int i = 0; i < mPixelData.Count; i++)
         {
             writer.Write(mPixelData[i]);
+        }
+    }
+
+    public void ModifyD3DTX(ID3DTX d3dtx, ImageSection[] imageSections)
+    {
+        mTextureInfo = d3dtx.mTextureInfo;
+        mSurfaceGamma = d3dtx.mSurfaceGamma;
+
+        mPixelData.Clear();
+        mPixelData = TextureManager.GetPixelDataListFromSections(imageSections);
+
+        mStreamHeader = new(MyVersion)
+        {
+            mRegionCount = imageSections.Length,
+            mAuxDataCount = mStreamHeader.mAuxDataCount,
+            mTotalDataSize = (int)ByteFunctions.GetByteArrayListElementsCount(mPixelData)
+        };
+
+        for (int i = 0; i < mStreamHeader.mRegionCount; i++)
+        {
+            RegionStreamHeader item = new(MyVersion)
+            {
+                mDataSize = (uint)mPixelData[i].Length,
+                mMipCount = 1, // mMipCount is a strange variable, it is always 1 for every single texture
+                mPitch = (int)imageSections[i].RowPitch,
+                mSlicePitch = (int)imageSections[i].SlicePitch,
+            };
+            mStreamHeader.Add(item);
+        }
+
+        if (d3dtx.IsCubemap())
+        {
+            mTextureInfo.mArraySize /= 6;
+            mTextureLayout = mTextureInfo.mArraySize > 1 ? T3TextureLayout.TextureCubemapArray : T3TextureLayout.TextureCubemap;
+
+            int interval = mStreamHeader.mRegionCount / (int)mTextureInfo.mNumMipLevels;
+            // Example a cube array textures with 5 mips will have 30 regions (6 faces * 5 mips)
+            // If the array is 2 element there will be 60 regions (6 faces * 5 mips * 2 elements)
+            // The mip index will be the region index % interval
+            for (int i = 0; i < mStreamHeader.Count; i++)
+            {
+                mStreamHeader[i].mFaceIndex = i % (6 * (int)mTextureInfo.mArraySize); // Unknown guess, it could be 6 or 6 * mArraySize
+                mStreamHeader[i].mMipIndex = (mStreamHeader.mRegionCount - i - 1) / interval;
+            }
+        }
+
+        else if (d3dtx.IsVolumemap())
+        {
+            mTextureLayout = T3TextureLayout.Texture3D;
+
+            int currDepth = (int)d3dtx.mTextureInfo.mDepth;
+            int currentMipIndex = (int)(d3dtx.mTextureInfo.mNumMipLevels - 1);
+            int copyOfDepth = currDepth;
+
+            int depthIndex = 0;
+            int faceIndex = 0;
+
+            for (int i = 0; i < mStreamHeader.Count; i++)
+            {
+                mStreamHeader[mStreamHeader.mRegionCount - currDepth + depthIndex++].mFaceIndex = faceIndex++; // NOTE: This could be different for 3D textures. I don't have information at the moment.
+                mStreamHeader[i].mMipIndex = currentMipIndex;
+
+                if (depthIndex == copyOfDepth)
+                {
+                    currentMipIndex--;
+
+                    copyOfDepth = Math.Max(copyOfDepth / 2, 1);
+                    currDepth += copyOfDepth;
+
+                    depthIndex = 0;
+                    faceIndex = 0;
+                }
+            }
+        }
+        else
+        {
+            mTextureLayout = mTextureInfo.mArraySize > 1 ? T3TextureLayout.Texture2DArray : T3TextureLayout.Texture2D;
+
+            int interval = mStreamHeader.mRegionCount / (int)mTextureInfo.mNumMipLevels;
+
+            for (int i = 0; i < mStreamHeader.mRegionCount; i++)
+            {
+                mStreamHeader[i].mFaceIndex = i % (int)mTextureInfo.mArraySize;
+                mStreamHeader[i].mMipIndex = (mStreamHeader.mRegionCount - i - 1) / interval;
+            }
         }
     }
 

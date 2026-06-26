@@ -89,7 +89,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
         XmlAttribute Unkown = element.OwnerDocument.CreateAttribute(nameof(this.Unkown));
         XmlAttribute Padding = element.OwnerDocument.CreateAttribute(nameof(this.Padding));
 
-        Data.InnerText = Convert.ToBase64String(this.Data);
+        Data.InnerText = System.Convert.ToBase64String(this.Data);
         Unkown.Value = this.Unkown.ToString();
         Padding.Value = this.Padding.ToString();
 
@@ -103,7 +103,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
         XmlElement Data = element.GetSingleElement(nameof(this.Data));
         Unkown = ulong.Parse(element.GetAttribute(nameof(Unkown)));
         Padding = uint.Parse(element.GetAttribute(nameof(Padding)));
-        this.Data = Convert.FromBase64String(Data.InnerText);
+        this.Data = System.Convert.FromBase64String(Data.InnerText);
     }
 
     #endregion
