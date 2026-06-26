@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64</Platforms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,10 +15,6 @@
     <PackageReference Include="DrSwizzler" Version="1.1.1" />
     <PackageReference Include="PVRTexLib.NET" Version="1.0.3" />
     <PackageReference Include="Hexa.NET.DirectXTex.Standalone" Version="2.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Telltale\FileTypes\D3dtx\Convert\" />
   </ItemGroup>
 
 </Project>
