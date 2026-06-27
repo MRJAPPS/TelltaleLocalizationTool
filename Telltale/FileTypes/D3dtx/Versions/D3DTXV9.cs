@@ -14,7 +14,7 @@ using TelltaleLocalizationTool.Telltale.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 [Description("Reading a D3DTX version 9")]
-public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
+public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ID3DTX
 {
     #region Private constants
 
@@ -356,9 +356,10 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     public void WriteMetaHeader(BinaryWriter writer)
     {
+        if (!wMsv6Header) return;
         if (Header == null)
         {
-            throw new NullReferenceException($"{nameof(Header)} is not properly initialized!");
+            throw new NullReferenceException($"{nameof(Header)} is not properly initialized! If you were looking to save a texture from a TFont as a D3dtx file, that feature hasn't been implemented yet and will likely be added in the future.");// TODO: Implement saving TFont texture as D3dtx.
         }
 
         uint debugSectionChunkSize = ((MSV6)Header).mDebugSectionChunkSize;
@@ -368,6 +369,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     public void ParseMetaHeader(BinaryReader reader)
     {
+        if (!rMsv6Header) return;
         long Position = reader.BaseStream.Position;
         uint magic = reader.ReadUInt32();
         if (magic != Msv6Magic)
@@ -388,7 +390,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mVersionAttr = element.OwnerDocument.CreateAttribute(nameof(mVersion));
         XmlAttribute mImportScaleAttr = element.OwnerDocument.CreateAttribute(nameof(mImportScale));
@@ -433,7 +435,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
         _ = element.Attributes.Append(mColorModeAttr);
     }
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         mVersion = int.Parse(element.GetAttribute(nameof(mVersion)));
         mImportScale = float.Parse(element.GetAttribute(nameof(mImportScale)));
@@ -475,6 +477,7 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     private void ParseHeader(XmlElement element)
     {
+        if (!rMsv6Header) return;
         XmlElement msv6H = element.GetSingleElement(nameof(msv6Header));
         msv6Header = System.Convert.FromBase64String(msv6H.InnerText);
         using MemoryStream headerTempStream = new(msv6Header);
@@ -485,6 +488,11 @@ public class D3DTXV9(bool AutoPixelData = true) : ReportBase, ID3DTX
 
     private void AppendHeader(XmlElement element)
     {
+        if (!wMsv6Header) return;
+        if (Header == null)
+        {
+            throw new NullReferenceException($"{nameof(Header)} is not properly initialized! If you were looking to save a texture from a TFont as a D3dtx file, that feature hasn't been implemented yet and will likely be added in the future.");// TODO: Implement saving TFont texture as D3dtx.
+        }
         string headerB64 = System.Convert.ToBase64String(msv6Header);
         XmlElement b64 = element.OwnerDocument.CreateElement(nameof(msv6Header));
         b64.InnerText = headerB64;
