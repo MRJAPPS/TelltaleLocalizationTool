@@ -17,7 +17,7 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 
 public static class Converter
 {
-    private static TextureType GetTextureTypeFromExtension(string fileName) => Path.GetExtension(fileName) switch
+    public static TextureType GetTextureTypeFromExtension(string fileName) => Path.GetExtension(fileName) switch
     {
         Formats.d3dtxExtension => TextureType.D3DTX,
         Formats.ddsExtension => TextureType.DDS,
@@ -30,6 +30,21 @@ public static class Converter
         Formats.tgaExtension => TextureType.TGA,
         Formats.hdrExtension => TextureType.HDR,
         _ => throw new FormatException($"I looked but couldn't find a {nameof(TextureType)} for format {Path.GetExtension(fileName)}!"),
+    };
+
+    public static string GetExtensionFromTextureType(TextureType textureType) => textureType switch
+    {
+        TextureType.D3DTX => Formats.d3dtxExtension,
+        TextureType.DDS => Formats.ddsExtension,
+        TextureType.KTX => Formats.ktxExtension,
+        TextureType.KTX2 => Formats.ktx2Extension,
+        TextureType.PNG => Formats.pngExtension,
+        TextureType.JPEG => Formats.jpegExtension,
+        TextureType.BMP => Formats.bmpExtension,
+        TextureType.TIFF => Formats.tifExtension,
+        TextureType.TGA => Formats.tgaExtension,
+        TextureType.HDR => Formats.hdrExtension,
+        _ => throw new ArgumentOutOfRangeException(nameof(textureType), textureType, $"No extension defined for {textureType}.")
     };
 
     public static void ConvertTextureFromD3DtxToOthersV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options)
@@ -103,13 +118,6 @@ public static class Converter
         d3dtxMaster.WriteD3DTX(destinationFilePath);
     }
 
-    private static void CheckArgs(string sourceFilePath, string destinationFilePath)
-    {
-        if (string.IsNullOrEmpty(sourceFilePath) || string.IsNullOrEmpty(destinationFilePath) || !Directory.Exists(Path.GetDirectoryName(destinationFilePath)))
-        {
-            throw new ArgumentException("Most likely the output folder couldn't be found or one of the arguments is null.");
-        }
-    }
 
     #region NEW
 
@@ -188,6 +196,14 @@ public static class Converter
         }
 
         return true;
+    }
+
+    private static void CheckArgs(string sourceFilePath, string destinationFilePath)
+    {
+        if (string.IsNullOrEmpty(sourceFilePath) || string.IsNullOrEmpty(destinationFilePath) || !Directory.Exists(Path.GetDirectoryName(destinationFilePath)))
+        {
+            throw new ArgumentException("Most likely the output folder couldn't be found or one of the arguments is null.");
+        }
     }
 
     #endregion
