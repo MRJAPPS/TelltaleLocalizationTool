@@ -24,8 +24,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Telltale\FileTypes\Font\" />
-  </ItemGroup>
-
 </Project>

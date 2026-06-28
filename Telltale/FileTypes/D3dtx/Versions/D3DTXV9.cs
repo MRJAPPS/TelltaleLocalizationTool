@@ -53,6 +53,8 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
     {
         ParseMetaHeader(reader);
 
+        mD3dtxMetaData.Parse(reader);
+
         if (AutoPixelData)
         {
             ParsePixelDatas(reader);
@@ -65,6 +67,7 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
     {
         XmlElement myElement = reader.GetSingleElement(nameof(D3DTXV9), name);
 
+        ParseBasicTypes(myElement);
         ParseHeader(myElement);
 
         mD3dtxMetaData.Parse(myElement, nameof(mD3dtxMetaData));
@@ -87,6 +90,8 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
     {
         WriteMetaHeader(writer);
 
+        mD3dtxMetaData.Write(writer);
+
         if (AutoPixelData)
         {
             WritePixelDatas(writer);
@@ -102,8 +107,8 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
 
         mD3dtxMetaData.Write(myElement, nameof(mD3dtxMetaData));
 
+        AppendBasicTypes(myElement);
         AppendHeader(myElement);
-
 
         AppendPixelData(myElement);
 
@@ -251,6 +256,26 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
     #endregion
 
     #region XML
+
+    private void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute rMsv6HeaderAtt, wMsv6HeaderAtt;
+
+        rMsv6HeaderAtt = element.OwnerDocument.CreateAttribute(nameof(rMsv6Header));
+        wMsv6HeaderAtt = element.OwnerDocument.CreateAttribute(nameof(wMsv6Header));
+
+        rMsv6HeaderAtt.Value = rMsv6Header.ToString();
+        wMsv6HeaderAtt.Value = wMsv6Header.ToString();
+
+        _ = element.Attributes.Append(rMsv6HeaderAtt);
+        _ = element.Attributes.Append(wMsv6HeaderAtt);
+    }
+
+    private void ParseBasicTypes(XmlElement element)
+    {
+        wMsv6Header = bool.Parse(element.GetAttribute(nameof(wMsv6Header)));
+        rMsv6Header = bool.Parse(element.GetAttribute(nameof(rMsv6Header)));
+    }
 
     public void AppendPixelData(XmlElement element)//TODO: Make all XML Append and Parse methods private!!!
     {
