@@ -4,9 +4,12 @@ using PVRTexLib;
 using System.Runtime.InteropServices;
 using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
+using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 
 namespace TelltaleLocalizationTool.Helper;
 
@@ -319,4 +322,35 @@ public static class Extensions
         throw new NotImplementedException($"{nameof(Extensions)}.{nameof(ResetForWD3NF_Font)}");
     }
 
+    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType textureType = TextureType.DDS)
+    {
+        int counter = 0;
+        Directory.CreateDirectory(outputDirectory);
+        foreach (D3DTXV9 d3dtxv9 in d3dtxList)
+        {
+            bool autoPixelData = d3dtxv9.AutoPixelData;
+            bool writeHeader = d3dtxv9.WriteMsv6Header;
+            //I know I could add an in-memory method to the Converter class for converting D3dtx to any format, but I prefer using it this way...
+            string outputName = $"{fontName}-{d3dtxv9.mD3dtxMetaData.mName}-{counter}{Converter.GetExtensionFromTextureType(textureType)}";
+            string outputD3dtxName = $"{d3dtxv9.mD3dtxMetaData.mName}{Converter.GetExtensionFromTextureType(TextureType.D3DTX)}";
+
+            string finalOutput = Path.Combine(outputDirectory, outputName);
+            string tempD3dtxPath = Path.Combine(outputDirectory, outputD3dtxName);
+
+            using TempFile tempD3dtx = new(outputD3dtxName);
+            using FileStream tempFs = new(tempD3dtx.Path, FileMode.Create, FileAccess.Write);
+            using BinaryWriter d3dtxTempW = new(tempFs);
+
+            d3dtxv9.AutoPixelData = true;
+            d3dtxv9.WriteMsv6Header = true;
+            d3dtxv9.Write(d3dtxTempW);
+            d3dtxv9.WriteMsv6Header = false;
+            d3dtxv9.AutoPixelData = autoPixelData;
+
+            d3dtxTempW.Close();
+            Converter.ConvertTextureFromD3DtxToOthersV9(tempD3dtx.Path, finalOutput, new());
+            counter++;
+        }
+
+    }
 }

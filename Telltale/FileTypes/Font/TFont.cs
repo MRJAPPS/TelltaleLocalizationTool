@@ -13,10 +13,10 @@ using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 using TelltaleLocalizationTool.Telltale.TTypes;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.TFont;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.Font;
 
 [Description("Reading a font!(Telltale font file)")]
-public class TFont : ReportBase, ITFont
+public class TFont : ReportBase, IFnt
 {
     #region Private constants
     private const uint BasicTypes = sizeof(float) * 4 + sizeof(bool) * 2;
@@ -65,8 +65,6 @@ public class TFont : ReportBase, ITFont
 
     public bool mIsDistanceField { get; set; }
 
-    public TFontMetadata metadata => new(mName, mbUnicode, mHeight, mBase, mWiiScale, mFontScale, mIsDistanceField, [.. mGlyphInfos]);
-
     #endregion
 
     #region Implement
@@ -77,12 +75,12 @@ public class TFont : ReportBase, ITFont
 
     public long Position { get; private set; }
 
-    public void Export(string TfontFile)//Just for loadedFont
+    public void Export(string fntPath)//Just for loadedFont
     {
-        throw new NotImplementedException($"{nameof(TFont)}.{nameof(Export)}");
+        mTexturePages.ExportTextures(mName, fntPath);
     }
 
-    public void Import(string TfontFile)
+    public void Import(string fntPath)
     {
         throw new NotImplementedException($"{nameof(TFont)}.{nameof(Import)}");
     }

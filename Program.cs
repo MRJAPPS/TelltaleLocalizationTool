@@ -3,7 +3,7 @@ using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
-using TelltaleLocalizationTool.Telltale.FileTypes.Font.TFont;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 
 namespace TelltaleLocalizationTool;
@@ -112,6 +112,7 @@ internal class Program
     private static void TestFont(string inputPath)
     {
         string outputDir = Path.GetDirectoryName(inputPath) ?? throw new NullReferenceException("I can't find your font dir!");
+        string exportDir = Path.Combine(outputDir, "ExportImport");
         string fontName = Path.GetFileNameWithoutExtension(inputPath);
         string outputPath = Path.Combine(outputDir, $"{fontName}_test.font");
         string outputXmlFile = Path.Combine(outputDir, $"{fontName}_test.xml");
@@ -125,6 +126,8 @@ internal class Program
         {
             font.Parse(reader);
             font.Write(writer);
+            Directory.CreateDirectory(exportDir);
+            font.Export(exportDir);
         }
 
         if (!CompareFilesByteByByte(inputPath, outputPath))
