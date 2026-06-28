@@ -1,12 +1,8 @@
 ﻿using Hexa.NET.DirectXTex;
-using System.Diagnostics;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
-using TelltaleLocalizationTool.Telltale.Graphics.Enums;
-using TelltaleLocalizationTool.Telltale.Graphics.Image;
 
 namespace TelltaleLocalizationTool.Telltale.Graphics.DDS;
 
@@ -26,9 +22,9 @@ public unsafe class DDS_Master
             return;
         }
 
-        if (d3dtx.mSurfaceFormat.IsFormatIncompatibleWithDDS())
+        if (d3dtx.mD3dtxMetaData.mSurfaceFormat.IsFormatIncompatibleWithDDS())
         {
-            if (d3dtx.mSurfaceFormat is T3SurfaceFormat.ATC_RGB or
+            if (d3dtx.mD3dtxMetaData.mSurfaceFormat is T3SurfaceFormat.ATC_RGB or
                 T3SurfaceFormat.ATC_RGBA or
                 T3SurfaceFormat.ATC_RGB1A)
             {
@@ -40,7 +36,7 @@ public unsafe class DDS_Master
             }
             else
             {
-                pixelData = d3dtx.mSurfaceFormat == T3SurfaceFormat.CTX1
+                pixelData = d3dtx.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.CTX1
                     ? throw new Exception("This format is not supported. Please, contact the maintainer as soon as possible!")
                     : d3dtx.DecodeTexturePvr(d3dtx.GetReversedMipPixelData());
             }
@@ -56,15 +52,15 @@ public unsafe class DDS_Master
     {
         ScratchImage image = DirectXTex.CreateScratchImage();
 
-        T3SurfaceFormat surfaceFormat = d3dtx.mSurfaceFormat;
-        T3SurfaceGamma surfaceGamma = d3dtx.mSurfaceGamma;
-        T3PlatformType platformType = d3dtx.mPlatform.EnumItem;
-        TextureInfo textureInfo = d3dtx.mTextureInfo;
+        T3SurfaceFormat surfaceFormat = d3dtx.mD3dtxMetaData.mSurfaceFormat;
+        T3SurfaceGamma surfaceGamma = d3dtx.mD3dtxMetaData.mSurfaceGamma;
+        T3PlatformType platformType = d3dtx.mD3dtxMetaData.mPlatform.EnumItem;
+        TextureInfo textureInfo = d3dtx.mD3dtxMetaData.mTextureInfo;
         TexMetadata metadata = new()
         {
             Width = textureInfo.mWidth,
             Height = textureInfo.mHeight,
-            ArraySize = d3dtx.IsCubemap() ? d3dtx.mTextureInfo.mArraySize * 6 : d3dtx.mTextureInfo.mArraySize,
+            ArraySize = d3dtx.IsCubemap() ? d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize * 6 : d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize,
             Depth = textureInfo.mDepth,
             MipLevels = textureInfo.mNumMipLevels,
             // Format = d3dtx.IsLegacyD3DTX() ? (int)DDSHelper.GetDXGIFormat(d3dtx.D3DFormat) : (int)DDSHelper.GetDXGIFormat(surfaceFormat, surfaceGamma, platformType), // We don't use legacy...
@@ -91,9 +87,9 @@ public unsafe class DDS_Master
     {
         ScratchImage image = DirectXTex.CreateScratchImage();
 
-        T3SurfaceFormat surfaceFormat = d3dtx.mSurfaceFormat;
-        T3SurfaceGamma surfaceGamma = d3dtx.mSurfaceGamma;
-        TextureInfo textureInfo = d3dtx.mTextureInfo;
+        T3SurfaceFormat surfaceFormat = d3dtx.mD3dtxMetaData.mSurfaceFormat;
+        T3SurfaceGamma surfaceGamma = d3dtx.mD3dtxMetaData.mSurfaceGamma;
+        TextureInfo textureInfo = d3dtx.mD3dtxMetaData.mTextureInfo;
         TexMetadata metadata = new()
         {
             Width = textureInfo.mWidth,
@@ -111,15 +107,15 @@ public unsafe class DDS_Master
 
         Console.WriteLine("Header length: " + header.Length);
 
-        if (d3dtx.mSurfaceFormat == T3SurfaceFormat.ATC_RGB)
+        if (d3dtx.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.ATC_RGB)
         {
             TextureManager.SetDDSHeaderFourCC(ref header, 'A', 'T', 'C', ' ');
         }
-        else if (d3dtx.mSurfaceFormat == T3SurfaceFormat.ATC_RGBA)
+        else if (d3dtx.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.ATC_RGBA)
         {
             TextureManager.SetDDSHeaderFourCC(ref header, 'A', 'T', 'C', 'A');
         }
-        else if (d3dtx.mSurfaceFormat == T3SurfaceFormat.ATC_RGB1A)
+        else if (d3dtx.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.ATC_RGB1A)
         {
             TextureManager.SetDDSHeaderFourCC(ref header, 'A', 'T', 'C', 'I');
         }
@@ -142,34 +138,34 @@ public unsafe class DDS_Master
             return;
         }
 
-        T3SurfaceFormat surfaceFormat = d3dtx.mSurfaceFormat;
+        T3SurfaceFormat surfaceFormat = d3dtx.mD3dtxMetaData.mSurfaceFormat;
 
         List<byte[]> textureData = [];
 
-        if (d3dtx.mPlatform.EnumItem.IsPlatformIncompatibleWithDDS())
+        if (d3dtx.mD3dtxMetaData.mPlatform.EnumItem.IsPlatformIncompatibleWithDDS())
         {
-            textureData.Add(d3dtx.GetPixelDataByFirstMipmapIndex(d3dtx.mSurfaceFormat, (int)d3dtx.mTextureInfo.mWidth, (int)d3dtx.mTextureInfo.mHeight, d3dtx.mPlatform.EnumItem));
+            textureData.Add(d3dtx.GetPixelDataByFirstMipmapIndex(d3dtx.mD3dtxMetaData.mSurfaceFormat, (int)d3dtx.mD3dtxMetaData.mTextureInfo.mWidth, (int)d3dtx.mD3dtxMetaData.mTextureInfo.mHeight, d3dtx.mD3dtxMetaData.mPlatform.EnumItem));
         }
         else
         {
-            TextureInfo textureInfo = d3dtx.mTextureInfo;
+            TextureInfo textureInfo = d3dtx.mD3dtxMetaData.mTextureInfo;
             if (d3dtx.IsVolumemap())
             {
                 int divideBy = 1;
                 for (int i = 0; i < textureInfo.mNumMipLevels; i++)
                 {
-                    textureData.Add(d3dtx.GetPixelDataByMipmapIndex(i, d3dtx.mSurfaceFormat, (int)textureInfo.mWidth / divideBy, (int)textureInfo.mHeight / divideBy, d3dtx.mPlatform.EnumItem));
+                    textureData.Add(d3dtx.GetPixelDataByMipmapIndex(i, d3dtx.mD3dtxMetaData.mSurfaceFormat, (int)textureInfo.mWidth / divideBy, (int)textureInfo.mHeight / divideBy, d3dtx.mD3dtxMetaData.mPlatform.EnumItem));
                     divideBy *= 2;
                 }
             }
             else
             {
-                int totalFaces = (int)(d3dtx.IsCubemap() ? d3dtx.mTextureInfo.mArraySize * 6 : d3dtx.mTextureInfo.mArraySize);
+                int totalFaces = (int)(d3dtx.IsCubemap() ? d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize * 6 : d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize);
 
                 // Get each face of the 2D texture
                 for (int i = 0; i < totalFaces; i++)
                 {
-                    textureData.Add(d3dtx.GetPixelDataByFaceIndex(i, d3dtx.mSurfaceFormat, (int)d3dtx.mTextureInfo.mWidth, (int)d3dtx.mTextureInfo.mHeight, d3dtx.mPlatform.EnumItem));
+                    textureData.Add(d3dtx.GetPixelDataByFaceIndex(i));
                 }
             }
         }

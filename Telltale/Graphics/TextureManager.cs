@@ -1,12 +1,10 @@
-﻿using BCnEncoder.Shared.ImageFiles;
-using Hexa.NET.DirectXTex;
+﻿using Hexa.NET.DirectXTex;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
@@ -124,22 +122,26 @@ public static unsafe class TextureManager
 
     public static ID3DTX GetTextureInformation(TexMetadata metadata, int version = 9)
     {
-        if (version == 9)
-            return new D3DTXV9
+        return version == 9
+            ? (ID3DTX)new D3DTXV9
             {
-                mTextureInfo = new()
+                mD3dtxMetaData = new(version)
                 {
-                    mWidth = (uint)metadata.Width,
-                    mHeight = (uint)metadata.Height,
-                    mDepth = (uint)metadata.Depth,
-                    mArraySize = (uint)metadata.ArraySize,
-                    mNumMipLevels = (uint)metadata.MipLevels,
-                },
-                mSurfaceFormat = DDSHelper.GetTelltaleSurfaceFormat((DXGIFormat)metadata.Format),
-                mSurfaceGamma = DirectXTex.IsSRGB(metadata.Format) ? T3SurfaceGamma.sRGB : T3SurfaceGamma.Linear,
-                mTextureLayout = DDSHelper.GetDimensionFromDDS(metadata),
-            };
-        else throw new NotImplementedException("We need a d3dtx9!");
+
+                    mTextureInfo = new()
+                    {
+                        mWidth = (uint)metadata.Width,
+                        mHeight = (uint)metadata.Height,
+                        mDepth = (uint)metadata.Depth,
+                        mArraySize = (uint)metadata.ArraySize,
+                        mNumMipLevels = (uint)metadata.MipLevels,
+                    },
+                    mSurfaceFormat = DDSHelper.GetTelltaleSurfaceFormat((DXGIFormat)metadata.Format),
+                    mSurfaceGamma = DirectXTex.IsSRGB(metadata.Format) ? T3SurfaceGamma.sRGB : T3SurfaceGamma.Linear,
+                    mTextureLayout = DDSHelper.GetDimensionFromDDS(metadata),
+                }
+            }
+            : throw new NotImplementedException("We need a d3dtx9!");
     }
 
     /// <summary>

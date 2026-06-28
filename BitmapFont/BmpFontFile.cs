@@ -7,10 +7,10 @@ namespace TelltaleLocalizationTool.BitmapFont;
 public class BmpFontFile
 {
     [XmlElement("info")]
-    public BmpFontInfo Info { get; set; }
+    public BmpFontInfo? Info { get; set; }
 
     [XmlElement("common")]
-    public BmpFontCommon Common { get; set; }
+    public BmpFontCommon? Common { get; set; }
 
     [XmlArray("pages")]
     [XmlArrayItem("page")]
@@ -40,8 +40,8 @@ public class BmpFontFile
     {
         Info = info;
         Common = common;
-        Pages = pages ?? new List<BmpFontPage>();
-        Chars = chars ?? new List<BmpFontChar>();
+        Pages = pages ?? [];
+        Chars = chars ?? [];
         Kernings = kernings ?? new List<BmpFontKerning>();
     }
 }
