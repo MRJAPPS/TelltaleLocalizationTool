@@ -293,54 +293,46 @@ public unsafe partial class Texture
         ScratchImage scratchImage = DirectXTex.CreateScratchImage();
         TexMetadata texMetadata = new();
 
-        try
+        switch (textureType)
         {
-            switch (textureType)
-            {
-                case TextureType.DDS: DirectXTex.LoadFromDDSFile(filePath, flags, ref texMetadata, ref scratchImage).ThrowIf(); break;
-                case TextureType.PNG:
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                    {
-                        DirectXTex.LoadFromWICFile(filePath, WICFlags.AllFrames, ref texMetadata, ref scratchImage, default).ThrowIf(); break;
-                    }
-                    else if (Environment.OSVersion.Platform == PlatformID.Unix)
-                    {
-                        DirectXTex.LoadFromPNGFile(filePath, ref texMetadata, ref scratchImage).ThrowIf();
-                    }
-                    break;
-                case TextureType.HDR: DirectXTex.LoadFromHDRFile(filePath, ref texMetadata, ref scratchImage).ThrowIf(); break;
-                case TextureType.JPEG: DirectXTex.LoadFromJPEGFile(filePath, ref texMetadata, ref scratchImage).ThrowIf(); break;
-                case TextureType.TGA: DirectXTex.LoadFromTGAFile2(filePath, ref texMetadata, ref scratchImage).ThrowIf(); break;
-                case TextureType.TIFF: DirectXTex.LoadFromWICFile(filePath, WICFlags.AllFrames, ref texMetadata, ref scratchImage, default).ThrowIf(); break;
-                case TextureType.BMP: DirectXTex.LoadFromWICFile(filePath, WICFlags.AllFrames, ref texMetadata, ref scratchImage, default).ThrowIf(); break;
-                default: break;
-            }
-
-            if (isCopy)
-            {
-                if (!Image.IsNull)
+            case TextureType.DDS: DirectXTex.LoadFromDDSFile(filePath, flags, ref texMetadata, ref scratchImage).ThrowIf(); break;
+            case TextureType.PNG:
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
-                    Image.Release();
+                    DirectXTex.LoadFromWICFile(filePath, WICFlags.AllFrames, ref texMetadata, ref scratchImage, default).ThrowIf(); break;
                 }
-                Image = scratchImage;
-                Metadata = texMetadata;
-            }
-            else
-            {
-                if (!OriginalImage.IsNull)
+                else if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
-                    OriginalImage.Release();
+                    DirectXTex.LoadFromPNGFile(filePath, ref texMetadata, ref scratchImage).ThrowIf();
                 }
-                OriginalImage = scratchImage;
-            }
-
+                break;
+            case TextureType.HDR: DirectXTex.LoadFromHDRFile(filePath, ref texMetadata, ref scratchImage).ThrowIf(); break;
+            case TextureType.JPEG: DirectXTex.LoadFromJPEGFile(filePath, ref texMetadata, ref scratchImage).ThrowIf(); break;
+            case TextureType.TGA: DirectXTex.LoadFromTGAFile2(filePath, ref texMetadata, ref scratchImage).ThrowIf(); break;
+            case TextureType.TIFF: DirectXTex.LoadFromWICFile(filePath, WICFlags.AllFrames, ref texMetadata, ref scratchImage, default).ThrowIf(); break;
+            case TextureType.BMP: DirectXTex.LoadFromWICFile(filePath, WICFlags.AllFrames, ref texMetadata, ref scratchImage, default).ThrowIf(); break;
+            default: break;
         }
-        catch (Exception e)
+
+        if (isCopy)
         {
-            Console.WriteLine(e.Message);
-            scratchImage.Release();
-            throw new Exception("Failed to load image!");
+            if (!Image.IsNull)
+            {
+                Image.Release();
+            }
+            Image = scratchImage;
+            Metadata = texMetadata;
         }
+        else
+        {
+            if (!OriginalImage.IsNull)
+            {
+                OriginalImage.Release();
+            }
+            OriginalImage = scratchImage;
+        }
+
+
     }
 
     private void ResetImageToOriginal()
