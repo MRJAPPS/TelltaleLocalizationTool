@@ -2,7 +2,6 @@
 
 public sealed class TempFile : IDisposable
 {
-    private readonly FileStream lockStream;
     private bool disposed;
     private readonly string normalName;
 
@@ -28,12 +27,7 @@ public sealed class TempFile : IDisposable
 
             try
             {
-                lockStream = new FileStream(
-                    candidate,
-                    FileMode.CreateNew,
-                    FileAccess.ReadWrite,
-                    FileShare.Read | FileShare.Write);
-
+                File.Create(candidate).Close();
                 Path = candidate;
                 break;
             }
@@ -88,8 +82,6 @@ public sealed class TempFile : IDisposable
             return;
 
         disposed = true;
-
-        lockStream.Dispose();
 
         try
         {

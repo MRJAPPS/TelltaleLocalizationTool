@@ -42,6 +42,6 @@ public class BmpFontFile
         Common = common;
         Pages = pages ?? [];
         Chars = chars ?? [];
-        Kernings = kernings ?? new List<BmpFontKerning>();
+        Kernings = kernings ?? [];
     }
 }
