@@ -8,7 +8,7 @@ using TelltaleLocalizationTool.Telltale.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 
 [Description("Processing a FlagIndexMap structure that includes keys, symbols")]
-public class FlagIndexMap : ReportBase, ILandb
+public class FlagIndexMap : ReportBase, ITelltaleObject
 {
     #region Constants
 

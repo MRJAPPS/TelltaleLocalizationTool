@@ -9,7 +9,7 @@ using TelltaleLocalizationTool.Telltale.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
 [Description("Processing the text section")]
-public class TextItem : ReportBase, ILandb
+public class TextItem : ReportBase, ITelltaleObject
 {
     #region Private Fields
 

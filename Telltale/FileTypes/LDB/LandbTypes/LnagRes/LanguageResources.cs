@@ -7,7 +7,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes;
 
 [Description("Processing the game text stuff (subtitles, menus, etc.)")]
-public class LanguageResources : ReportBase, ILandb
+public class LanguageResources : ReportBase, ITelltaleObject
 {
     #region Private Fields
 

@@ -5,7 +5,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.T3ToonGraReg;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
-using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;

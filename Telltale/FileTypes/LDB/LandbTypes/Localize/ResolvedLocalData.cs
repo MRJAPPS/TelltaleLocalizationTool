@@ -7,7 +7,7 @@ using TelltaleLocalizationTool.Telltale.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
 [Description("Processing the resolved localization data section")]
-public class ResolvedLocalData : ReportBase, ILandb
+public class ResolvedLocalData : ReportBase, ITelltaleObject
 {
     #region Constants
 

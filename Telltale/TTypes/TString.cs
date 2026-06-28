@@ -11,7 +11,7 @@ namespace TelltaleLocalizationTool.Telltale.TTypes;
 
 [Description("processing a string(Telltale string)")]
 public class TString(string value, bool readSize, int FixedLength, bool skipZero, Encoding? encoding)
-    : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, ILandb
+    : ReportBase, IEquatable<TString>, IComparable<TString>, ICollection<char>, IComparable, ITelltaleObject
 {
     #region Constants
 

@@ -6,7 +6,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
 [Description("Processing the text collection")]
-public class TextCollection : TCollectionBase<TextItem>, ILandb
+public class TextCollection : TCollectionBase<TextItem>, ITelltaleObject
 {
     #region Constants
 

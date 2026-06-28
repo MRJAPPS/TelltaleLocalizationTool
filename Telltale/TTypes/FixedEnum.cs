@@ -4,12 +4,12 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
+namespace TelltaleLocalizationTool.Telltale.TTypes;
 
-using Enum = System.Enum;
+using Enum = Enum;
 
 [Description("Processing an Enum (probably, but I don't think so) with a fixed size")]
-public class FixedEnum<T> : ReportBase, ILandb
+public class FixedEnum<T> : ReportBase, ITelltaleObject
     where T : struct, Enum
 {
     #region Private Fields
