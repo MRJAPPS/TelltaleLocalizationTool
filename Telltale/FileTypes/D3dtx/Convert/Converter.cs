@@ -73,30 +73,30 @@ public static class Converter
 
         Texture texture = new(sourceFilePath, GetTextureTypeFromExtension(sourceFilePath), flags);
 
-        if (d3dtxMaster.mType is T3TextureType.eTxBumpmap or T3TextureType.eTxNormalMap)
+        if (d3dtxMaster.mD3dtxMetaData.mType is T3TextureType.eTxBumpmap or T3TextureType.eTxNormalMap)
         {
             options.IsTelltaleNormalMap = true;
         }
-        else if (d3dtxMaster.mType is T3TextureType.eTxNormalXYMap)
+        else if (d3dtxMaster.mD3dtxMetaData.mType is T3TextureType.eTxNormalXYMap)
         {
             options.IsTelltaleNormalMap = true;
         }
 
-        if (d3dtxMaster.mSurfaceGamma is T3SurfaceGamma.sRGB)
+        if (d3dtxMaster.mD3dtxMetaData.mSurfaceGamma is T3SurfaceGamma.sRGB)
         {
             options.IsSRGB = true;
         }
 
         texture.TransformTexture(options, true, true);
 
-        texture.GetDDSInformationV9(out D3DTXV9 metadata, out ImageSection[] sections, flags);
+        texture.GetDDSInformationV9(out D3DTXV9 d3dtx, out ImageSection[] sections, flags);
 
         if (options.EnableSwizzle)
         {
-            metadata.mPlatform.EnumItem = options.PlatformType;
+            d3dtx.mD3dtxMetaData.mPlatform.EnumItem = options.PlatformType;
         }
 
-        d3dtxMaster.ModifyD3DTX(metadata, sections);
+        d3dtxMaster.ModifyD3DTX(d3dtx, sections);
 
         texture.Release();
 

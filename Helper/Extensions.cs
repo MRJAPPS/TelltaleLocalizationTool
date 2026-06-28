@@ -21,12 +21,13 @@ public static class Extensions
         XmlNodeList? nodes = element.SelectNodes(xpath);
 
         if (nodes is null || nodes.Count == 0)
+        {
             throw new InvalidDataException($"I can't find <{tagName}> in xml!");
+        }
 
-        if (nodes.Count > 1)
-            throw new InvalidDataException($"I found more than one <{tagName}> in xml!");
-
-        return (XmlElement)(nodes[0] ?? throw new NullReferenceException("WTF!?"));
+        return nodes.Count > 1
+            ? throw new InvalidDataException($"I found more than one <{tagName}> in xml!")
+            : (XmlElement)(nodes[0] ?? throw new NullReferenceException("WTF!?"));
     }
 
     public static byte[] DecodeAsPvr(this byte[] data)
@@ -64,7 +65,9 @@ public static class Extensions
                 uint magic = BitConverter.ToUInt32(region, 0);
 
                 if (magic == DDSMagicLittleEndian)
+                {
                     return true;
+                }
             }
         }
 
@@ -128,19 +131,29 @@ public static class Extensions
         };
     }
 
-    public static bool IsCubemap(this ID3DTX d3dtx) => d3dtx.mTextureLayout is T3TextureLayout.TextureCubemap or T3TextureLayout.TextureCubemapArray;
+    public static bool IsCubemap(this ID3DTX d3dtx)
+    {
+        return d3dtx.mD3dtxMetaData.mTextureLayout is T3TextureLayout.TextureCubemap or T3TextureLayout.TextureCubemapArray;
+    }
 
-    public static bool IsVolumemap(this ID3DTX d3dtx) => d3dtx.mTextureLayout == T3TextureLayout.Texture3D;
+    public static bool IsVolumemap(this ID3DTX d3dtx)
+    {
+        return d3dtx.mD3dtxMetaData.mTextureLayout == T3TextureLayout.Texture3D;
+    }
 
-    public static bool IsLegacyD3DTX(this ID3DTX d3dtx) => false; //We focus on newer games...
+    public static bool IsLegacyD3DTX(this ID3DTX _)
+    {
+        return false; //We focus on newer games...
+    }
 
     public static byte[] GetReversedMipPixelData(this ID3DTX d3dtx)
     {
+        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
         List<byte[]> finalArray = [];
 
-        RegionStreamHeader[] regionHeaders = [.. d3dtx.mStreamHeader];
+        RegionStreamHeader[] regionHeaders = [.. metadata.mStreamHeader];
 
-        for (int i = 0; i < d3dtx.mTextureInfo.mNumMipLevels; i++)
+        for (int i = 0; i < metadata.mTextureInfo.mNumMipLevels; i++)
         {
             for (int j = 0; j < regionHeaders.Length; j++)
             {
@@ -157,10 +170,10 @@ public static class Extensions
     public static byte[] GetPixelDataByFirstMipmapIndex(this ID3DTX d3dtx, T3SurfaceFormat surfaceFormat, int width, int height, T3PlatformType platformType)
     {
         int index = 0;
-
-        if (d3dtx.mStreamHeader.Count == 1)
+        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
+        if (metadata.mStreamHeader.Count == 1)
         {
-            index = d3dtx.mStreamHeader[0].mMipIndex;
+            index = metadata.mStreamHeader[0].mMipIndex;
         }
 
         return d3dtx.GetPixelDataByMipmapIndex(index, surfaceFormat, width, height, platformType);
@@ -168,9 +181,10 @@ public static class Extensions
 
     public static byte[] GetPixelDataByMipmapIndex(this ID3DTX d3dtx, int mipmapIndex, T3SurfaceFormat surfaceFormat, int width, int height, T3PlatformType platformType)
     {
+        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
         List<byte[]> newPixelData = [];
 
-        RegionStreamHeader[] regionHeaders = [.. d3dtx.mStreamHeader];
+        RegionStreamHeader[] regionHeaders = [.. metadata.mStreamHeader];
 
         for (int i = 0; i < regionHeaders.Length; i++)
         {
@@ -190,11 +204,12 @@ public static class Extensions
         return [.. newPixelData.SelectMany(b => b)];
     }
 
-    public static byte[] GetPixelDataByFaceIndex(this ID3DTX d3dtx, int faceIndex, T3SurfaceFormat surfaceFormat, int width, int height, T3PlatformType platformType)
+    public static byte[] GetPixelDataByFaceIndex(this ID3DTX d3dtx, int faceIndex)
     {
+        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
         List<byte[]> newPixelData = [];
 
-        RegionStreamHeader[] regionHeaders = [.. d3dtx.mStreamHeader];
+        RegionStreamHeader[] regionHeaders = [.. metadata.mStreamHeader];
 
         int divideBy = 1;
 
@@ -218,14 +233,14 @@ public static class Extensions
         // Reverse the elements in the list to get the correct order.
         newPixelData.Reverse();
 
-        return newPixelData.SelectMany(b => b).ToArray();
+        return [.. newPixelData.SelectMany(b => b)];
     }
 
     public static void WriteD3DTXXML(this ID3DTX d3dtx, string fileName)
     {
         XmlDocument doc = new();
         XmlElement element = doc.CreateElement("Root");
-        doc.AppendChild(element);
+        _ = doc.AppendChild(element);
         d3dtx.Write(element, nameof(d3dtx));
         doc.Save(fileName);
     }
@@ -253,13 +268,14 @@ public static class Extensions
 
     public static byte[] DecodeTexturePvr(this ID3DTX d3dtx, byte[] data)
     {
-        PVRTexLibPixelFormat format = d3dtx.mSurfaceFormat.GetPVRFormat();
+        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
+        PVRTexLibPixelFormat format = metadata.mSurfaceFormat.GetPVRFormat();
         ulong RGBA8888 = PVRDefine.PVRTGENPIXELID4('r', 'g', 'b', 'a', 8, 8, 8, 8);
-        uint width = d3dtx.mTextureInfo.mWidth;
-        uint height = d3dtx.mTextureInfo.mHeight;
-        uint depth = d3dtx.mTextureInfo.mDepth;
-        uint numMipMaps = d3dtx.mTextureInfo.mNumMipLevels;
-        uint numArrayMembers = d3dtx.mTextureInfo.mArraySize;
+        uint width = metadata.mTextureInfo.mWidth;
+        uint height = metadata.mTextureInfo.mHeight;
+        uint depth = metadata.mTextureInfo.mDepth;
+        uint numMipMaps = metadata.mTextureInfo.mNumMipLevels;
+        uint numArrayMembers = metadata.mTextureInfo.mArraySize;
         uint numFaces = d3dtx.IsCubemap() ? 6U : 1U;
         using PVRTextureHeader textureHeader = new((ulong)format, width, height, depth, numMipMaps, numArrayMembers, numFaces);
         ulong textureSize = textureHeader.GetTextureDataSize();
@@ -275,7 +291,7 @@ public static class Extensions
             {
                 using PVRTexture texture = new(textureHeader, ptr);
 
-                PVRTexLibColourSpace colorSpace = d3dtx.mSurfaceGamma == T3SurfaceGamma.sRGB ? PVRTexLibColourSpace.sRGB : PVRTexLibColourSpace.Linear;
+                PVRTexLibColourSpace colorSpace = metadata.mSurfaceGamma == T3SurfaceGamma.sRGB ? PVRTexLibColourSpace.sRGB : PVRTexLibColourSpace.Linear;
                 _ = texture.Transcode(RGBA8888, PVRTexLibVariableType.UnsignedByteNorm, colorSpace);
 
                 void* ddsPtr = null;
