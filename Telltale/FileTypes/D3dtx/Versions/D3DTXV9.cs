@@ -6,11 +6,13 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderI
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Structs;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
+using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 [Description("Reading a D3DTX version 9")]
-public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ID3DTX
+public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ID3DTX
 {
     #region Private constants
 
@@ -25,8 +27,52 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
     #endregion
 
     #region private fields
+    /// <summary>
+    /// Honestly, I didn't define className as TelltaleObject because I couldn't be bothered — marking it as a //TODO for later.
+    /// </summary>
+    static readonly ClassNames[] mDefaultClassNamesWD3 =
+[
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x3E249E7E6F38CCE2 },
+        mVersionCRC = 0xA730AB61
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x937F5D487A0988E3 },
+        mVersionCRC = 0xB2E3CEB0
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x8E88FBB78405598C },
+        mVersionCRC = 0xA4AC7DAF
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0xFA6C8889876EBA7A },
+        mVersionCRC = 0x5B484905
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x7BBCA244E61F1A07 },
+        mVersionCRC = 0xE19FCC02
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0xEFA1BA20E620F40F },
+        mVersionCRC = 0x9AF4FC40
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x584619F1AE300EEA },
+        mVersionCRC = 0x5057EA61
+    }
+];
 
     private byte[] msv6Header = [];//Use this for xml export/import
+
+    #endregion
+
+    #region Publci props
+
+    public bool AutoPixelData { get => autoPixelData; set => autoPixelData = value; }
+
+    public bool ReadMsv6Header { get => rMsv6Header; set => rMsv6Header = value; }
+
+    public bool WriteMsv6Header { get => wMsv6Header; set => wMsv6Header = value; }
 
     #endregion
 
@@ -55,12 +101,12 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
 
         mD3dtxMetaData.Parse(reader);
 
-        if (AutoPixelData)
+        if (autoPixelData)
         {
             ParsePixelDatas(reader);
         }
 
-        Report(this, extra: $"(APD: {AutoPixelData},PDLength: {asyncSectionChunkSize})");
+        Report(this, extra: $"(APD: {autoPixelData},PDLength: {asyncSectionChunkSize})");
     }
 
     public void Parse(XmlElement reader, string name)
@@ -92,12 +138,12 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
 
         mD3dtxMetaData.Write(writer);
 
-        if (AutoPixelData)
+        if (autoPixelData)
         {
             WritePixelDatas(writer);
         }
 
-        Report(this, true, $"(APD: {AutoPixelData})");
+        Report(this, true, $"(APD: {autoPixelData})");
     }
 
     public void Write(XmlElement element, string name)
@@ -220,9 +266,17 @@ public class D3DTXV9(bool AutoPixelData = true, bool rMsv6Header = true, bool wM
             return;
         }
 
-        if (Header == null)
+        if (Header == null && rMsv6Header)
         {
-            throw new NullReferenceException($"{nameof(Header)} is not properly initialized! If you were looking to save a texture from a TFont as a D3dtx file, that feature hasn't been implemented yet and will likely be added in the future.");// TODO: Implement saving TFont texture as D3dtx.
+            throw new NullReferenceException($"{nameof(Header)} is not properly initialized!");
+        }
+        else if (Header == null)
+        {
+            //Recreate header
+            MSV6 defaultHeaderForWalkingDead3NewF = (MSV6)MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
+            defaultHeaderForWalkingDead3NewF.mClassNamesLength = (uint)mDefaultClassNamesWD3.Length;
+            defaultHeaderForWalkingDead3NewF.mClassNames = mDefaultClassNamesWD3;
+            Header = defaultHeaderForWalkingDead3NewF;
         }
 
         uint debugSectionChunkSize = ((MSV6)Header).mDebugSectionChunkSize;
