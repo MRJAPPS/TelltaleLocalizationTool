@@ -78,7 +78,7 @@ public unsafe class DDS_Master
         //DDSFlags flags = D3DTX_Master.IsFormatIncompatibleWithDDS(surfaceFormat) ? DDSFlags.ForceDx9Legacy : DDSFlags.ForceDx9Legacy;
         header = TextureManager.GetDDSHeaderBytes(image);
 
-        Console.WriteLine("Header length: " + header.Length);
+        //Console.WriteLine("Header length: " + header.Length);
 
         image.Release();
     }
