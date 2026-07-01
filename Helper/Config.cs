@@ -8,6 +8,7 @@ namespace TelltaleLocalizationTool.Helper;
 public class Config
 {
     private const string appsettingsDefault = "appsettings.json";
+    public const string GithubPage = "https://github.com/MRJAPPS/TelltaleLocalizationTool";
     private readonly string appsettingsJsonFileName = appsettingsDefault;
     private readonly IConfiguration config;
 
@@ -55,6 +56,9 @@ public class Config
     public uint mArraySize => GetRequired<uint>("mArraySize", "'mArraySize' is gone. Array of nothing, my favorite.");
     public T3SurfaceFormat mSurfaceFormat => (T3SurfaceFormat)GetRequired<int>("mSurfaceFormat", "'mSurfaceFormat'? Never heard of it. (Because it's not in the config.)");
     public T3TextureLayout mTextureLayout => (T3TextureLayout)GetRequired<int>("mTextureLayout", "'mTextureLayout' is out to lunch. Maybe put it back?");
+
+    public T3SurfaceGamma mSurfaceGamma => (T3SurfaceGamma)GetRequired<int>("mSurfaceGamma", "'mSurfaceGamma' not found. why?");
+
     public T3SurfaceMultisample mSurfaceMultisample => (T3SurfaceMultisample)GetRequired<int>("mSurfaceMultisample", "'mSurfaceMultisample' left the building. Smooth edges are overrated anyway.");
     public T3ResourceUsage mResourceUsage => (T3ResourceUsage)GetRequired<int>("mResourceUsage", "'mResourceUsage' is undefined. Go ahead, waste all the GPU memory.");
     public T3TextureType mType => (T3TextureType)GetRequired<int>("mType", "'mType' is AWOL. Type? What's that?");
