@@ -1,14 +1,17 @@
 ﻿using BCnEncoder.Decoder;
 using BCnEncoder.Shared.ImageFiles;
+using Hexa.NET.DirectXTex;
 using PVRTexLib;
 using System.Runtime.InteropServices;
 using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
+using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 
 namespace TelltaleLocalizationTool.Helper;
@@ -23,12 +26,9 @@ public static class Extensions
 
         XmlNodeList? nodes = element.SelectNodes(xpath);
 
-        if (nodes is null || nodes.Count == 0)
-        {
-            throw new InvalidDataException($"I can't find <{tagName}> in xml!");
-        }
-
-        return nodes.Count > 1
+        return nodes is null || nodes.Count == 0
+            ? throw new InvalidDataException($"I can't find <{tagName}> in xml!")
+            : nodes.Count > 1
             ? throw new InvalidDataException($"I found more than one <{tagName}> in xml!")
             : (XmlElement)(nodes[0] ?? throw new NullReferenceException("WTF!?"));
     }
@@ -317,21 +317,45 @@ public static class Extensions
         }
     }
 
-    public static void ResetForWD3NF_Font(this D3DTXV9 d3dtx)
+
+    public static void ResetForWD3NF_Font(this D3DTXV9 d3dtx, string fontName = "tempforcommit")
     {
-        throw new NotImplementedException($"{nameof(Extensions)}.{nameof(ResetForWD3NF_Font)}");
+        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
+        Config config = Program.Config;
+        //========= Metadata =========
+        metadata.mSamplerState.mData = config.mSamplerState;
+        metadata.mPlatform.EnumItem = config.mPlatform;
+        metadata.mName = fontName;
+        metadata.mImportName = Config.GithubPage;
+        metadata.mImportScale = config.mImportScale;
+        metadata.mToolProps.mbHasProps = config.mToolProps;
+        metadata.mTextureInfo.mDepth = config.mDepth;
+        metadata.mSurfaceFormat = config.mSurfaceFormat;
+        metadata.mTextureLayout = config.mTextureLayout;
+        metadata.mSurfaceGamma = config.mSurfaceGamma;
+        metadata.mSurfaceMultisample = config.mSurfaceMultisample;
+        metadata.mType = config.mType;
+        metadata.mSwizzle.mSwizzle = config.mSwizzle;
+        metadata.mSpecularGlossExponent = config.mSpecularGlossExponent;
+        metadata.mHDRLightmapScale = config.mHDRLightmapScale;
+        metadata.mToonGradientCutoff = config.mToonGradientCutoff;
+        metadata.mAlphaMode = config.mAlphaMode;
+        metadata.mColorMode = config.mColorMode;
+        metadata.mUVOffset = new() { mX = config.mUVOffset[0], mY = config.mUVOffset[1] };
+        metadata.mUVScale = new() { mX = config.mUVScale[0], mY = config.mUVScale[1] };
+        
     }
 
-    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType textureType = TextureType.DDS)
+    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType toTextureType = TextureType.DDS)
     {
         int counter = 0;
-        Directory.CreateDirectory(outputDirectory);
+        _ = Directory.CreateDirectory(outputDirectory);
         foreach (D3DTXV9 d3dtxv9 in d3dtxList)
         {
             bool autoPixelData = d3dtxv9.AutoPixelData;
             bool writeHeader = d3dtxv9.WriteMsv6Header;
             //I know I could add an in-memory method to the Converter class for converting D3dtx to any format, but I prefer using it this way...
-            string outputName = $"{fontName}-{d3dtxv9.mD3dtxMetaData.mName}-{counter}{Converter.GetExtensionFromTextureType(textureType)}";
+            string outputName = $"{fontName}{FontTexName.Separator}{d3dtxv9.mD3dtxMetaData.mName}{FontTexName.Separator}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
             string outputD3dtxName = $"{d3dtxv9.mD3dtxMetaData.mName}{Converter.GetExtensionFromTextureType(TextureType.D3DTX)}";
 
             string finalOutput = Path.Combine(outputDirectory, outputName);
@@ -352,5 +376,17 @@ public static class Extensions
             counter++;
         }
 
+    }
+
+
+    public static void ImportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string inputDirectory, TextureType fromTextureType = TextureType.DDS)
+    {
+        IEnumerable<FontTexName> fontTexNames = FontTexName.GetSortedTexFiles(inputDirectory, $"{fontName}*{FontTexName.Separator}*{Converter.GetExtensionFromTextureType(fromTextureType)}");
+        foreach (FontTexName fontTexName in fontTexNames)
+        {
+            //Convert input to d3dtx
+            //We need to convert pixel data to rgba... for this version, we need just rgbamap
+            throw new NotImplementedException();
+        }
     }
 }
