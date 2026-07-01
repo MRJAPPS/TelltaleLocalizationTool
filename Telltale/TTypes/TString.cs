@@ -279,7 +279,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     public static implicit operator TString(string s)
     {
-        return [.. s];
+        return new TString(s, -1, false);
     }
 
     #endregion
@@ -288,7 +288,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     public static TString FromValue(string value)
     {
-        return [.. value];
+        return new TString(value, -1, false);
     }
 
     #endregion
@@ -333,10 +333,10 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
     #endregion
 
     #region Public
-    
+
     public string NormalizePersian() => Value.NormalizePersian();
 
     public string FixPersian() => Value.FixPersian();
-    
+
     #endregion
 }
