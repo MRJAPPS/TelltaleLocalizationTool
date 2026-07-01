@@ -66,7 +66,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     #endregion
 
-    #region Publci props
+    #region public props
 
     public bool AutoPixelData { get => autoPixelData; set => autoPixelData = value; }
 

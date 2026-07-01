@@ -1,17 +1,15 @@
 ﻿using BCnEncoder.Decoder;
 using BCnEncoder.Shared.ImageFiles;
-using Hexa.NET.DirectXTex;
 using PVRTexLib;
 using System.Runtime.InteropServices;
 using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
-using TelltaleLocalizationTool.Telltale.Graphics;
+using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 
 namespace TelltaleLocalizationTool.Helper;
@@ -318,11 +316,12 @@ public static class Extensions
     }
 
 
-    public static void ResetForWD3NF_Font(this D3DTXV9 d3dtx, string fontName = "tempforcommit")
+    public static void ResetForWD3NF_Font(this D3DTXV9 d3dtx, string fontName)
     {
         D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
         Config config = Program.Config;
         //========= Metadata =========
+        metadata.mVersion = 9;
         metadata.mSamplerState.mData = config.mSamplerState;
         metadata.mPlatform.EnumItem = config.mPlatform;
         metadata.mName = fontName;
@@ -343,7 +342,8 @@ public static class Extensions
         metadata.mColorMode = config.mColorMode;
         metadata.mUVOffset = new() { mX = config.mUVOffset[0], mY = config.mUVOffset[1] };
         metadata.mUVScale = new() { mX = config.mUVScale[0], mY = config.mUVScale[1] };
-        
+        //========= D3dtx =========
+        d3dtx.ReadMsv6Header = false;
     }
 
     public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType toTextureType = TextureType.DDS)
@@ -388,5 +388,28 @@ public static class Extensions
             //We need to convert pixel data to rgba... for this version, we need just rgbamap
             throw new NotImplementedException();
         }
+    }
+
+    public static void Load_DDS_HEADER(this DDS_HEADER ddsHeader, string inputFile)
+    {
+        if (!File.Exists(inputFile))
+        {
+            throw new FileNotFoundException("Please provide a file with a DDS magic that actually exists!", inputFile);
+        }
+        using FileStream inputFs = new(inputFile, FileMode.Open, FileAccess.Read);
+        using BinaryReader reader = new(inputFs);
+        ddsHeader.Parse(reader);
+    }
+
+    public static byte[] Get_DDS_DATA(this DDS_HEADER ddsHeader, string inputFile)
+    {
+        if (!File.Exists(inputFile))
+        {
+            throw new FileNotFoundException("Please provide a file with a DDS magic that actually exists!", inputFile);
+        }
+        using FileStream inputFs = new(inputFile, FileMode.Open, FileAccess.Read);
+        using BinaryReader reader = new(inputFs);
+        ddsHeader.Parse(reader);
+        return reader.ReadBytes((int)(inputFs.Length - inputFs.Position));
     }
 }
