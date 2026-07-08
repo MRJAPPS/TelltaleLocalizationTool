@@ -67,7 +67,10 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
     /// Reserved
     /// </summary>
     public uint dwReserved2 { get; private set; }
-
+    /// <summary>
+    /// Reserved
+    /// </summary>
+    public uint dwReserved3 { get; private set; }
     #endregion
 
     #region Implement
@@ -96,6 +99,7 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
         dwCaps3 = reader.ReadUInt32();
         dwCaps4 = reader.ReadUInt32();
         dwReserved2 = reader.ReadUInt32();
+        dwReserved3 = reader.ReadUInt32();
     }
 
     public void Parse(XmlElement reader, string name)
