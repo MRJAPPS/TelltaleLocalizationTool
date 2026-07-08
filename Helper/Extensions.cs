@@ -328,7 +328,7 @@ public static class Extensions
         metadata.mImportName = Config.GithubPage;
         metadata.mImportScale = config.mImportScale;
         metadata.mToolProps.mbHasProps = config.mToolProps;
-        metadata.mTextureInfo.mDepth = config.mDepth;
+        metadata.mSurfaceFormat = T3SurfaceFormat.ETC2_RGBA;
         metadata.mSurfaceFormat = config.mSurfaceFormat;
         metadata.mTextureLayout = config.mTextureLayout;
         metadata.mSurfaceGamma = config.mSurfaceGamma;

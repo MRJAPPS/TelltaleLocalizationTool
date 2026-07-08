@@ -54,7 +54,6 @@ public class Config
     public uint mNumMipLevels => GetRequired<uint>("mNumMipLevels", "'mNumMipLevels' is missing. Flat textures only? How retro.");
     public uint mDepth => GetRequired<uint>("mDepth", "'mDepth' went missing. Zero-depth texture — a true minimalist approach.");
     public uint mArraySize => GetRequired<uint>("mArraySize", "'mArraySize' is gone. Array of nothing, my favorite.");
-    public T3SurfaceFormat mSurfaceFormat => (T3SurfaceFormat)GetRequired<int>("mSurfaceFormat", "'mSurfaceFormat'? Never heard of it. (Because it's not in the config.)");
     public T3TextureLayout mTextureLayout => (T3TextureLayout)GetRequired<int>("mTextureLayout", "'mTextureLayout' is out to lunch. Maybe put it back?");
 
     public T3SurfaceGamma mSurfaceGamma => (T3SurfaceGamma)GetRequired<int>("mSurfaceGamma", "'mSurfaceGamma' not found. why?");
