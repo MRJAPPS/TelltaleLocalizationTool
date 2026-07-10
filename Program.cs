@@ -1,6 +1,5 @@
 ﻿using System.Xml;
 using TelltaleLocalizationTool.Helper;
-using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
@@ -112,7 +111,9 @@ internal class Program
     private static void TestFont(string inputPath)
     {
         string outputDir = Path.GetDirectoryName(inputPath) ?? throw new NullReferenceException("I can't find your font dir!");
-        string exportDir = Path.Combine(outputDir, "ExportImport");
+        string exportImportDir = Path.Combine(outputDir, "ExportImport");
+        string ExportFnt = Path.Combine(exportImportDir, "Export", $"{Path.GetFileNameWithoutExtension(inputPath)}{Formats.fntExtension}");
+        string ImportFnt = Path.Combine(exportImportDir, "Import", $"{Path.GetFileNameWithoutExtension(inputPath)}{Formats.fntExtension}");
         string fontName = Path.GetFileNameWithoutExtension(inputPath);
         string outputPath = Path.Combine(outputDir, $"{fontName}_test.font");
         string outputXmlFile = Path.Combine(outputDir, $"{fontName}_test.xml");
@@ -126,17 +127,27 @@ internal class Program
         {
             font.Parse(reader);
             font.Write(writer);
-            Directory.CreateDirectory(exportDir);
-            font.Export(exportDir);
+            _ = Directory.CreateDirectory(exportImportDir);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(ExportFnt)!);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(ImportFnt)!);
+            font.Export(ExportFnt);
+#if false //Export and Import aren't fully implemented yet, so for now we're just focusing on exporting font atlases until the .fnt file is fully built for export — later, that same file and its atlases can be imported.
+            File.Copy(ExportFnt, ImportFnt, true);
+            font.Import(ImportFnt);
+#endif
         }
 
         if (!CompareFilesByteByByte(inputPath, outputPath))
+        {
             throw new Exception("Binary write-back does not match original file.");
+        }
 
         XmlDocument odoc = new();
-        odoc.AppendChild(odoc.CreateElement("Root"));
+        _ = odoc.AppendChild(odoc.CreateElement("Root"));
         if (odoc.DocumentElement == null)
+        {
             throw new NullReferenceException("I can't find your root element! WTF<!>?");
+        }
 
         font.Write(odoc.DocumentElement, "myfont");
         odoc.Save(outputXmlFile);
@@ -145,7 +156,9 @@ internal class Program
         XmlDocument idoc = new();
         idoc.Load(outputXmlFile);
         if (idoc.DocumentElement == null)
+        {
             throw new NullReferenceException("I can't find your root element! WTF<!>?");
+        }
 
         rxmlFont.Parse(idoc.DocumentElement, "myfont");
 
@@ -156,7 +169,9 @@ internal class Program
         }
 
         if (!CompareFilesByteByByte(inputPath, outputXmlFontFile))
+        {
             throw new Exception("XML round-trip output does not match original file.");
+        }
     }
 
     // Helper: compare two files byte by byte, printing colored results

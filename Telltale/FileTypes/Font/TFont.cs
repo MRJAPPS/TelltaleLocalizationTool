@@ -77,12 +77,17 @@ public class TFont : ReportBase, IFnt
 
     public void Export(string fntPath)//Just for loadedFont
     {
-        mTexturePages.ExportTextures(mName, fntPath);
+        CheckImportExportArgs(fntPath, false);
+        mTexturePages.ExportTextures(mName, Path.GetDirectoryName(fntPath)!, bmpFontMode: true);
+        //Next step: Generate fnt xml file from glyphs and metadata
     }
 
     public void Import(string fntPath)
     {
-        throw new NotImplementedException($"{nameof(TFont)}.{nameof(Import)}");
+        CheckImportExportArgs(fntPath, true);
+        mName = Path.GetFileNameWithoutExtension(fntPath);
+        mTexturePages.ImportTextures(mName, Path.GetDirectoryName(fntPath)!, bmfontMode: true);
+        //Next step: Map fnt file to font
     }
 
     public void Parse(BinaryReader reader)
@@ -241,5 +246,21 @@ public class TFont : ReportBase, IFnt
         _ = element.AppendChild(b64);
     }
 
+    #endregion
+
+    #region Error Checking
+    public void CheckImportExportArgs(string fntPath, bool import)
+    {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(fntPath, nameof(fntPath));
+        string directory = Path.GetDirectoryName(fntPath) ?? throw new DirectoryNotFoundException($"I couldn't find the directory associated with fntPath; the path you gave must be an absolute .fnt file path, not relative!{Environment.NewLine}\"{fntPath}\"");
+        if (!import && !Directory.Exists(directory))
+        {
+            throw new DirectoryNotFoundException($"I couldn't find the directory associated with fntPath!{Environment.NewLine}\"{directory}\"");
+        }
+        if (import && !File.Exists(fntPath))
+        {
+            throw new FileNotFoundException($"Couldn't find the .fnt file to import — you sure it exists?{Environment.NewLine}\"{fntPath}\"");
+        }
+    }
     #endregion
 }
