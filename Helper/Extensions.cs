@@ -1,15 +1,19 @@
 ﻿using BCnEncoder.Decoder;
+using BCnEncoder.Encoder;
 using BCnEncoder.Shared.ImageFiles;
 using PVRTexLib;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
+using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 
 namespace TelltaleLocalizationTool.Helper;
@@ -316,20 +320,23 @@ public static class Extensions
     }
 
 
-    public static void ResetForWD3NF_Font(this D3DTXV9 d3dtx, string fontName)
+    public static void MapDdsToD3dtxForFont(this D3DTXV9 d3dtx, DdsD3dtx ddsData = default, string? fontName = default)
     {
         D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
+        TextureInfo textureInfo = metadata.mTextureInfo;
+        StreamHeaderInfo streamHeaderInfo = metadata.mStreamHeader;
+        RegionStreamHeader regionStreamHeaderForAdd;
         Config config = Program.Config;
+        const int MipMapCount = 1, AuxDataCount = 0, DefInxe = 0, BlockSizeBytesEtc2 = 16;
         //========= Metadata =========
         metadata.mVersion = 9;
         metadata.mSamplerState.mData = config.mSamplerState;
         metadata.mPlatform.EnumItem = config.mPlatform;
-        metadata.mName = fontName;
+        metadata.mName = fontName ?? "MyFont";
         metadata.mImportName = Config.GithubPage;
         metadata.mImportScale = config.mImportScale;
         metadata.mToolProps.mbHasProps = config.mToolProps;
         metadata.mSurfaceFormat = T3SurfaceFormat.ETC2_RGBA;
-        metadata.mSurfaceFormat = config.mSurfaceFormat;
         metadata.mTextureLayout = config.mTextureLayout;
         metadata.mSurfaceGamma = config.mSurfaceGamma;
         metadata.mSurfaceMultisample = config.mSurfaceMultisample;
@@ -342,11 +349,40 @@ public static class Extensions
         metadata.mColorMode = config.mColorMode;
         metadata.mUVOffset = new() { mX = config.mUVOffset[0], mY = config.mUVOffset[1] };
         metadata.mUVScale = new() { mX = config.mUVScale[0], mY = config.mUVScale[1] };
+        //========= TextureInfo =========
+        textureInfo.mDepth = config.mDepth;
+        textureInfo.mArraySize = MipMapCount;
+        textureInfo.mWidth = ddsData.Width;
+        textureInfo.mHeight = ddsData.Height;
+        textureInfo.mNumMipLevels = MipMapCount;
+        //========= StreamHeaderInfo =========
+        streamHeaderInfo.mAuxDataCount = AuxDataCount;
+        streamHeaderInfo.mTotalDataSize = ddsData.PixelData.Length;
+        streamHeaderInfo.mRegionCount = MipMapCount;
+        //========= RegionStreamHeader(ETC2_RGBA pitch,slicePitch) =========
+        int BlocksPerRow = (int)textureInfo.mWidth / 4;
+        int BlocksPerCol = (int)textureInfo.mHeight / 4;
+        int pitch = BlocksPerRow * BlockSizeBytesEtc2;
+        int slicePitch = ddsData.PixelData.Length;
+        //========= RegionStreamHeader =========
+        regionStreamHeaderForAdd = new(metadata.mVersion)
+        {
+            mDataSize = (uint)ddsData.PixelData.Length,
+            mFaceIndex = DefInxe,
+            mMipCount = MipMapCount,
+            mMipIndex = DefInxe,
+            mPitch = pitch,
+            mSlicePitch = slicePitch
+        };
+        streamHeaderInfo.Add(regionStreamHeaderForAdd);
+        //========= PixelData =========
+        d3dtx.mPixelData.Add(ddsData.PixelData);
         //========= D3dtx =========
         d3dtx.ReadMsv6Header = false;
+        d3dtx.WriteMsv6Header = true;
     }
 
-    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType toTextureType = TextureType.DDS)
+    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
     {
         int counter = 0;
         _ = Directory.CreateDirectory(outputDirectory);
@@ -355,7 +391,8 @@ public static class Extensions
             bool autoPixelData = d3dtxv9.AutoPixelData;
             bool writeHeader = d3dtxv9.WriteMsv6Header;
             //I know I could add an in-memory method to the Converter class for converting D3dtx to any format, but I prefer using it this way...
-            string outputName = $"{fontName}{FontTexName.Separator}{d3dtxv9.mD3dtxMetaData.mName}{FontTexName.Separator}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
+            string outputName = bmpFontMode ? $"{fontName}{Separator()}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}" :
+                $"{fontName}{Separator()}{d3dtxv9.mD3dtxMetaData.mName}{Separator()}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
             string outputD3dtxName = $"{d3dtxv9.mD3dtxMetaData.mName}{Converter.GetExtensionFromTextureType(TextureType.D3DTX)}";
 
             string finalOutput = Path.Combine(outputDirectory, outputName);
@@ -374,19 +411,23 @@ public static class Extensions
             d3dtxTempW.Close();
             Converter.ConvertTextureFromD3DtxToOthersV9(tempD3dtx.Path, finalOutput, new());
             counter++;
+            //local methods:
+            string Separator() => bmpFontMode ? FontTexName.bmpFontSparator : FontTexName.DefSeparator;
         }
 
     }
 
 
-    public static void ImportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string inputDirectory, TextureType fromTextureType = TextureType.DDS)
+    public static void ImportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string inputDirectory, TextureType fromTextureType = TextureType.DDS, bool bmfontMode = false)
     {
-        IEnumerable<FontTexName> fontTexNames = FontTexName.GetSortedTexFiles(inputDirectory, $"{fontName}*{FontTexName.Separator}*{Converter.GetExtensionFromTextureType(fromTextureType)}");
+        IEnumerable<FontTexName> fontTexNames = FontTexName.GetSortedTexFiles(inputDirectory,
+            $"{fontName}*{(bmfontMode ? FontTexName.bmpFontSparator : FontTexName.DefSeparator)}*{Converter.GetExtensionFromTextureType(fromTextureType)}",
+            bmfontMode);
         foreach (FontTexName fontTexName in fontTexNames)
         {
-            //Convert input to d3dtx
-            //We need to convert pixel data to rgba... for this version, we need just rgbamap
-            throw new NotImplementedException();
+            string input = fontTexName.FullPath;
+            D3DTXV9 d3dtxv9 = Converter.ConvertDdsToD3dtx(input, fontName);
+            d3dtxList.Add(d3dtxv9);
         }
     }
 

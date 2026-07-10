@@ -1,51 +1,54 @@
 ﻿using Hexa.NET.DirectXTex;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using TelltaleLocalizationTool.Helper;
-using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
+using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics.Image;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 
 
 public static class Converter
 {
-    public static TextureType GetTextureTypeFromExtension(string fileName) => Path.GetExtension(fileName) switch
+    public static TextureType GetTextureTypeFromExtension(string fileName)
     {
-        Formats.d3dtxExtension => TextureType.D3DTX,
-        Formats.ddsExtension => TextureType.DDS,
-        Formats.ktxExtension => TextureType.KTX,
-        Formats.ktx2Extension => TextureType.KTX2,
-        Formats.pngExtension => TextureType.PNG,
-        Formats.jpegExtension => TextureType.JPEG,
-        Formats.bmpExtension => TextureType.BMP,
-        Formats.tifExtension => TextureType.TIFF,
-        Formats.tgaExtension => TextureType.TGA,
-        Formats.hdrExtension => TextureType.HDR,
-        _ => throw new FormatException($"I looked but couldn't find a {nameof(TextureType)} for format {Path.GetExtension(fileName)}!"),
-    };
+        return Path.GetExtension(fileName) switch
+        {
+            Formats.d3dtxExtension => TextureType.D3DTX,
+            Formats.ddsExtension => TextureType.DDS,
+            Formats.ktxExtension => TextureType.KTX,
+            Formats.ktx2Extension => TextureType.KTX2,
+            Formats.pngExtension => TextureType.PNG,
+            Formats.jpegExtension => TextureType.JPEG,
+            Formats.bmpExtension => TextureType.BMP,
+            Formats.tifExtension => TextureType.TIFF,
+            Formats.tgaExtension => TextureType.TGA,
+            Formats.hdrExtension => TextureType.HDR,
+            _ => throw new FormatException($"I looked but couldn't find a {nameof(TextureType)} for format {Path.GetExtension(fileName)}!"),
+        };
+    }
 
-    public static string GetExtensionFromTextureType(TextureType textureType) => textureType switch
+    public static string GetExtensionFromTextureType(TextureType textureType)
     {
-        TextureType.D3DTX => Formats.d3dtxExtension,
-        TextureType.DDS => Formats.ddsExtension,
-        TextureType.KTX => Formats.ktxExtension,
-        TextureType.KTX2 => Formats.ktx2Extension,
-        TextureType.PNG => Formats.pngExtension,
-        TextureType.JPEG => Formats.jpegExtension,
-        TextureType.BMP => Formats.bmpExtension,
-        TextureType.TIFF => Formats.tifExtension,
-        TextureType.TGA => Formats.tgaExtension,
-        TextureType.HDR => Formats.hdrExtension,
-        _ => throw new ArgumentOutOfRangeException(nameof(textureType), textureType, $"No extension defined for {textureType}.")
-    };
+        return textureType switch
+        {
+            TextureType.D3DTX => Formats.d3dtxExtension,
+            TextureType.DDS => Formats.ddsExtension,
+            TextureType.KTX => Formats.ktxExtension,
+            TextureType.KTX2 => Formats.ktx2Extension,
+            TextureType.PNG => Formats.pngExtension,
+            TextureType.JPEG => Formats.jpegExtension,
+            TextureType.BMP => Formats.bmpExtension,
+            TextureType.TIFF => Formats.tifExtension,
+            TextureType.TGA => Formats.tgaExtension,
+            TextureType.HDR => Formats.hdrExtension,
+            _ => throw new ArgumentOutOfRangeException(nameof(textureType), textureType, $"No extension defined for {textureType}.")
+        };
+    }
 
     public static void ConvertTextureFromD3DtxToOthersV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options)
     {
@@ -81,7 +84,7 @@ public static class Converter
         }
         else
         {
-            d3dtxMaster.ResetForWD3NF_Font();
+            throw new FileNotFoundException("Couldn't find the D3dtx XML file to build the D3dtx.");
         }
 
         DDSFlags flags = d3dtxMaster.IsLegacyD3DTX() ? DDSFlags.ForceDx9Legacy : DDSFlags.None;
@@ -121,6 +124,61 @@ public static class Converter
 
     #region NEW
 
+    public static D3DTXV9 ConvertDdsToD3dtx(string ddsFile, string? fontName = default)
+    {
+        ArgumentNullException.ThrowIfNull(ddsFile, nameof(ddsFile));
+        CheckArgsExtension(ddsFile);
+
+        DdsD3dtx ddsData;
+        D3DTXV9 result = new();
+        using TempFile etc2rgbaDds = new(ddsFile);
+
+        _ = CompressWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
+        ddsData = GetD3dtxDataFormDds(etc2rgbaDds.Path);
+        result.MapDdsToD3dtxForFont(ddsData, fontName);
+        return result;
+        //local methods:
+        static void CheckArgsExtension(string ddsFile)
+        {
+            string ddsExtension = Path.GetExtension(ddsFile);
+            if (!ddsExtension.Equals(Formats.ddsExtension))
+            {
+                throw new NotSupportedException($"We don't support {ddsExtension} extension for input file(we need {Formats.ddsExtension})!");
+            }
+        }
+    }
+
+    public static void ConvertDdsToD3dtx(string ddsFile, string d3dtxFile, string? fontName = default, bool writeXml = true)
+    {
+        CheckArgs(ddsFile, d3dtxFile);
+        CheckArgsExtension(ddsFile, d3dtxFile);
+
+        DdsD3dtx ddsData;
+        D3DTXV9 d3dtx = new();
+        using TempFile etc2rgbaDds = new(ddsFile);
+
+        _ = CompressWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
+        ddsData = GetD3dtxDataFormDds(etc2rgbaDds.Path);
+        d3dtx.MapDdsToD3dtxForFont(ddsData, fontName);
+        d3dtx.WriteD3DTX(d3dtxFile);
+        if (writeXml)
+            d3dtx.WriteD3DTXXML(Path.ChangeExtension(d3dtxFile, Formats.xmlExtension));
+        //local methods:
+        static void CheckArgsExtension(string ddsFile, string d3dtxFile)
+        {
+            string ddsExtension = Path.GetExtension(ddsFile);
+            string d3dtxExtension = Path.GetExtension(d3dtxFile);
+            if (!ddsExtension.Equals(Formats.ddsExtension))
+            {
+                throw new NotSupportedException($"We don't support {ddsExtension} extension for input file(we need {Formats.ddsExtension})!");
+            }
+            if (!d3dtxExtension.Equals(Formats.d3dtxExtension))
+            {
+                throw new NotSupportedException($"We don't support {d3dtxExtension} extension for output file!(we need {Formats.d3dtxExtension})");
+            }
+        }
+    }
+
     public static Size ConvertPngToBmp(string inputPngPath, string outputBmpPath)
     {
         Texture png = new(inputPngPath, TextureType.PNG);
@@ -143,7 +201,9 @@ public static class Converter
         string args = $"-fd {compressAlgo} \"{input}\" \"{output}\"";
 
         if (!CheckArgs(input, output, @throw))
+        {
             return false;
+        }
 
         ProcessStartInfo psi = new()
         {
@@ -174,25 +234,19 @@ public static class Converter
 #endif
 
         bool result = process.ExitCode == 0;
-        if (@throw && !result)
-            throw new Exception($"CCLIE: [{stde}] CCLIO: [{stdo}]");
-        return result;
+        return @throw && !result ? throw new Exception($"CCLIE: [{stde}] CCLIO: [{stdo}]") : result;
     }
 
     private static bool CheckArgs(string input, string output, bool @throw)
     {
         if (string.IsNullOrWhiteSpace(input))
         {
-            if (@throw)
-                throw new ArgumentException("Input path cannot be null or empty!", nameof(input));
-            return false;
+            return @throw ? throw new ArgumentException("Input path cannot be null or empty!", nameof(input)) : false;
         }
 
         if (string.IsNullOrWhiteSpace(output))
         {
-            if (@throw)
-                throw new ArgumentException("Output path cannot be null or empty!", nameof(output));
-            return false;
+            return @throw ? throw new ArgumentException("Output path cannot be null or empty!", nameof(output)) : false;
         }
 
         return true;
@@ -204,6 +258,13 @@ public static class Converter
         {
             throw new ArgumentException("Most likely the output folder couldn't be found or one of the arguments is null.");
         }
+    }
+
+    private static DdsD3dtx GetD3dtxDataFormDds(string ddsFile)
+    {
+        DDS_HEADER ddsHeader = new();
+        ddsHeader.Load_DDS_HEADER(ddsFile);
+        return new(ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.Get_DDS_DATA(ddsFile));
     }
 
     #endregion
