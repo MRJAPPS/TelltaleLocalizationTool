@@ -21,4 +21,5 @@ internal class Formats
     public const string tgaExtension = ".tga";
     public const string hdrExtension = ".hdr";
     public const string xmlExtension = ".xml";
+    public const string fntExtension = ".fnt";
 }
