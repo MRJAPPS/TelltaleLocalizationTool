@@ -4,7 +4,6 @@ using System.Xml;
 using System.Xml.Linq;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 

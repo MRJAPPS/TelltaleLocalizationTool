@@ -1,8 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.ComponentModel;
-using System.IO.Pipes;
-using System.Linq;
-using System.Reflection.PortableExecutable;
+﻿using System.ComponentModel;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
@@ -19,7 +15,7 @@ namespace TelltaleLocalizationTool.Telltale.FileTypes.Font;
 public class TFont : ReportBase, IFnt
 {
     #region Private constants
-    private const uint BasicTypes = sizeof(float) * 4 + sizeof(bool) * 2;
+    private const uint BasicTypes = (sizeof(float) * 4) + (sizeof(bool) * 2);
     #endregion
 
     #region private fields

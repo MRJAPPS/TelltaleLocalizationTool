@@ -1,7 +1,7 @@
 ﻿using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
+namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 public class FChar : ITelltaleObject
 {
     #region Public Props
@@ -45,7 +45,7 @@ public class FChar : ITelltaleObject
     {
         XmlAttribute charCodeAtt = element.OwnerDocument.CreateAttribute(name);
         charCodeAtt.Value = CharCode.ToString();
-        element.Attributes.Append(charCodeAtt);
+        _ = element.Attributes.Append(charCodeAtt);
     }
 
     #endregion
