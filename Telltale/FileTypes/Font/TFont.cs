@@ -6,13 +6,20 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Structs;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 using TelltaleLocalizationTool.Telltale.TTypes;
+using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font;
 
 [Description("Reading a font!(Telltale font file)")]
-public class TFont : ReportBase, IFnt
+public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase
+#if IFNT
+    , IFnt
+#else
+    , ITelltaleFile
+#endif
 {
     #region Private constants
     private const uint BasicTypes = (sizeof(float) * 4) + (sizeof(bool) * 2);
@@ -39,21 +46,72 @@ public class TFont : ReportBase, IFnt
         }
     }
 
+    /// <summary>
+    /// Honestly, I didn't define className as TelltaleObject because I couldn't be bothered — marking it as a //TODO for later.
+    /// </summary>
+    static readonly ClassNames[] mDefaultClassNamesWD3 =
+[
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x9A3A4A9E63375381 },
+        mVersionCRC = 0xF28FDEE8
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0xAB4BFA2304C2292C },
+        mVersionCRC = 0x3FE91201
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x53A0B3AA86983895 },
+        mVersionCRC = 0x376CAB81
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x3E249E7E6F38CCE2 },
+        mVersionCRC = 0xA730AB61
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x937F5D487A0988E3 },
+        mVersionCRC = 0xB2E3CEB0
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x8E88FBB78405598C },
+        mVersionCRC = 0xA4AC7DAF
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0xFA6C8889876EBA7A },
+        mVersionCRC = 0x5B484905
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x7BBCA244E61F1A07 },
+        mVersionCRC = 0xE19FCC02
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0xEFA1BA20E620F40F },
+        mVersionCRC = 0x9AF4FC40
+    },
+    new() {
+        mTypeNameCRC = new Symbol { mCrc64 = 0x584619F1AE300EEA },
+        mVersionCRC = 0x5057EA61
+    }
+];
+
     #endregion
 
     #region Public props
+
+    public bool ReadMsv6Header { get => rMsv6Header; set => rMsv6Header = value; }
+
+    public bool WriteMsv6Header { get => wMsv6Header; set => wMsv6Header = value; }
 
     public TString mName { get; set; } = [];
 
     public bool mbUnicode { get; set; } //TODO: We need a new type for TelltaleBool! TBool!!! Remove ByteFunctions.ReadTBool... you know what u should do..
 
-    public float mHeight;
+    public float mHeight { get; set; }
 
-    public float mBase;
+    public float mBase { get; set; }
 
-    public float mWiiScale;
+    public float mWiiScale { get; set; }
 
-    public float mFontScale;
+    public float mFontScale { get; set; }
 
     public GlyphInfoCollection mGlyphInfos { get; set; } = [];
 
@@ -70,7 +128,7 @@ public class TFont : ReportBase, IFnt
     public uint Size => defaultSectionChunkSize + asyncSectionChunkSize;
 
     public long Position { get; private set; }
-
+#if IFNT
     public void Export(string fntPath)//Just for loadedFont
     {
         CheckImportExportArgs(fntPath, false);
@@ -85,6 +143,7 @@ public class TFont : ReportBase, IFnt
         mTexturePages.ImportTextures(mName, Path.GetDirectoryName(fntPath)!, bmfontMode: true);
         //Next step: Map fnt file to font
     }
+#endif
 
     public void Parse(BinaryReader reader)
     {
@@ -154,6 +213,11 @@ public class TFont : ReportBase, IFnt
 
     public void ParseMetaHeader(BinaryReader reader)
     {//TODO: This method can be refactored too :| what the fuck are u doing?
+        if (!rMsv6Header)
+        {
+            return;
+        }
+
         long Position = reader.BaseStream.Position;
         uint magic = reader.ReadUInt32();
         if (magic != Config.Msv6Magic)
@@ -172,9 +236,22 @@ public class TFont : ReportBase, IFnt
 
     public void WriteMetaHeader(BinaryWriter writer)
     {
-        if (Header == null)
+        if (!wMsv6Header)
+        {
+            return;
+        }
+
+        if (Header == null && rMsv6Header)
         {
             throw new NullReferenceException($"{nameof(Header)} is not properly initialized!");
+        }
+        else if (Header == null)
+        {
+            //Recreate header
+            MSV6 defaultHeaderForWalkingDead3NewF = (MSV6)MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
+            defaultHeaderForWalkingDead3NewF.mClassNamesLength = (uint)mDefaultClassNamesWD3.Length;
+            defaultHeaderForWalkingDead3NewF.mClassNames = mDefaultClassNamesWD3;
+            Header = defaultHeaderForWalkingDead3NewF;
         }
 
         uint debugSectionChunkSize = ((MSV6)Header).mDebugSectionChunkSize;
@@ -194,6 +271,10 @@ public class TFont : ReportBase, IFnt
         XmlAttribute mWiiScale = element.OwnerDocument.CreateAttribute(nameof(this.mWiiScale));
         XmlAttribute mFontScale = element.OwnerDocument.CreateAttribute(nameof(this.mFontScale));
         XmlAttribute mIsDistanceField = element.OwnerDocument.CreateAttribute(nameof(this.mIsDistanceField));
+        XmlAttribute rMsv6HeaderAtt, wMsv6HeaderAtt;
+
+        rMsv6HeaderAtt = element.OwnerDocument.CreateAttribute(nameof(rMsv6Header));
+        wMsv6HeaderAtt = element.OwnerDocument.CreateAttribute(nameof(wMsv6Header));
 
         mbUnicode.Value = this.mbUnicode.ToString();
         mHeight.Value = this.mHeight.ToString();
@@ -208,6 +289,8 @@ public class TFont : ReportBase, IFnt
         _ = element.Attributes.Append(mWiiScale);
         _ = element.Attributes.Append(mFontScale);
         _ = element.Attributes.Append(mIsDistanceField);
+        _ = element.Attributes.Append(rMsv6HeaderAtt);
+        _ = element.Attributes.Append(wMsv6HeaderAtt);
     }
 
     private void ParseBasicTypes(XmlElement element)
@@ -218,6 +301,8 @@ public class TFont : ReportBase, IFnt
         mWiiScale = float.Parse(element.GetAttribute(nameof(mWiiScale)));
         mFontScale = float.Parse(element.GetAttribute(nameof(mFontScale)));
         mIsDistanceField = bool.Parse(element.GetAttribute(nameof(mIsDistanceField)));
+        wMsv6Header = bool.Parse(element.GetAttribute(nameof(wMsv6Header)));
+        rMsv6Header = bool.Parse(element.GetAttribute(nameof(rMsv6Header)));
     }
 
     private void ParseHeader(XmlElement element)
@@ -244,7 +329,8 @@ public class TFont : ReportBase, IFnt
 
     #endregion
 
-    #region Error Checking
+    #region Error Checking'
+#if IFNT
     public void CheckImportExportArgs(string fntPath, bool import)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(fntPath, nameof(fntPath));
@@ -258,5 +344,6 @@ public class TFont : ReportBase, IFnt
             throw new FileNotFoundException($"Couldn't find the .fnt file to import — you sure it exists?{Environment.NewLine}\"{fntPath}\"");
         }
     }
+#endif
     #endregion
 }

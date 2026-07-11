@@ -1,6 +1,8 @@
-﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿#if IFNT
+namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 public interface IFnt : ITelltaleFile
 {
     public void Import(string fntPath);
     public void Export(string fntPath);
 }
+#endif

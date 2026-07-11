@@ -9,6 +9,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>$(DefineConstants);IFNT</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DefineConstants>$(DefineConstants);IFNT</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Compent.Shared.ConfigurationProvider.Json" Version="0.2.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
