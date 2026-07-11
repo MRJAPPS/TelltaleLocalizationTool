@@ -3,14 +3,17 @@ using BCnEncoder.Encoder;
 using BCnEncoder.Shared.ImageFiles;
 using PVRTexLib;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Xml;
+using System.Xml.Linq;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
@@ -391,8 +394,7 @@ public static class Extensions
             bool autoPixelData = d3dtxv9.AutoPixelData;
             bool writeHeader = d3dtxv9.WriteMsv6Header;
             //I know I could add an in-memory method to the Converter class for converting D3dtx to any format, but I prefer using it this way...
-            string outputName = bmpFontMode ? $"{fontName}{Separator()}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}" :
-                $"{fontName}{Separator()}{d3dtxv9.mD3dtxMetaData.mName}{Separator()}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
+            string outputName = FontTexName.GetFontTexOutputName(fontName, toTextureType, bmpFontMode, counter, d3dtxv9);
             string outputD3dtxName = $"{d3dtxv9.mD3dtxMetaData.mName}{Converter.GetExtensionFromTextureType(TextureType.D3DTX)}";
 
             string finalOutput = Path.Combine(outputDirectory, outputName);
@@ -411,17 +413,14 @@ public static class Extensions
             d3dtxTempW.Close();
             Converter.ConvertTextureFromD3DtxToOthersV9(tempD3dtx.Path, finalOutput, new());
             counter++;
-            //local methods:
-            string Separator() => bmpFontMode ? FontTexName.bmpFontSparator : FontTexName.DefSeparator;
         }
 
     }
 
-
     public static void ImportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string inputDirectory, TextureType fromTextureType = TextureType.DDS, bool bmfontMode = false)
     {
         IEnumerable<FontTexName> fontTexNames = FontTexName.GetSortedTexFiles(inputDirectory,
-            $"{fontName}*{(bmfontMode ? FontTexName.bmpFontSparator : FontTexName.DefSeparator)}*{Converter.GetExtensionFromTextureType(fromTextureType)}",
+            FontTexName.GetSearchPattern(fontName, fromTextureType, bmfontMode),
             bmfontMode);
         foreach (FontTexName fontTexName in fontTexNames)
         {
@@ -453,4 +452,22 @@ public static class Extensions
         ddsHeader.Parse(reader);
         return reader.ReadBytes((int)(inputFs.Length - inputFs.Position));
     }
+
+    public static void WriteTFont(this TFont font, string fontPath)
+    {
+        using FileStream fileStream = new(fontPath, FileMode.Create, FileAccess.Write);
+        using BinaryWriter binaryWriter = new(fileStream);
+        font.Write(binaryWriter);
+    }
+
+    public static void ReadTFont(this TFont font, string fontPath)
+    {
+        using FileStream fileStream = new(fontPath, FileMode.Open, FileAccess.Read);
+        using BinaryReader binaryReader = new(fileStream);
+        font.Parse(binaryReader);
+    }
+
+#if !IFNT
+    public static void Export(this TFont font, string fntPath) => font.mTexturePages.ExportTextures(font.mName, Path.GetDirectoryName(fntPath)!, bmpFontMode: true);
+#endif
 }
