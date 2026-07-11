@@ -1,4 +1,5 @@
 ﻿using System.Xml;
+using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
@@ -17,6 +18,12 @@ internal class Program
     {
         if (args.Length > 0)
         {
+            if (Path.GetExtension(args[0]).Equals(".fnt"))
+            {
+                TestFnt(args[0]);
+                return;
+            }
+
             if (Path.GetExtension(args[0]).Equals(".d3dtx"))
             {
                 TestD3dtx(args[0]);
@@ -37,6 +44,16 @@ internal class Program
             string outoutXmlLandb = GetOutputLandb(inputLandb, ".xml");
             ProccessLandbFile(inputLandb, ouputLandb, outoutXmlLandb);
         }
+    }
+
+    private static void TestFnt(string fntPath)
+    {
+        if (!File.Exists(fntPath))
+            throw new FileNotFoundException($"Are you sure file {Path.GetFileName(fntPath)} is in path {Path.GetDirectoryName(fntPath) ?? "WTF!?"}?");
+        TFont font = BmpFontFile.ToTFont(fntPath);
+        string fontPath = Path.ChangeExtension(fntPath, Formats.fontExtension);
+        font.WriteTFont(fontPath);
+        TestFont(fontPath);
     }
 
     private static void TestD3dtx(string inputPath)

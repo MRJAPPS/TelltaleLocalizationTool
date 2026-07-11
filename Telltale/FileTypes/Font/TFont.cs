@@ -282,6 +282,8 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         mWiiScale.Value = this.mWiiScale.ToString();
         mFontScale.Value = this.mFontScale.ToString();
         mIsDistanceField.Value = this.mIsDistanceField.ToString();
+        rMsv6HeaderAtt.Value = rMsv6Header.ToString();
+        wMsv6HeaderAtt.Value = wMsv6Header.ToString();
 
         _ = element.Attributes.Append(mbUnicode);
         _ = element.Attributes.Append(mHeight);

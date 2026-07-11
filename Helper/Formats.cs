@@ -22,4 +22,5 @@ internal class Formats
     public const string hdrExtension = ".hdr";
     public const string xmlExtension = ".xml";
     public const string fntExtension = ".fnt";
+    public const string fontExtension = ".font";
 }

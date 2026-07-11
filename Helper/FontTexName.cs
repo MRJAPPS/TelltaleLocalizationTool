@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.Metrics;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 
@@ -17,16 +16,9 @@ public class FontTexName
     public string? D3dtxMetaDataName { get; set; } = "";
     public string Extension { get; set; } = "";
     public string? Directory { get; set; } = "";
-    public string FullPath
-    {
-        get
-        {
-            if (!bmpFontMode)
-                return Path.Combine(Directory!, $"{FontName}{Separator}{D3dtxMetaDataName}{Separator}{Counter}{Extension}");
-            else
-                return Path.Combine(Directory!, $"{FontName}{bmpFontSparator}{Counter}{Extension}");
-        }
-    }
+    public string FullPath => !bmpFontMode
+                ? Path.Combine(Directory!, $"{FontName}{Separator}{D3dtxMetaDataName}{Separator}{Counter}{Extension}")
+                : Path.Combine(Directory!, $"{FontName}{bmpFontSparator}{Counter}{Extension}");
 
     public int Counter { get; set; }
     public TextureType FormatEnum => Converter.GetTextureTypeFromExtension(Extension);
@@ -48,7 +40,9 @@ public class FontTexName
         if (!bmpFontMode)
         {
             if (parts.Length != 3)
+            {
                 CheckProp(@throw, null, "The input file should use the \"|-_-|\" separator and contain 3 parts: fontName, mD3dtxMetaDataName, and counter.format. What you provided is broken, dude!");
+            }
             else
             {
                 FontName = parts[0];
@@ -59,7 +53,9 @@ public class FontTexName
         else
         {
             if (parts.Length != 2)
+            {
                 CheckProp(@throw, null, "The input file should use the \"_\" separator and contain 3 parts: fontName and counter.format. What you provided is broken, dude!");
+            }
             else
             {
                 FontName = parts[0];
@@ -74,16 +70,28 @@ public class FontTexName
     private void CheckProp(bool @throw, object? input, string message)
     {
         if (input is null)
-            if (@throw)
-                throw new ArgumentException(message);
-            else
-                IsSuccess = false;
+        {
+            IsSuccess = @throw ? throw new ArgumentException(message) : false;
+        }
     }
 
     public static IEnumerable<FontTexName> GetSortedTexFiles(string directory, string searchPattern, bool bmpFontMode)
-    => from file in System.IO.Directory.GetFiles(directory, searchPattern)
-       let parts = new FontTexName(file, false, bmpFontMode)
-       where parts.IsSuccess
-       orderby parts.Counter ascending
-       select parts;
+    {
+        return from file in System.IO.Directory.GetFiles(directory, searchPattern)
+               let parts = new FontTexName(file, false, bmpFontMode)
+               where parts.IsSuccess
+               orderby parts.Counter ascending
+               select parts;
+    }
+    #region Extracted methods
+    public static string GetSearchPattern(string fontName, TextureType fromTextureType, bool bmfontMode)
+    {
+        return $"{fontName}*{(bmfontMode ? bmpFontSparator : DefSeparator)}*{Converter.GetExtensionFromTextureType(fromTextureType)}";
+    }
+    public static string GetFontTexOutputName(string fontName, TextureType toTextureType, bool bmpFontMode, int counter, D3DTXV9 d3dtxv9)
+    {
+        return bmpFontMode ? $"{fontName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}" :
+                        $"{fontName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{d3dtxv9.mD3dtxMetaData.mName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
+    }
+    #endregion
 }
