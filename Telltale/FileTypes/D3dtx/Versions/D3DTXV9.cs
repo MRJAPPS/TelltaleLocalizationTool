@@ -97,6 +97,8 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     public void Parse(BinaryReader reader)
     {
+        Position = reader.BaseStream.Position;
+
         ParseMetaHeader(reader);
 
         mD3dtxMetaData.Parse(reader);
@@ -134,6 +136,8 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     public void Write(BinaryWriter writer)
     {
+        Position = writer.BaseStream.Position;
+
         WriteMetaHeader(writer);
 
         mD3dtxMetaData.Write(writer);
