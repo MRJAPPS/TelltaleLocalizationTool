@@ -5,7 +5,9 @@
 //Author: Shayan Edalatmanesh
 //=============================================================================================================================
 //Me: Thanks to Shayan Edalatmanesh for implementing this class — now I don't have to dive deep into Unicode for the time being
-
+//_____________________________________________________________________________________________________________________________
+//Every time we encounter ^...^, whatever string follows inherits the rules from the previous ^..^ block. And whenever a new ^...^ appears followed by a string, it's like a completely new string being rendered from a fresh display position starting at 0. You can test with Persian text :) — one ^...^, then Persian text, then another ^...^, then Persian text. You'll see what happens and how the ordering gets messed up. This needs to be fixed too //TODO
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace TelltaleLocalizationTool.Localize;
@@ -159,6 +161,45 @@ public static class PersianMap
         Array.Reverse(chars);
         return new string(chars);
     }
+    private static int TelltaleMarkupSkip(string line, int index, StringBuilder sb)
+    {
+        if (line[index] != '^')
+        {
+            throw new NotImplementedException("This should not happen!");
+        }
+        sb.Append('^');
+        for (index++; index < line.Length; ++index)
+        {
+            if (line[index] == '^')
+            {
+                sb.Append('^');
+                return index;
+            }
+            sb.Append(line[index]);
+        }
+        throw new FormatException("Trailing '^' not found — your string is invalid!");
+    }
+    private static string TelltaleConvertLine(string line)
+    {
+        if (string.IsNullOrEmpty(line) || !ContainsPersian(line))
+            return line;
+        StringBuilder sb = new(), temp = new();
+        for (int i = 0; i < line.Length; ++i)
+        {
+            if (line[i] == '^')
+            {
+                sb.Append(ConvertLine(temp.ToString()));
+                i = TelltaleMarkupSkip(line, i, sb);
+                temp.Clear();
+            }
+            else
+            {
+                temp.Append(line[i]);
+            }
+        }
+        sb.Append(ConvertLine(temp.ToString()));
+        return sb.ToString();
+    }
 
     private static string ConvertLine(string line)
     {
@@ -193,7 +234,7 @@ public static class PersianMap
         return res.ToString();
     }
 
-    public static string ConvertPersian(string str)
+    public static string ConvertPersian(string str, bool telltaleMode = true)
     {
         if (string.IsNullOrEmpty(str))
             return str;
@@ -202,7 +243,7 @@ public static class PersianMap
         string[] lines = str.Split('\n');
 
         for (int i = 0; i < lines.Length; i++)
-            lines[i] = ConvertLine(lines[i]);
+            lines[i] = telltaleMode ? TelltaleConvertLine(lines[i]) : ConvertLine(lines[i]);
 
         return string.Join("\n", lines);
     }
