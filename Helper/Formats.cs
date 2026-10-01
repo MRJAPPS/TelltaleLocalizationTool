@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace TelltaleLocalizationTool.Helper;
-internal class Formats
+public class Formats
 {
     public const string d3dtxExtension = ".d3dtx";
     public const string ddsExtension = ".dds";
