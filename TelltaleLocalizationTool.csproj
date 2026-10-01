@@ -24,6 +24,7 @@
     <PackageReference Include="DrSwizzler" Version="1.1.1" />
     <PackageReference Include="PVRTexLib.NET" Version="1.0.3" />
     <PackageReference Include="Hexa.NET.DirectXTex.Standalone" Version="2.0.0" />
+    <PackageReference Include="Spectre.Console" Version="0.57.2" />
   </ItemGroup>
 
   <ItemGroup>
