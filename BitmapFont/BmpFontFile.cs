@@ -184,13 +184,6 @@ public class BmpFontFile
         D3DTXV9 firstPage = font.mTexturePages.First();
         uint width = firstPage.mD3dtxMetaData.mTextureInfo.mWidth;
         uint height = firstPage.mD3dtxMetaData.mTextureInfo.mHeight;
-        foreach (D3DTXV9 page in font.mTexturePages)
-        {
-            if (width == 0 || height == 0 || page.mD3dtxMetaData.mTextureInfo.mWidth != width || page.mD3dtxMetaData.mTextureInfo.mHeight != height)
-            {
-                throw new NotSupportedException("BMFont needs all atlas pages to have the same valid dimensions!");
-            }
-        }
         foreach (GlyphInfo glyph in font.mGlyphInfos)
         {
             if (glyph.mTexturePage < 0 || glyph.mTexturePage >= font.mTexturePages.Count)
