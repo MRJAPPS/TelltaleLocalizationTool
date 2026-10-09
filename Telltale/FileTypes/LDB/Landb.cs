@@ -132,6 +132,15 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     {
         XmlElement myElement = reader.GetSingleElement(nameof(Landb), name);
 
+        if (myElement.SelectSingleNode(nameof(msv6Header)) is XmlElement headerElement)
+        {
+            msv6Header = Convert.FromBase64String(headerElement.InnerText);
+            using MemoryStream headerStream = new(msv6Header);
+            using BinaryReader headerReader = new(headerStream);
+            Header = MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
+            Header.ReadFromBinary(headerReader);
+        }
+
         mLanguageDB.Parse(myElement, nameof(mLanguageDB));
         mLanguageResources.Parse(myElement, nameof(mLanguageResources));
         mRegistry.Parse(myElement, nameof(mRegistry));
@@ -165,6 +174,12 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     {
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Landb));
         myElement.SetAttribute(nameof(name), name);
+        if (msv6Header.Length > 0)
+        {
+            XmlElement headerElement = element.OwnerDocument.CreateElement(nameof(msv6Header));
+            headerElement.InnerText = Convert.ToBase64String(msv6Header);
+            _ = myElement.AppendChild(headerElement);
+        }
         mLanguageDB.Write(myElement, nameof(mLanguageDB));
         mLanguageResources.Write(myElement, nameof(mLanguageResources));
         mRegistry.Write(myElement, nameof(mRegistry));

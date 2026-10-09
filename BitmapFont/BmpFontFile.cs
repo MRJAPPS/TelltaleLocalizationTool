@@ -177,6 +177,28 @@ public class BmpFontFile
     //I'm not moving these functions to the Converter class because it's already cluttered enough — some of its functions should be moved elsewhere (TODO).
     public static BmpFontFile FromTFont(TFont font)
     {
+        if (font.mTexturePages.Count == 0)
+        {
+            throw new InvalidDataException("This font has no texture pages! I can't export an atlas that doesn't exist.");
+        }
+        D3DTXV9 firstPage = font.mTexturePages.First();
+        uint width = firstPage.mD3dtxMetaData.mTextureInfo.mWidth;
+        uint height = firstPage.mD3dtxMetaData.mTextureInfo.mHeight;
+        foreach (D3DTXV9 page in font.mTexturePages)
+        {
+            if (width == 0 || height == 0 || page.mD3dtxMetaData.mTextureInfo.mWidth != width || page.mD3dtxMetaData.mTextureInfo.mHeight != height)
+            {
+                throw new NotSupportedException("BMFont needs all atlas pages to have the same valid dimensions!");
+            }
+        }
+        foreach (GlyphInfo glyph in font.mGlyphInfos)
+        {
+            if (glyph.mTexturePage < 0 || glyph.mTexturePage >= font.mTexturePages.Count)
+            {
+                throw new InvalidDataException($"Glyph {glyph.mChar.CharCode} refers to a font page that doesn't exist!");
+            }
+        }
+
         BmpFontFile ret = new()
         {
             Info = new()
