@@ -243,8 +243,42 @@ public class BmpFontFile
         return ToTFont(bmpFont, inputDirectory, Path.GetFileNameWithoutExtension(bmpFontFile));
     }
 
-    public static TFont ToTFont(BmpFontFile bmpFont, string inputDirectory, string fontTexNamePrefix)
+    public static TFont ToTFont(BmpFontFile bmpFont, string inputDirectory, string fontTexNamePrefix, Action<BmpFontPage, bool>? report = null)
     {
+        if (bmpFont.Info == null || bmpFont.Common == null)
+        {
+            throw new InvalidDataException($"Your fnt file needs {nameof(BmpFontFile.Info)} and {nameof(BmpFontFile.Common)} elements! I can't build a font out of nothing.");
+        }
+        if (bmpFont.Common.ScaleW <= 0 || bmpFont.Common.ScaleH <= 0 || bmpFont.Pages.Count == 0 || bmpFont.Common.Pages != bmpFont.Pages.Count)
+        {
+            throw new InvalidDataException("Check your fnt dimensions and page count! We need valid atlas sizes and at least one page.");
+        }
+        List<BmpFontPage> pages = [.. bmpFont.Pages.OrderBy(page => page.Id)];
+        for (int i = 0; i < pages.Count; ++i)
+        {
+            BmpFontPage page = pages[i];
+            if (page.Id != i)
+            {
+                throw new InvalidDataException("Font page IDs must start at 0 with no gaps or duplicates!");
+            }
+            string atlas = Path.GetFullPath(Path.Combine(inputDirectory, page.File));
+            if (!File.Exists(atlas))
+            {
+                throw new FileNotFoundException($"I couldn't find font atlas \"{atlas}\"!");
+            }
+            if (!Path.GetExtension(atlas).Equals(Formats.ddsExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotSupportedException("Font import needs DDS atlases! Check the page file names in your fnt.");
+            }
+        }
+        foreach (BmpFontChar bmpChar in bmpFont.Chars)
+        {
+            if (bmpChar.Page < 0 || bmpChar.Page >= pages.Count)
+            {
+                throw new InvalidDataException($"Glyph {bmpChar.Id} refers to a font page that doesn't exist!");
+            }
+        }
+
         TFont font = new()
         {
             mBase = bmpFont.Common!.Base,
