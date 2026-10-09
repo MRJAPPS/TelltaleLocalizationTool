@@ -80,7 +80,7 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, ITelltaleObje
         writer.Write(Size);
 
         writer.Write(Items.Count);
-        for (int i = 0; i < Capacity; ++i)
+        for (int i = 0; i < Items.Count; ++i)
         {
             Items[i].Write(writer);
         }

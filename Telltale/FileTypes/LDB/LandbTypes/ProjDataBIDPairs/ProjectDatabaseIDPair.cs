@@ -53,7 +53,7 @@ public class ProjectDatabaseIDPair : ReportBase, ITelltaleObject
 
         myElement.SetAttribute(nameof(name), name);
 
-        AppendBasicTypes(element);
+        AppendBasicTypes(myElement);
 
         _ = element.AppendChild(myElement);
     }
