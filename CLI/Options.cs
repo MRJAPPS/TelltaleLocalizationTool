@@ -9,6 +9,7 @@ public class Options : CommandSettings
     {
         public const string c_export = "export";
         public const string c_import = "import";
+        public const string c_about = "about";
     }
     [CommandArgument(0, "<mode>")]
     [Description($"The mode you want to use [green]{Modes.c_export}[/] OR [green]{Modes.c_import}[/] OR [blue]about[/]")]
@@ -20,16 +21,16 @@ public class Options : CommandSettings
         public const string c_font = "font";
     }
 
-    [CommandArgument(1, "<type>")]
-    [Description($"The file(s) type that you want to use [green]{Modes.c_export}[/] OR [green]{Modes.c_import}[/]. You can use [green]{FileTypes.c_landb}[/] OR [green]{FileTypes.c_font}[/]")]
+    [CommandArgument(1, "[type]")]
+    [Description($"The file(s) type that you want to use with export or import: [green]{FileTypes.c_landb}[/] OR [green]{FileTypes.c_font}[/]. Not needed for about.")]
     public string FileType { get; set; } = string.Empty;
 
-    [CommandOption("-i|--input <inputPath>", true)]
+    [CommandOption("-i|--input <inputPath>", false)]
     [Description("The input file or directory based on --batch flag")]
     public string Input { get; set; } = string.Empty;
 
 
-    [CommandOption("-o|--output <outputPath>", true)]
+    [CommandOption("-o|--output <outputPath>", false)]
     [Description("The output file or directory based on --batch flag")]
     public string Output { get; set; } = string.Empty;
 
