@@ -36,10 +36,10 @@ public class Options : CommandSettings
 
 
     [CommandOption("-b|--batch", false)]
-    [Description("If you use the this flag, the input and output must be directories. [green]default: false[/]")]
+    [Description("If you use the this flag, the input and output must be directories.")]
     public bool Batch { get; set; } = false;
 
     [CommandOption("-r|--relative", false)]
-    [Description("This flag must only be used with -b or --batch. When enabled, it recursively reads all files from the input folder and creates output files or folders relative to the input folder. [green]default: false[/]")]
+    [Description("This flag must only be used with -b or --batch. When enabled, it recursively reads all files from the input folder and creates output files or folders relative to the input folder.")]
     public bool Relative { get; set; } = false;
 }

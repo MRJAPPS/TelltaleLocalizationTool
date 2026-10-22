@@ -23,4 +23,5 @@ public class Formats
     public const string xmlExtension = ".xml";
     public const string fntExtension = ".fnt";
     public const string fontExtension = ".font";
+    public const string landbExtension = ".landb";
 }
