@@ -62,6 +62,10 @@ public class ImageAdvancedOptions
 
     public ImageEffect ImageEffect { get; set; }
 
+    public bool Used3dtxXml { get; set; }
+
+    public bool WriteXmlAsideOutputTex { get; set; }
+
     public ImageAdvancedOptions() { }
 
     public ImageAdvancedOptions(ImageAdvancedOptions options)
@@ -93,5 +97,7 @@ public class ImageAdvancedOptions
         EnableAlpha = options.EnableAlpha;
         AlphaFormat = options.AlphaFormat;
         ImageEffect = options.ImageEffect;
+        Used3dtxXml = options.Used3dtxXml;
+        WriteXmlAsideOutputTex = options.WriteXmlAsideOutputTex;
     }
 }

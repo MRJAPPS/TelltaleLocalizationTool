@@ -8,6 +8,7 @@ namespace TelltaleLocalizationTool.Helper;
 public class Formats
 {
     public const string d3dtxExtension = ".d3dtx";
+    public const string d3dtxXmlExtension = ".d3dtx.xml";
     public const string ddsExtension = ".dds";
     public const string ktxExtension = ".ktx";
     public const string ktx2Extension = ".ktx2";

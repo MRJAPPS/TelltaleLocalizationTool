@@ -60,7 +60,9 @@ public static class Converter
         DDS_Master ddsFile = new(d3dtxFile);
         byte[] array = ddsFile.GetData(d3dtxFile);
 
-        d3dtxFile.WriteD3DTXXML(Path.ChangeExtension(sourceFilePath, Formats.xmlExtension));
+        d3dtxFile.WriteD3DTXXML(Path.ChangeExtension(
+            options.WriteXmlAsideOutputTex ? destinationFilePath : sourceFilePath,
+            options.Used3dtxXml ? Formats.d3dtxXmlExtension : Formats.xmlExtension));
 
         Texture texture = new(array, TextureType.D3DTX);
         texture.TransformTexture(options, true, false);
