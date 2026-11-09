@@ -97,7 +97,12 @@ public class MBIN : IMetaHeader
     }
     public uint GetHeaderByteSize()
     {
-        return 0;
+        uint size = checked(2 * sizeof(uint) + 12 * (uint)mClassNames.Length);
+        foreach (UnhashedClassNames item in mUnhashedClassNames)
+        {
+            size = checked(size + 2 * sizeof(uint) + (uint)System.Text.Encoding.UTF8.GetByteCount(item.className));
+        }
+        return size;
     }
 
 }
