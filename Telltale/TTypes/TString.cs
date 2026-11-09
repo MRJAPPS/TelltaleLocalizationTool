@@ -99,7 +99,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
         ParseBasicTypes(element);
 
-        Value = element.InnerText.FixPersian();
+        Value = element.InnerText;
     }
 
     public void Write(BinaryWriter writer)
@@ -132,7 +132,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
         myElement.SetAttribute(nameof(name), name);
 
         AppendBasicTypes(myElement);
-        myElement.InnerText = Value.NormalizePersian();
+        myElement.InnerText = Value;
 
         _ = element.AppendChild(myElement);
     }

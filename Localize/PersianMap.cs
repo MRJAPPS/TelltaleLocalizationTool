@@ -163,32 +163,33 @@ public static class PersianMap
     }
     private static int TelltaleMarkupSkip(string line, int index, StringBuilder sb)
     {
-        if (line[index] != '^')
+        if (line[index] != '^' && line[index] != '<')
         {
             throw new NotImplementedException("This should not happen!");
         }
-        sb.Append('^');
+        char closing = line[index] == '^' ? '^' : '>';
+        sb.Append(line[index]);
         for (index++; index < line.Length; ++index)
         {
-            if (line[index] == '^')
+            if (line[index] == closing)
             {
-                sb.Append('^');
+                sb.Append(closing);
                 return index;
             }
             sb.Append(line[index]);
         }
-        throw new FormatException("Trailing '^' not found — your string is invalid!");
+        throw new FormatException($"Trailing '{closing}' not found — your string is invalid!");
     }
-    private static string TelltaleConvertLine(string line)
+    private static string TelltaleConvertLine(string line, bool normalize = false)
     {
-        if (string.IsNullOrEmpty(line) || !ContainsPersian(line))
+        if (string.IsNullOrEmpty(line) || (normalize ? !line.Any(IsPresentationForm) : !ContainsPersian(line)))
             return line;
         StringBuilder sb = new(), temp = new();
         for (int i = 0; i < line.Length; ++i)
         {
-            if (line[i] == '^')
+            if (line[i] == '^' || (line[i] == '<' && line.IndexOf('>', i + 1) >= 0))
             {
-                sb.Append(ConvertLine(temp.ToString()));
+                sb.Append(normalize ? NormalizePersianLine(temp.ToString()) : ConvertLine(temp.ToString()));
                 i = TelltaleMarkupSkip(line, i, sb);
                 temp.Clear();
             }
@@ -197,7 +198,7 @@ public static class PersianMap
                 temp.Append(line[i]);
             }
         }
-        sb.Append(ConvertLine(temp.ToString()));
+        sb.Append(normalize ? NormalizePersianLine(temp.ToString()) : ConvertLine(temp.ToString()));
         return sb.ToString();
     }
 
@@ -239,13 +240,12 @@ public static class PersianMap
         if (string.IsNullOrEmpty(str))
             return str;
 
-        str = str.Replace("\r\n", "\n");
-        string[] lines = str.Split('\n');
+        string[] lines = System.Text.RegularExpressions.Regex.Split(str, "(\\r\\n|\\r|\\n)");
 
-        for (int i = 0; i < lines.Length; i++)
+        for (int i = 0; i < lines.Length; i += 2)
             lines[i] = telltaleMode ? TelltaleConvertLine(lines[i]) : ConvertLine(lines[i]);
 
-        return string.Join("\n", lines);
+        return string.Concat(lines);
     }
 
     public static string FixPersian(this string str)
@@ -302,7 +302,7 @@ public static class PersianMap
 
     private static string NormalizePersianLine(string str)
     {
-        if (string.IsNullOrEmpty(str))
+        if (string.IsNullOrEmpty(str) || !str.Any(IsPresentationForm))
             return str;
 
         int start = 0;
@@ -368,12 +368,11 @@ public static class PersianMap
         if (string.IsNullOrEmpty(str))
             return str;
 
-        str = str.Replace("\r\n", "\n");
-        string[] lines = str.Split('\n');
+        string[] lines = System.Text.RegularExpressions.Regex.Split(str, "(\\r\\n|\\r|\\n)");
 
-        for (int i = 0; i < lines.Length; i++)
-            lines[i] = NormalizePersianLine(lines[i]);
+        for (int i = 0; i < lines.Length; i += 2)
+            lines[i] = TelltaleConvertLine(lines[i], true);
 
-        return string.Join("\n", lines);
+        return string.Concat(lines);
     }
 }

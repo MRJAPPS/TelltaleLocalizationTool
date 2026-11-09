@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Localize;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.DData;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
@@ -130,7 +131,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public void Parse(XmlElement reader, string name)
     {
-        XmlElement myElement = reader.GetSingleElement(nameof(Landb), name);
+        XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name));
 
         if (myElement.SelectSingleNode(nameof(msv6Header)) is XmlElement headerElement)
         {
@@ -173,6 +174,9 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     {
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Landb));
         myElement.SetAttribute(nameof(name), name);
+        XmlElement textTransform = element.OwnerDocument.CreateElement("textTransform");
+        textTransform.SetAttribute("mode", "none");
+        _ = myElement.AppendChild(textTransform);
         if (msv6Header.Length > 0)
         {
             XmlElement headerElement = element.OwnerDocument.CreateElement(nameof(msv6Header));
@@ -192,6 +196,26 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     #endregion
 
     #region XML
+
+    private static XmlElement ApplyTextTransform(XmlElement element)
+    {
+        XmlNodeList transforms = element.SelectNodes("textTransform")!;
+        if (transforms.Count > 1)
+            throw new FormatException("Only one textTransform is allowed!");
+
+        string mode = transforms.Count == 0 ? "none" : ((XmlElement)transforms[0]!).GetAttribute("mode");
+        if (mode == "none")
+            return element;
+        if (mode != "shaped" && mode != "logical")
+            throw new FormatException($"Unknown textTransform mode: {mode}");
+
+        XmlElement result = (XmlElement)element.CloneNode(true);
+        XmlNodeList texts = result.SelectNodes("LanguageResources/TextCollection/TextItem/ResolvedLocalData/TString[@name='mText'] | LanguageResources/TextCollection/TextItem/LocalDataCollection/LocalDataItem/TString[@name='mText']")!;
+        foreach (XmlElement text in texts)
+            text.InnerText = mode == "shaped" ? text.InnerText.FixPersian() : text.InnerText.NormalizePersian();
+
+        return result;
+    }
 
     private void ParseBasicTypes(XmlElement element)
     {
