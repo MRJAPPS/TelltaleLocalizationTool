@@ -43,8 +43,7 @@ public class DebugDataList : TCollectionBase<TString>, ITelltaleObject
         Items = [];
 
         // Keep chewing strings until the stream is completely empty.
-        // PeekChar() returns -1 when there are no more bytes, which is our only stop signal.
-        while (reader.PeekChar() != -1)
+        while (reader.BaseStream.Position < reader.BaseStream.Length)//I'll use this approach instead of PeekChar... it seems safer for different encodings.
         {
             // Important parameters:
             //  - readSize = false   → the TString won't look for an explicit 4‑byte size cap

@@ -183,7 +183,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     private void SkipZeros(BinaryReader reader)
     {
-        while (reader.PeekChar() != -1)
+        while (reader.BaseStream.Position < reader.BaseStream.Length)//I'll use this approach instead of PeekChar... it seems safer for different encodings.
         {
             byte b = reader.ReadByte();
             if (b != 0)
