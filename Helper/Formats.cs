@@ -23,6 +23,7 @@ public class Formats
     public const string hdrExtension = ".hdr";
     public const string xmlExtension = ".xml";
     public const string fntExtension = ".fnt";
+    public const string ttfExtension = ".ttf";
     public const string fontExtension = ".font";
     public const string landbExtension = ".landb";
 }

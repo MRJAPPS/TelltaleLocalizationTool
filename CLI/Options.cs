@@ -1,5 +1,6 @@
 ﻿using Spectre.Console.Cli;
 using System.ComponentModel;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font.Enums;
 
 namespace TelltaleLocalizationTool.CLI;
 
@@ -20,10 +21,11 @@ public class Options : CommandSettings
         public const string c_landb = "landb";
         public const string c_font = "font";
         public const string c_d3dtx = "d3dtx";
+        public const string c_ttf = "ttf";//Input only!
     }
 
     [CommandArgument(1, "[type]")]
-    [Description($"The file(s) type that you want to use with export or import: [green]{FileTypes.c_landb}[/] OR [green]{FileTypes.c_font}[/]. Not needed for about.")]
+    [Description($"The file(s) type: [green]{FileTypes.c_landb}[/], [green]{FileTypes.c_font}[/], [green]{FileTypes.c_d3dtx}[/] or [green]{FileTypes.c_ttf}[/] (import only). Not needed for about.")]
     public string FileType { get; set; } = string.Empty;
 
     [CommandOption("-i|--input <inputPath>", false)]
@@ -43,4 +45,8 @@ public class Options : CommandSettings
     [CommandOption("-r|--relative", false)]
     [Description("This flag must only be used with -b or --batch. When enabled, it recursively reads all files from the input folder and creates output files or folders relative to the input folder.")]
     public bool Relative { get; set; } = false;
+
+    [CommandOption("-g|--glyphSize <size>", false)]
+    [Description("Required for TTF import. Sets the glyph size in whole pixels; bmfont64.exe must be available.")]
+    public float GlyphSize { get; set; } = -1F;//-1 IS NOT VALID, USER MUST GIVE US A SIZE!
 }

@@ -52,7 +52,7 @@ public class Config
         {
             string ret = config["BmfontPath64"];
             return !File.Exists(ret)
-                ? throw new FileNotFoundException("Set a valid BmfontPath64 in appsettings.json! Keep in mind, this app can't convert ttf2font without BmfontPath64 version 4.5.52!")
+                ? throw new FileNotFoundException("Set a valid BmfontPath64 in appsettings.json! We need bmfont64.exe to convert TTF fonts.")
                 : ret;
         }
     }

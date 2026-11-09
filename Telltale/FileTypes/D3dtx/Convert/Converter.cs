@@ -1,5 +1,10 @@
 ﻿using Hexa.NET.DirectXTex;
 using System.Diagnostics;
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
+using System.Text;
+using TelltaleLocalizationTool.BitmapFont;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using System.Drawing;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
@@ -125,6 +130,204 @@ public static class Converter
 
 
     #region NEW
+
+    public static TFont ConvertTtfToFont(string input, float glyphSize, Action<string>? report = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(input);
+        if (!Path.GetExtension(input).Equals(Formats.ttfExtension, StringComparison.OrdinalIgnoreCase))
+            throw new NotSupportedException($"We need a {Formats.ttfExtension} file here!");
+        if (!float.IsFinite(glyphSize) || glyphSize <= 0 || glyphSize >= int.MaxValue || glyphSize != MathF.Truncate(glyphSize))
+            throw new ArgumentOutOfRangeException(nameof(glyphSize), "Glyph size must be a positive whole number of pixels!");
+
+        cancellationToken.ThrowIfCancellationRequested();
+        string executable = Path.GetFullPath(Program.Config.BmfontPath64);
+        (string fontName, bool bold, bool italic) = ReadTtfInfo(input);
+        DirectoryInfo tempDirectory = Directory.CreateTempSubdirectory("TelltaleTtf_");
+        try
+        {
+            string source = Path.Combine(tempDirectory.FullName, "source.ttf");
+            string config = Path.Combine(tempDirectory.FullName, "font.bmfc");
+            string fnt = Path.Combine(tempDirectory.FullName, "font.fnt");
+            File.Copy(input, source);
+            File.WriteAllText(config, $"""
+                fileVersion=1
+                fontName={fontName}
+                fontFile=source.ttf
+                charSet=1
+                fontSize=-{(int)glyphSize}
+                aa=1
+                scaleH=100
+                useSmoothing=1
+                isBold={(bold ? 1 : 0)}
+                isItalic={(italic ? 1 : 0)}
+                useUnicode=1
+                disableBoxChars=1
+                outputInvalidCharGlyph=0
+                dontIncludeKerningPairs=1
+                useHinting=1
+                renderFromOutline=0
+                useClearType=0
+                autoFitNumPages=0
+                paddingDown=1
+                paddingUp=1
+                paddingRight=1
+                paddingLeft=1
+                spacingHoriz=1
+                spacingVert=1
+                useFixedHeight=0
+                forceZero=0
+                outWidth=1024
+                outHeight=1024
+                outBitDepth=32
+                fontDescFormat=1
+                fourChnlPacked=0
+                textureFormat=dds
+                textureCompression=0
+                alphaChnl=0
+                redChnl=4
+                greenChnl=4
+                blueChnl=4
+                invA=0
+                invR=0
+                invG=0
+                invB=0
+                outlineThickness=0
+                chars=32-55295,57344-1114111
+                """, new UTF8Encoding(false));
+
+            ProcessStartInfo psi = new()
+            {
+                FileName = executable,
+                WorkingDirectory = tempDirectory.FullName,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+            psi.ArgumentList.Add("-c");
+            psi.ArgumentList.Add(config);
+            psi.ArgumentList.Add("-o");
+            psi.ArgumentList.Add(fnt);
+
+            ConcurrentQueue<string> messages = new();
+            StringBuilder log = new();
+            using Process process = new() { StartInfo = psi };
+            process.OutputDataReceived += (_, message) => { if (message.Data != null) messages.Enqueue(message.Data); };
+            process.ErrorDataReceived += (_, message) => { if (message.Data != null) messages.Enqueue(message.Data); };
+            report?.Invoke($"Generating {fontName} at {glyphSize} pixels with BMFont...");
+            _ = process.Start();
+            try
+            {
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                while (!process.WaitForExit(100))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ReportMessages();
+                }
+                process.WaitForExit();
+                ReportMessages();
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            catch
+            {
+                if (!process.HasExited)
+                    process.Kill(true);
+                process.WaitForExit();
+                throw;
+            }
+            if (process.ExitCode != 0 || !File.Exists(fnt))
+                throw new InvalidOperationException($"BMFont couldn't generate the font (exit code {process.ExitCode})!{Environment.NewLine}{log}");
+
+            report?.Invoke("Reading generated font glyphs and DDS atlases...");
+            BmpFontFile bmpFont = BmpFontLoader.LoadFromFile(fnt);
+            if (bmpFont.Info == null || bmpFont.Chars.Count == 0)
+                throw new InvalidDataException("BMFont didn't generate any usable glyphs!");
+            bmpFont.Info.Size = (int)glyphSize;
+            TFont font = BmpFontFile.ToTFont(bmpFont, tempDirectory.FullName, Path.GetFileNameWithoutExtension(input),
+                (page, done) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    report?.Invoke($"{(done ? "Imported" : "Importing")} atlas {page.Id + 1}/{bmpFont.Pages.Count}: {page.File}");
+                });
+            cancellationToken.ThrowIfCancellationRequested();
+            return font;
+
+            void ReportMessages()
+            {
+                while (messages.TryDequeue(out string? message))
+                {
+                    log.AppendLine(message);
+                    report?.Invoke($"BMFont: {message}");
+                }
+            }
+        }
+        finally
+        {
+            tempDirectory.Delete(true);
+        }
+    }
+
+    private static (string Name, bool Bold, bool Italic) ReadTtfInfo(string input)
+    {
+        using BinaryReader reader = new(File.OpenRead(input));
+        uint signature = ReadUInt32();
+        if (signature != 0x00010000 && signature != 0x74727565)
+            throw new InvalidDataException("This isn't a TrueType font!");
+        ushort tables = ReadUInt16();
+        reader.BaseStream.Position = 12;
+        uint nameOffset = 0, nameLength = 0, headOffset = 0;
+        for (int index = 0; index < tables; ++index)
+        {
+            string tag = Encoding.ASCII.GetString(reader.ReadBytes(4));
+            _ = ReadUInt32();
+            uint offset = ReadUInt32(), length = ReadUInt32();
+            if ((long)offset + length > reader.BaseStream.Length)
+                throw new InvalidDataException($"Invalid TTF table: {tag}");
+            if (tag == "name") { nameOffset = offset; nameLength = length; }
+            if (tag == "head" && length >= 46) headOffset = offset;
+        }
+        if (nameOffset == 0 || nameLength < 6)
+            throw new InvalidDataException("I couldn't find the TTF name table!");
+        reader.BaseStream.Position = nameOffset;
+        _ = ReadUInt16();
+        ushort names = ReadUInt16(), strings = ReadUInt16();
+        if (6L + names * 12 > nameLength || strings > nameLength)
+            throw new InvalidDataException("The TTF name table is incomplete!");
+
+        string? family = null;
+        for (int index = 0; index < names; ++index)
+        {
+            ushort platform = ReadUInt16(), encoding = ReadUInt16(), language = ReadUInt16();
+            ushort name = ReadUInt16(), length = ReadUInt16(), offset = ReadUInt16();
+            if (name != 1 || (platform != 0 && !(platform == 3 && (encoding == 1 || encoding == 10))))
+                continue;
+            if ((long)strings + offset + length > nameLength || length % 2 != 0)
+                throw new InvalidDataException("Invalid TTF family name!");
+            long position = reader.BaseStream.Position;
+            reader.BaseStream.Position = (long)nameOffset + strings + offset;
+            string candidate = Encoding.BigEndianUnicode.GetString(reader.ReadBytes(length));
+            reader.BaseStream.Position = position;
+            if (string.IsNullOrWhiteSpace(candidate))
+                continue;
+            family ??= candidate;
+            if (platform == 3 && language == 0x0409) { family = candidate; break; }
+        }
+        if (family == null || family.IndexOfAny(['\r', '\n', '\0']) >= 0)
+            throw new InvalidDataException("I couldn't read a usable Unicode family name from the TTF!");
+        ushort style = 0;
+        if (headOffset != 0)
+        {
+            reader.BaseStream.Position = headOffset + 44;
+            style = ReadUInt16();
+        }
+        return (family, (style & 1) != 0, (style & 2) != 0);
+
+        ushort ReadUInt16() => BinaryPrimitives.ReverseEndianness(reader.ReadUInt16());
+        uint ReadUInt32() => BinaryPrimitives.ReverseEndianness(reader.ReadUInt32());
+    }
 
     public static D3DTXV9 ConvertDdsToD3dtx(string ddsFile, string? fontName = default)
     {

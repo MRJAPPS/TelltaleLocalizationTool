@@ -61,9 +61,25 @@ public class CliProgram : Command<Options>
 
     private static void CheckArgs(Options settings)
     {
-        if (settings.FileType is not Options.FileTypes.c_landb and not Options.FileTypes.c_font and not Options.FileTypes.c_d3dtx)
+        if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_font &&
+            !settings.Batch && Path.GetExtension(settings.Input).Equals(Formats.ttfExtension, oic))
         {
-            throw new ArgumentException($"Enter a valid file type! We need {Options.FileTypes.c_landb} or {Options.FileTypes.c_font} or {Options.FileTypes.c_d3dtx}.");
+            settings.FileType = Options.FileTypes.c_ttf;
+        }
+        if (settings.FileType is not Options.FileTypes.c_landb and not Options.FileTypes.c_font and not Options.FileTypes.c_d3dtx and not Options.FileTypes.c_ttf)
+        {
+            throw new ArgumentException($"Enter a valid file type! We need {Options.FileTypes.c_landb}, {Options.FileTypes.c_font}, {Options.FileTypes.c_d3dtx} or {Options.FileTypes.c_ttf}.");
+        }
+        if (settings.FileType == Options.FileTypes.c_ttf)
+        {
+            if (settings.Mode != Options.Modes.c_import)
+                throw new NotSupportedException("TTF is input only! We can't convert a bitmap font back to TTF.");
+            if (!float.IsFinite(settings.GlyphSize) || settings.GlyphSize <= 0 || settings.GlyphSize >= int.MaxValue || settings.GlyphSize != MathF.Truncate(settings.GlyphSize))
+                throw new ArgumentOutOfRangeException(nameof(settings.GlyphSize), "TTF import needs --glyphSize with a positive whole pixel size!");
+        }
+        else if (settings.GlyphSize != -1F)
+        {
+            throw new ArgumentException("--glyphSize is only used for TTF import!");
         }
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.Input, nameof(settings.Input));
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.Output, nameof(settings.Output));
@@ -176,7 +192,7 @@ public class CliProgram : Command<Options>
             Path.GetDirectoryName(input) ?? settings.Input);
         string relativeName = Path.GetFileNameWithoutExtension(input);
 
-        if (settings.FileType == Options.FileTypes.c_font || settings.FileType == Options.FileTypes.c_d3dtx)
+        if (settings.FileType == Options.FileTypes.c_font || settings.FileType == Options.FileTypes.c_d3dtx || settings.FileType == Options.FileTypes.c_ttf)
         {
             string fileDir = relativeDirectory != "." &&
                 (settings.Mode == Options.Modes.c_import || Path.GetFileName(relativeDirectory).Equals(relativeName, oic))
@@ -196,6 +212,7 @@ public class CliProgram : Command<Options>
         {
             Options.FileTypes.c_landb => binary ? Formats.landbExtension : Formats.xmlExtension,
             Options.FileTypes.c_font => binary ? Formats.fontExtension : Formats.fntExtension,
+            Options.FileTypes.c_ttf => input ? Formats.ttfExtension : Formats.fontExtension,
             Options.FileTypes.c_d3dtx => binary ? Formats.d3dtxExtension : settings.Batch ? Formats.ddsExtension :
                 Path.GetExtension(settings.Mode == Options.Modes.c_import ? settings.Input : settings.Output).ToLowerInvariant(),
             _ => throw new NotSupportedException($"We only support {Formats.landbExtension}({Formats.xmlExtension}), {Formats.fontExtension}({Formats.fntExtension}) and {Formats.d3dtxExtension}({Formats.ddsExtension},{Formats.pngExtension},{Formats.jpegExtension}) here!")
@@ -312,6 +329,9 @@ public class CliProgram : Command<Options>
                             case Options.FileTypes.c_font:
                                 ProcessFont(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
                                 break;
+                            case Options.FileTypes.c_ttf:
+                                ProcessTtf(input, output, settings.GlyphSize, ctx, current, cancellationToken);
+                                break;
                             case Options.FileTypes.c_d3dtx:
                                 ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
                                 break;
@@ -421,6 +441,27 @@ public class CliProgram : Command<Options>
     #endregion
 
     #region Font
+
+    private static void ProcessTtf(string input, string output, float glyphSize, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    {
+        task.IsIndeterminate = true;
+        TFont font;
+        try
+        {
+            font = Converter.ConvertTtfToFont(input, glyphSize,
+                message => ReportProgress(ctx, task, message, cancellationToken), cancellationToken);
+        }
+        finally
+        {
+            task.IsIndeterminate = false;
+        }
+        task.Value = 2;
+        ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
+        using TempFile temp = new(output);
+        font.WriteTFont(temp.Path);
+        SaveResult(temp, output, cancellationToken);
+        task.Increment(1);
+    }
 
     private static TFont ImportFont(BmpFontFile bmpFont, string input, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
@@ -836,7 +877,7 @@ public class CliProgram : Command<Options>
         ("[cyan]d3dtx[/]",   "export .d3dtx to DDS, PNG or JPEG with .d3dtx.xml metadata, then import the image and its metadata back to .d3dtx."),
         ("[grey]info[/]",    "[grey]D3dtx batch export uses DDS. Batch import reads DDS, PNG and JPEG from the input folder and each texture's subfolder.[/]"),
         ("[orange1]warn[/]", "[orange1]Font import needs Compressonator CLI 4.5.52.[/] Set [bold]CompressonatorPath[/] in appsettings.json!"),
-        ("[orange1]warn[/]", "[orange1]TTF import needs bmfont64.exe.[/] Set [bold]BmfontPath[/] in appsettings.json!"),
+        ("[orange1]warn[/]", "[orange1]TTF import needs bmfont64.exe and --glyphSize <size>.[/] Set [bold]BmfontPath64[/] in appsettings.json!"),
         ("[grey]info[/]",    "[grey]Use --batch for folders and --relative to include subfolders and keep their paths.[/]"),
         ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them.[/]"),
         };
@@ -875,7 +916,7 @@ public class CliProgram : Command<Options>
         ("[green]bmfont64[/]",
          "To save myself [grey]the headache[/] of implementing [orange1]TTF parsing[/] from scratch, I leaned on [link=https://www.angelcode.com/products/bmfont/][green]bmfont64[/][/]. It's [grey]not mandatory[/] here [grey]—[/] but the input format is always [cyan]FNT (XML flavor)[/], which bmfont64 generates for you."),
         ("[green]@ByteAndPlay[/]",
-         "All of these tools are also downloadable from our Telegram channel: [link=https://t.me/ByteAndPlay][green]@ByteAndPlay[/][/]."),
+         "All of these tools are also downloadable from my Telegram channel: [link=https://t.me/ByteAndPlay][green]@ByteAndPlay[/][/]."),
         };
 
         AnsiConsole.Live(creditsTable)

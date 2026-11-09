@@ -289,8 +289,12 @@ public class BmpFontFile
 
         GetChars(bmpFont, font);
 
-        TextureType fromTextureType = Converter.GetTextureTypeFromExtension(bmpFont.Pages.First().File);
-        font.mTexturePages.ImportTextures(fontTexNamePrefix, inputDirectory, fromTextureType, true);
+        foreach (BmpFontPage page in pages)
+        {
+            report?.Invoke(page, false);
+            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(Path.Combine(inputDirectory, page.File), fontTexNamePrefix));
+            report?.Invoke(page, true);
+        }
 
         return font;
     }
