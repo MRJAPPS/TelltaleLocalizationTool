@@ -2,8 +2,8 @@
 
 public enum MetaVersion
 {
-    MSV6 = 3,
-    MSV5 = 2,
+    MSV6 = 6,
+    MSV5 = 5,
     MTRE = 1,
     MBIN = 0,
     Unknown = -1

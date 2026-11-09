@@ -277,13 +277,13 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         else if (Header == null)
         {
             //Recreate header
-            MSV6 defaultHeaderForWalkingDead3NewF = (MSV6)MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
+            MSV6 defaultHeaderForWalkingDead3NewF = new();
             defaultHeaderForWalkingDead3NewF.mClassNamesLength = (uint)mDefaultClassNamesWD3.Length;
             defaultHeaderForWalkingDead3NewF.mClassNames = mDefaultClassNamesWD3;
             Header = defaultHeaderForWalkingDead3NewF;
         }
 
-        uint debugSectionChunkSize = ((MSV6)Header).mDebugSectionChunkSize;
+        uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(mD3dtxMetaData.Size, debugSectionChunkSize, asyncSectionChunkSize);
         Header.WriteToBinary(writer);
     }
@@ -296,19 +296,10 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         }
 
         long Position = reader.BaseStream.Position;
-        uint magic = reader.ReadUInt32();
-        if (magic != Config.Msv6Magic)
-        {
-            throw new NotImplementedException("Right now I can only handle MSV6!! I can't deal with the Meta Stream version of the input file!");
-        }
-
+        Header = MetaHeaderFactory.ReadMetaHeader(reader);
         reader.BaseStream.Position = Position;
-        Header = MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
-        Header.ReadFromBinary(reader);
-        //===========================
-        reader.BaseStream.Position -= Header.GetHeaderByteSize();
         msv6Header = new byte[Header.GetHeaderByteSize()];
-        _ = reader.Read(msv6Header);
+        reader.BaseStream.ReadExactly(msv6Header);
     }
 
     #endregion
@@ -369,8 +360,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         msv6Header = System.Convert.FromBase64String(msv6H.InnerText);
         using MemoryStream headerTempStream = new(msv6Header);
         using BinaryReader reader = new(headerTempStream);
-        Header ??= MetaHeaderFactory.CreateMetaHeader(Meta.Enums.MetaVersion.MSV6);
-        Header.ReadFromBinary(reader);
+        Header = MetaHeaderFactory.ReadMetaHeader(reader);
     }
 
     private void AppendHeader(XmlElement element)

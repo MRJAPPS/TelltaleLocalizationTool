@@ -65,6 +65,13 @@ public class MBIN : IMetaHeader
         mMetaStreamVersion = ByteFunctions.ReadFixedString(reader, 4); // Meta Stream Keyword [4 bytes]
         mClassNamesLength = reader.ReadUInt32(); // mClassNamesLength [4 bytes]
 
+        mClassNames = [];
+        mUnhashedClassNames = [];
+        if (mClassNamesLength == 0)
+        {
+            return;
+        }
+
         uint checkValue = reader.ReadUInt32();
 
         reader.BaseStream.Position -= 4;

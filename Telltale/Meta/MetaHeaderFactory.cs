@@ -5,6 +5,24 @@ namespace TelltaleLocalizationTool.Telltale.Meta
 {
     public static class MetaHeaderFactory
     {
+        public static IMetaHeader ReadMetaHeader(BinaryReader reader)
+        {
+            long position = reader.BaseStream.Position;
+            uint magic = reader.ReadUInt32();
+            reader.BaseStream.Position = position;
+            MetaVersion version = magic switch
+            {
+                0x4D535636 => MetaVersion.MSV6, //6VSM
+                0x4D535635 => MetaVersion.MSV5, //5VSM
+                0x4D545245 => MetaVersion.MTRE, //ERTM
+                0x4D42494E => MetaVersion.MBIN, //NIBM
+                _ => throw new NotSupportedException($"I can't read Meta Stream magic 0x{magic:X8}! Supported headers: MSV6, MSV5, MTRE and MBIN.")
+            };
+            IMetaHeader header = CreateMetaHeader(version);
+            header.ReadFromBinary(reader);
+            return header;
+        }
+
         public static IMetaHeader CreateMetaHeader(MetaVersion version)
         {
             return version switch

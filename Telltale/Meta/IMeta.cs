@@ -5,6 +5,10 @@ namespace TelltaleLocalizationTool.Telltale.Meta;
 /// </summary>
 public interface IMetaHeader : ITelltaleSerializable
 {
+    //Older headers don't have separate debug or async sections.
+    uint mDebugSectionChunkSize => 0;
+    uint mAsyncSectionChunkSize => 0;
+
     /// <summary>
     /// Gets the size of the header in bytes.
     /// </summary>
