@@ -19,6 +19,7 @@ public class Options : CommandSettings
     {
         public const string c_landb = "landb";
         public const string c_font = "font";
+        public const string c_d3dtx = "d3dtx";
     }
 
     [CommandArgument(1, "[type]")]

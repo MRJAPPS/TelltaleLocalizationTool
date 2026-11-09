@@ -3,9 +3,14 @@ using Spectre.Console.Cli;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
+using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 
 namespace TelltaleLocalizationTool.CLI;
@@ -55,9 +60,9 @@ public class CliProgram : Command<Options>
 
     private static void CheckArgs(Options settings)
     {
-        if (settings.FileType is not Options.FileTypes.c_landb and not Options.FileTypes.c_font)
+        if (settings.FileType is not Options.FileTypes.c_landb and not Options.FileTypes.c_font and not Options.FileTypes.c_d3dtx)
         {
-            throw new ArgumentException($"Enter a valid file type! We need {Options.FileTypes.c_landb} or {Options.FileTypes.c_font}.");
+            throw new ArgumentException($"Enter a valid file type! We need {Options.FileTypes.c_landb} or {Options.FileTypes.c_font} or {Options.FileTypes.c_d3dtx}.");
         }
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.Input, nameof(settings.Input));
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.Output, nameof(settings.Output));
@@ -89,8 +94,17 @@ public class CliProgram : Command<Options>
             {
                 throw new FileNotFoundException($"Are you sure \"{settings.Input}\" exists?");
             }
-            CheckExtension(settings.Input, GetExtension(settings, true));
-            CheckExtension(settings.Output, GetExtension(settings, false));
+            if (settings.FileType == Options.FileTypes.c_d3dtx)
+            {
+                bool import = settings.Mode == Options.Modes.c_import;
+                CheckExtension(import ? settings.Output : settings.Input, Formats.d3dtxExtension);
+                CheckOutputTexFormat(import ? settings.Input : settings.Output);
+            }
+            else
+            {
+                CheckExtension(settings.Input, GetExtension(settings, true));
+                CheckExtension(settings.Output, GetExtension(settings, false));
+            }
             if (Directory.Exists(settings.Output))
             {
                 throw new ArgumentException("The output must be a file path! Use --batch if you want to process folders.");
@@ -161,13 +175,13 @@ public class CliProgram : Command<Options>
             Path.GetDirectoryName(input) ?? settings.Input);
         string relativeName = Path.GetFileNameWithoutExtension(input);
 
-        if (settings.FileType == Options.FileTypes.c_font)
+        if (settings.FileType == Options.FileTypes.c_font || settings.FileType == Options.FileTypes.c_d3dtx)
         {
-            string fontDirectory = relativeDirectory != "." &&
+            string fileDir = relativeDirectory != "." &&
                 (settings.Mode == Options.Modes.c_import || Path.GetFileName(relativeDirectory).Equals(relativeName, oic))
                 ? Path.Combine(settings.Output, relativeDirectory)
                 : Path.Combine(settings.Output, relativeDirectory, relativeName);
-            return Path.Combine(fontDirectory, relativeName + GetExtension(settings, false));
+            return Path.Combine(fileDir, relativeName + GetExtension(settings, false));
         }
 
         string relativeFile = Path.GetRelativePath(settings.Input, input);
@@ -181,7 +195,9 @@ public class CliProgram : Command<Options>
         {
             Options.FileTypes.c_landb => binary ? Formats.landbExtension : Formats.xmlExtension,
             Options.FileTypes.c_font => binary ? Formats.fontExtension : Formats.fntExtension,
-            _ => throw new NotSupportedException($"We only support {Formats.landbExtension}({Formats.xmlExtension}) and {Formats.fontExtension}({Formats.fntExtension}) here!")
+            Options.FileTypes.c_d3dtx => binary ? Formats.d3dtxExtension : settings.Batch ? Formats.ddsExtension :
+                Path.GetExtension(settings.Mode == Options.Modes.c_import ? settings.Input : settings.Output).ToLowerInvariant(),
+            _ => throw new NotSupportedException($"We only support {Formats.landbExtension}({Formats.xmlExtension}), {Formats.fontExtension}({Formats.fntExtension}) and {Formats.d3dtxExtension}({Formats.ddsExtension},{Formats.pngExtension},{Formats.jpegExtension}) here!")
         };
     }
 
@@ -198,7 +214,30 @@ public class CliProgram : Command<Options>
                 List<string> files = [];
                 if (settings.Batch)
                 {
-                    if (settings.Mode == Options.Modes.c_import &&
+                    if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_d3dtx)
+                    {
+                        EnumerationOptions options = new()
+                        {
+                            RecurseSubdirectories = true,
+                            MaxRecursionDepth = settings.Relative ? int.MaxValue : 1,
+                            IgnoreInaccessible = false,
+                            AttributesToSkip = FileAttributes.ReparsePoint
+                        };
+
+                        foreach (string file in Directory.EnumerateFiles(settings.Input, "*", options))
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            string extension = Path.GetExtension(file).ToLowerInvariant();
+                            if (extension is not Formats.ddsExtension and not Formats.pngExtension and not Formats.jpegExtension)
+                            {
+                                continue;
+                            }
+                            files.Add(file);
+                            total.Description = $"Found {files.Count} input file(s)";
+                            ctx.Refresh();
+                        }
+                    }
+                    else if (settings.Mode == Options.Modes.c_import &&
                         settings.FileType == Options.FileTypes.c_font)
                     {
                         foreach (string file in EnumerateFontImportFiles(settings.Input, settings.Relative, cancellationToken))
@@ -239,7 +278,10 @@ public class CliProgram : Command<Options>
                 cancellationToken.ThrowIfCancellationRequested();
                 if (files.Count == 0)
                 {
-                    throw new FileNotFoundException($"I couldn't find any {GetExtension(settings, true)} files in your input folder!");
+                    string extension = settings.FileType == Options.FileTypes.c_d3dtx && settings.Mode == Options.Modes.c_import
+                        ? $"{Formats.ddsExtension}, {Formats.pngExtension} or {Formats.jpegExtension}"
+                        : GetExtension(settings, true);
+                    throw new FileNotFoundException($"I couldn't find any {extension} files in your input folder!");
                 }
 
                 total.IsIndeterminate = false;
@@ -268,6 +310,9 @@ public class CliProgram : Command<Options>
                                 break;
                             case Options.FileTypes.c_font:
                                 ProcessFont(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
+                                break;
+                            case Options.FileTypes.c_d3dtx:
+                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
                                 break;
                         }
                         success++;
@@ -461,6 +506,226 @@ public class CliProgram : Command<Options>
         return font;
     }
 
+    #endregion
+
+    #region D3dtx
+
+    private static void ImportD3dtx(D3DTXV9 d3dtx, Texture texture)
+    {
+        texture.GetDDSInformationV9(out D3DTXV9 imported, out ImageSection[] sections);
+        if (imported.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.Unknown)
+        {
+            throw new NotSupportedException("I can't map this image's pixel format to a Telltale surface format! Save it as a supported DDS format first.");
+        }
+        int mipLevels = (int)imported.mD3dtxMetaData.mTextureInfo.mNumMipLevels;
+        int arraySize = (int)imported.mD3dtxMetaData.mTextureInfo.mArraySize;
+        int depth = (int)imported.mD3dtxMetaData.mTextureInfo.mDepth;
+        List<(ImageSection section, int mip, int face)> images = [];
+        int index = 0;
+        if (imported.IsVolumemap())
+        {
+            for (int mip = 0; mip < mipLevels; ++mip)
+            {
+                for (int face = 0; face < Math.Max(1, depth >> mip); ++face)
+                {
+                    images.Add((sections[index++], mip, face));
+                }
+            }
+        }
+        else
+        {
+            for (int face = 0; face < arraySize; ++face)
+            {
+                for (int mip = 0; mip < mipLevels; ++mip)
+                {
+                    images.Add((sections[index++], mip, face));
+                }
+            }
+        }
+
+        d3dtx.mD3dtxMetaData.mTextureInfo = imported.mD3dtxMetaData.mTextureInfo;
+        d3dtx.mD3dtxMetaData.mSurfaceFormat = imported.mD3dtxMetaData.mSurfaceFormat;
+        d3dtx.mD3dtxMetaData.mSurfaceGamma = imported.mD3dtxMetaData.mSurfaceGamma;
+        d3dtx.mD3dtxMetaData.mTextureLayout = imported.mD3dtxMetaData.mTextureLayout;
+        if (imported.IsCubemap())
+        {
+            d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize /= 6;
+            d3dtx.mD3dtxMetaData.mTextureLayout = d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize > 1
+                ? T3TextureLayout.TextureCubemapArray : T3TextureLayout.TextureCubemap;
+        }
+        d3dtx.mD3dtxMetaData.mStreamHeader = new(9)
+        {
+            mRegionCount = sections.Length,
+            mAuxDataCount = d3dtx.mD3dtxMetaData.mStreamHeader.mAuxDataCount,
+            mTotalDataSize = sections.Sum(section => section.Pixels.Length)
+        };
+        d3dtx.mPixelData.Clear();
+        //Telltale stores the smallest mip first. DDS starts with the biggest one.
+        foreach ((ImageSection section, int mip, int face) image in images.OrderByDescending(image => image.mip).ThenBy(image => image.face))
+        {
+            d3dtx.mPixelData.Add(image.section.Pixels);
+            d3dtx.mD3dtxMetaData.mStreamHeader.Add(new(9)
+            {
+                mMipIndex = image.mip,
+                mFaceIndex = image.face,
+                mMipCount = 1,
+                mDataSize = (uint)image.section.Pixels.Length,
+                mPitch = (int)image.section.RowPitch,
+                mSlicePitch = (int)image.section.SlicePitch
+            });
+        }
+    }
+
+    private static void CheckOutputTexFormat(string fileNameOrFormat)
+    {
+        string format = Path.GetExtension(fileNameOrFormat).ToLowerInvariant();
+        switch (format)
+        {
+            case Formats.jpegExtension:
+            case Formats.pngExtension:
+            case Formats.ddsExtension:
+                return;
+        }
+        throw new NotImplementedException($"The necessary conversions for your requested format haven't been implemented! You can only use {Formats.jpegExtension}, {Formats.pngExtension}, and {Formats.ddsExtension}!");
+    }
+
+    private static void ProcessD3dtx(string input, string output, bool import, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    {
+        string inputFileName = Path.GetFileName(input);
+        ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
+        using TempFile temp = new(output);
+        D3DTXV9 d3dtx = new();
+        if (import)
+        {
+            CheckOutputTexFormat(input);
+            string xmlFile = Path.ChangeExtension(input, Formats.d3dtxXmlExtension);
+            if (!File.Exists(xmlFile))
+            {
+                xmlFile = Path.ChangeExtension(input, Formats.xmlExtension);
+            }
+            if (!File.Exists(xmlFile))
+            {
+                throw new FileNotFoundException($"Your texture needs its {Formats.d3dtxXmlExtension} file next to it! I can't guess the original metadata.");
+            }
+            d3dtx.LoadD3DTXXML(xmlFile);
+            task.Increment(1);
+            ReportProgress(ctx, task, "Importing d3dtx texture and metadata...", cancellationToken);
+            Texture texture = new(input, Converter.GetTextureTypeFromExtension(input.ToLowerInvariant()));
+            try
+            {
+                if (!Path.GetExtension(input).Equals(Formats.ddsExtension, oic))
+                {
+                    if (d3dtx.IsCubemap() || d3dtx.IsVolumemap() || d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize > 1)
+                    {
+                        throw new NotSupportedException("Use DDS for cubemaps, texture arrays and 3D textures! One picture can't hold all their faces or slices.");
+                    }
+                    uint mipLevels = Math.Min(d3dtx.mD3dtxMetaData.mTextureInfo.mNumMipLevels, texture.GetMaxMipLevels());
+                    if (mipLevels > 1)
+                    {
+                        texture.GenerateMipMaps(mipLevels);
+                    }
+                    if (!d3dtx.mD3dtxMetaData.mSurfaceFormat.IsFormatIncompatibleWithDDS())
+                    {
+                        DXGIFormat format = DDSHelper.GetDXGIFormat(d3dtx.mD3dtxMetaData.mSurfaceFormat, d3dtx.mD3dtxMetaData.mSurfaceGamma);
+                        if (Hexa.NET.DirectXTex.DirectXTex.IsCompressed((int)format))
+                        {
+                            texture.Compress(format);
+                        }
+                        else
+                        {
+                            texture.Convert(format);
+                        }
+                    }
+                }
+                ImportD3dtx(d3dtx, texture);
+            }
+            finally
+            {
+                texture.Release();
+            }
+            task.Increment(1);
+            ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
+            d3dtx.WriteD3DTX(temp.Path);
+            SaveResult(temp, output, cancellationToken);
+        }
+        else
+        {
+            CheckOutputTexFormat(output);
+            string xmlFile = Path.ChangeExtension(output, Formats.d3dtxXmlExtension);
+            CheckOutput(xmlFile);
+            using TempFile tempXml = new(xmlFile);
+            d3dtx.LoadD3DTX(input);
+            task.Increment(1);
+            ReportProgress(ctx, task, "Exporting d3dtx texture...", cancellationToken);
+            DDS_Master dds = new(d3dtx);
+            byte[] data = dds.GetData(d3dtx);
+            if (d3dtx.IsCubemap() && !d3dtx.HasDDSHeader() && data.Length >= 148 && BitConverter.ToUInt32(data, 84) == 0x30315844)
+            {
+                //The generated DX10 header counts faces as array items. DDS needs the cube flag and the cube count.
+                BitConverter.GetBytes(BitConverter.ToUInt32(data, 112) | 0xFE00U).CopyTo(data, 112);
+                BitConverter.GetBytes(BitConverter.ToUInt32(data, 136) | 4U).CopyTo(data, 136);
+                BitConverter.GetBytes(d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize).CopyTo(data, 140);
+            }
+            if (Path.GetExtension(output).Equals(Formats.ddsExtension, oic))
+            {
+                File.WriteAllBytes(temp.Path, data);
+            }
+            else
+            {
+                Texture texture = new(data);
+                try
+                {
+                    if (texture.Metadata.ArraySize > 1 || texture.Metadata.Depth > 1)
+                    {
+                        throw new NotSupportedException("Use DDS for cubemaps, texture arrays and 3D textures! One picture can't hold all their faces or slices.");
+                    }
+                    if (Path.GetExtension(output).Equals(Formats.pngExtension, oic))
+                    {
+                        texture.SaveAsPNG(temp.Path);
+                    }
+                    else
+                    {
+                        texture.SaveAsJPEG(temp.Path);
+                    }
+                }
+                finally
+                {
+                    texture.Release();
+                }
+            }
+            d3dtx.WriteD3DTXXML(tempXml.Path);
+            task.Increment(1);
+            ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)} and metadata...", cancellationToken);
+            bool savedXml = false;
+            try
+            {
+                SaveResult(tempXml, xmlFile, cancellationToken);
+                savedXml = true;
+                SaveResult(temp, output, cancellationToken);
+            }
+            catch
+            {
+                if (savedXml)
+                {
+                    try
+                    {
+                        File.Delete(xmlFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        SimpleAnsiConsole.ShowWarring($"I couldn't remove the incomplete metadata \"{xmlFile}\": {ex.Message}");
+                    }
+                }
+                throw;
+            }
+        }
+        task.Increment(1);
+    }
+
+    #endregion
+
+    #region Font
+
     private static void ProcessFont(string input, string output, bool import, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
         string inputFileName = Path.GetFileName(input);
@@ -558,6 +823,8 @@ public class CliProgram : Command<Options>
         SimpleAnsiConsole.ShowInfo(Config.GithubPage);
         SimpleAnsiConsole.ShowInfo("landb: export .landb to XML, then import your translated XML back to .landb.");
         SimpleAnsiConsole.ShowInfo("font: export .font to .fnt (XML) and DDS atlases, then import .fnt back to .font.");
+        SimpleAnsiConsole.ShowInfo("d3dtx: export .d3dtx to DDS, PNG or JPEG with .d3dtx.xml metadata, then import the image and its metadata back to .d3dtx.");
+        SimpleAnsiConsole.ShowInfo("D3dtx batch export uses DDS. Batch import reads DDS, PNG and JPEG from the input folder and each texture's subfolder.");
         SimpleAnsiConsole.ShowInfo("Font import needs Compressonator CLI 4.5.52. Set CompressonatorPath in appsettings.json!");
         SimpleAnsiConsole.ShowInfo("Use --batch for folders and --relative to include subfolders and keep their paths.");
         SimpleAnsiConsole.ShowInfo("Existing output files are kept. Choose a new output path if you've already exported or imported them.");
