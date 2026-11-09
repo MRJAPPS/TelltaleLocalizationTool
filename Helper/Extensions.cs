@@ -18,11 +18,29 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
+using TelltaleLocalizationTool.Telltale.Meta.Versions;
+using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Helper;
 
 public static class Extensions
 {
+
+    public static bool IsHeadersEqauls(this MSV6 header, ClassNames[] target)//For now, and for wd3nf, we use msv6...
+    {
+        if (header.mClassNamesLength != target.Length)
+        {
+            return false;
+        }
+        for (int i = 0; i < header.mClassNamesLength; ++i)
+        {
+            if (header.mClassNames[i].mVersionCRC != target[i].mVersionCRC ||
+                header.mClassNames[i].mTypeNameCRC.mCrc64 != target[i].mTypeNameCRC.mCrc64)
+                return false;
+        }
+        return true;
+    }
+
     public static XmlElement GetSingleElement(this XmlElement element, string tagName, string? name = null)
     {
         string xpath = name is null
