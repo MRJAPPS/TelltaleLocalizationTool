@@ -46,6 +46,17 @@ public class Config
         }
     }
 
+    public string BmfontPath64
+    {
+        get
+        {
+            string ret = config["BmfontPath64"];
+            return !File.Exists(ret)
+                ? throw new FileNotFoundException("Set a valid BmfontPath64 in appsettings.json! Keep in mind, this app can't convert ttf2font without BmfontPath64 version 4.5.52!")
+                : ret;
+        }
+    }
+
     // D3DTX default values (Font settings) with sarcastic validation
     public T3SamplerStateValue mSamplerState => (T3SamplerStateValue)GetRequired<int>("mSamplerState", "'mSamplerState' seems to have evaporated. Maybe add it to the JSON? Just a thought.");
     public T3PlatformType mPlatform => (T3PlatformType)GetRequired<int>("mPlatform", "'mPlatform' is nowhere to be found. Did you think I'd guess?");
