@@ -7,9 +7,9 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Structs;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 using TelltaleLocalizationTool.Telltale.TTypes;
-using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font;
 

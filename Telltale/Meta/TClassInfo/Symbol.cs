@@ -2,7 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.Meta.Structs;
+namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
 [Description("Reading a symbol")]
 public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject

@@ -1,11 +1,10 @@
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
-namespace TelltaleLocalizationTool.Telltale.Meta.Structs;
+namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
 /// <summary>
 /// This is a class name struct used in a meta header.
@@ -15,6 +14,9 @@ namespace TelltaleLocalizationTool.Telltale.Meta.Structs;
 [Description("Reading an unhashed ClassName (UnhashedClassName)")]
 public class UnhashedClassNames : ReportBase, ITelltaleObject
 {
+    // No BOM, and scream loudly on bad bytes instead of silently mangling them, Ok???.
+    private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     #region private fields
 
     private string className = string.Empty;
@@ -25,7 +27,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
 
     #region Public props
 
-    public uint Length { get => (uint)Encoding.ASCII.GetByteCount(className); }
+    public uint Length => (uint)Utf8.GetByteCount(className);
 
     public string ClassName
     {
@@ -34,11 +36,8 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            foreach (char c in value)
-                if (!char.IsAscii(c))
-                    throw new ArgumentException(
-                        $"{nameof(ClassName)} must be ASCII .. We are in a binary file bro!. Got U+{(int)c:X4}({(uint)c}).",
-                        nameof(ClassName));
+            // Sanity check: throws if there's a lone surrogate bro, that's not real text!
+            _ = Utf8.GetByteCount(value);
 
             className = value;
         }
@@ -50,7 +49,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
 
     #region Implement
 
-    public uint Size => (sizeof(uint) * 2) + Length;
+    public uint Size => sizeof(uint) * 2 + Length;
 
     public long Position { get; private set; }
 
@@ -58,8 +57,9 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
     {
         Position = writer.BaseStream.Position;
 
-        writer.Write(Length);
-        writer.Write(Encoding.ASCII.GetBytes(ClassName));
+        byte[] bytes = Utf8.GetBytes(className);
+        writer.Write((uint)bytes.Length);
+        writer.Write(bytes);
         writer.Write(mVersionCRC);
 
         Report(this, true);
@@ -72,7 +72,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
         myElement.SetAttribute(nameof(name), name);
         AppendBasicTypes(myElement);
 
-        element.AppendChild(myElement);
+        _ = element.AppendChild(myElement);
     }
 
     public void Parse(BinaryReader reader)
@@ -80,7 +80,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
         Position = reader.BaseStream.Position;
 
         uint length = reader.ReadUInt32();
-        ClassName = Encoding.ASCII.GetString(reader.ReadBytes((int)length));
+        ClassName = Utf8.GetString(reader.ReadBytes((int)length)); // screams on corrupt UTF-8 bytes
         VersionCRC = reader.ReadUInt32();
 
         Report(this);
@@ -102,8 +102,10 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
         ClassName = element.GetAttribute(nameof(className)); // setter validates here too
 
         if (!uint.TryParse(element.GetAttribute(nameof(mVersionCRC)), out mVersionCRC))
+        {
             throw new XmlException(
                 $"Missing or invalid '{nameof(mVersionCRC)}' attribute on <{nameof(UnhashedClassNames)}> bro, can't rebuild the binary without it!.");
+        }
     }
 
     public void AppendBasicTypes(XmlElement element)

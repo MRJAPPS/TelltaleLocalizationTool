@@ -1,6 +1,6 @@
 ﻿using TelltaleLocalizationTool.Helper;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
-using TelltaleTextureTool.TelltaleTypes;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
+
 
 /*
  * This is a meta stream header.
@@ -49,12 +49,12 @@ public class MTRE : IMetaHeader
         //--------------------------mClassNames--------------------------
         for (int i = 0; i < mClassNames.Length; i++)
         {
-            mClassNames[i].WriteBinaryData(writer);
+            mClassNames[i].Write(writer);
         }
 
         for (int i = 0; i < mUnhashedClassNames.Length; i++)
         {
-            mUnhashedClassNames[i].WriteBinaryData(writer);
+            mUnhashedClassNames[i].Write(writer);
         }
     }
 
@@ -81,7 +81,8 @@ public class MTRE : IMetaHeader
 
             for (int i = 0; i < mClassNames.Length; i++)
             {
-                mClassNames[i] = new ClassNames(reader);
+                mClassNames[i] = new ClassNames();
+                mClassNames[i].Parse(reader);
             }
         }
         else
@@ -90,7 +91,8 @@ public class MTRE : IMetaHeader
 
             for (int i = 0; i < mUnhashedClassNames.Length; i++)
             {
-                mUnhashedClassNames[i] = new UnhashedClassNames(reader);
+                mUnhashedClassNames[i] = new UnhashedClassNames();
+                mUnhashedClassNames[i].Parse(reader);
             }
         }
     }
@@ -125,7 +127,7 @@ public class MTRE : IMetaHeader
         uint size = checked(2 * sizeof(uint) + 12 * (uint)mClassNames.Length);
         foreach (UnhashedClassNames item in mUnhashedClassNames)
         {
-            size = checked(size + 2 * sizeof(uint) + (uint)System.Text.Encoding.UTF8.GetByteCount(item.className));
+            size = checked(size + 2 * sizeof(uint) + (uint)System.Text.Encoding.UTF8.GetByteCount(item.ClassName));
         }
         return size;
     }

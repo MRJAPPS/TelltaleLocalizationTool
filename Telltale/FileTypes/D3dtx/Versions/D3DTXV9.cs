@@ -7,8 +7,8 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Structs;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
-using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 [Description("Reading a D3DTX version 9")]

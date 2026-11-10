@@ -18,8 +18,8 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
-using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Helper;
 

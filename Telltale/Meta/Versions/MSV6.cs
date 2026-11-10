@@ -1,5 +1,6 @@
 ﻿using TelltaleLocalizationTool.Helper;
-using TelltaleTextureTool.TelltaleTypes;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
+
 
 /*
  * This is a meta stream header.
@@ -61,7 +62,7 @@ public class MSV6 : IMetaHeader
         //--------------------------mClassNames--------------------------
         for (int i = 0; i < mClassNames.Length; i++)
         {
-            mClassNames[i].WriteBinaryData(writer);
+            mClassNames[i].Write(writer);
         }
     }
 
@@ -78,7 +79,8 @@ public class MSV6 : IMetaHeader
 
         for (int i = 0; i < mClassNames.Length; i++)
         {
-            mClassNames[i] = new ClassNames(reader);
+            mClassNames[i] = new ClassNames();
+            mClassNames[i].Parse(reader);
         }
     }
 

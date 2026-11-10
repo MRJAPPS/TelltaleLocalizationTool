@@ -10,8 +10,8 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPair
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Structs;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
-using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 

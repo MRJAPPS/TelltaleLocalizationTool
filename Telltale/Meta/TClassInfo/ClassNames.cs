@@ -2,9 +2,8 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
 
-namespace TelltaleTextureTool.TelltaleTypes;
+namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
 /// <summary>
 /// This is a class name struct used in a meta header.
@@ -47,7 +46,7 @@ public class ClassNames : ReportBase, ITelltaleObject
         mTypeNameCRC.Write(myElement, string.Empty);//We don't need a "name" in this case because symbol adds itself to this Node like an Attribute.
         AppendBasicTypes(myElement);
 
-        element.AppendChild(myElement);
+        _ = element.AppendChild(myElement);
     }
 
     public void Parse(BinaryReader reader)
