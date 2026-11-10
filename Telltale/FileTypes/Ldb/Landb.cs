@@ -9,7 +9,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPairs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 using TelltaleLocalizationTool.Telltale.Meta;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
@@ -23,9 +22,6 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     private const int OffsetAsyncDataLen = OffsetDefDebugDataLen + 0x4;
 
     #region private fields
-    /// <summary>
-    /// Honestly, I didn't define className as TelltaleObject because I couldn't be bothered — marking it as a //TODO for later.
-    /// </summary>
     // Array built from the DCArray type symbols and the updated version CRCs from your log.
     static readonly ClassNames[] mDefaultClassNamesWD3 =
     [
@@ -70,7 +66,6 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         mVersionCRC = 4129176698
     }
     ];
-    private byte[] msv6Header = [];//Use this for xml export/import
 
     private uint defaultSectionChunkSize => mLanguageDB.Size +
         mLanguageResources.Size +
@@ -133,13 +128,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     {
         XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name));
 
-        if (myElement.SelectSingleNode(nameof(msv6Header)) is XmlElement headerElement)
-        {
-            msv6Header = Convert.FromBase64String(headerElement.InnerText);
-            using MemoryStream headerStream = new(msv6Header);
-            using BinaryReader headerReader = new(headerStream);
-            Header = MetaHeaderFactory.ReadMetaHeader(headerReader);
-        }
+        Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
 
         mLanguageDB.Parse(myElement, nameof(mLanguageDB));
         mLanguageResources.Parse(myElement, nameof(mLanguageResources));
@@ -177,12 +166,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         XmlElement textTransform = element.OwnerDocument.CreateElement("textTransform");
         textTransform.SetAttribute("mode", "none");
         _ = myElement.AppendChild(textTransform);
-        if (msv6Header.Length > 0)
-        {
-            XmlElement headerElement = element.OwnerDocument.CreateElement(nameof(msv6Header));
-            headerElement.InnerText = Convert.ToBase64String(msv6Header);
-            _ = myElement.AppendChild(headerElement);
-        }
+        MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
         mLanguageDB.Write(myElement, nameof(mLanguageDB));
         mLanguageResources.Write(myElement, nameof(mLanguageResources));
         mRegistry.Write(myElement, nameof(mRegistry));
@@ -238,17 +222,13 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     }
 
     public void ParseMetaHeader(BinaryReader reader)
-    {//TODO: This method can be refactored too :| what the fuck are u doing?
+    {
         if (!rMsv6Header)
         {
             return;
         }
 
-        long Position = reader.BaseStream.Position;
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
-        reader.BaseStream.Position = Position;
-        msv6Header = new byte[Header.GetHeaderByteSize()];
-        reader.BaseStream.ReadExactly(msv6Header);
     }
 
     public void WriteMetaHeader(BinaryWriter writer)

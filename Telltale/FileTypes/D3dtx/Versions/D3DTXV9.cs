@@ -6,7 +6,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderI
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Meta;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
@@ -27,9 +26,6 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
     #endregion
 
     #region private fields
-    /// <summary>
-    /// Honestly, I didn't define className as TelltaleObject because I couldn't be bothered — marking it as a //TODO for later.
-    /// </summary>
     static readonly ClassNames[] mDefaultClassNamesWD3 =
 [
     new() {
@@ -61,8 +57,6 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         mVersionCRC = 0x5057EA61
     }
 ];
-
-    private byte[] msv6Header = [];//Use this for xml export/import
 
     #endregion
 
@@ -116,7 +110,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         XmlElement myElement = reader.GetSingleElement(nameof(D3DTXV9), name);
 
         ParseBasicTypes(myElement);
-        ParseHeader(myElement);
+        Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
 
         mD3dtxMetaData.Parse(myElement, nameof(mD3dtxMetaData));
 
@@ -158,7 +152,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         mD3dtxMetaData.Write(myElement, nameof(mD3dtxMetaData));
 
         AppendBasicTypes(myElement);
-        AppendHeader(myElement);
+        MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
 
         AppendPixelData(myElement);
 
@@ -295,11 +289,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
             return;
         }
 
-        long Position = reader.BaseStream.Position;
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
-        reader.BaseStream.Position = Position;
-        msv6Header = new byte[Header.GetHeaderByteSize()];
-        reader.BaseStream.ReadExactly(msv6Header);
     }
 
     #endregion
@@ -347,37 +337,6 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
                 mPixelData.Add(data);
             }
         }
-    }
-
-    private void ParseHeader(XmlElement element)
-    {
-        if (!rMsv6Header)
-        {
-            return;
-        }
-
-        XmlElement msv6H = element.GetSingleElement(nameof(msv6Header));
-        msv6Header = System.Convert.FromBase64String(msv6H.InnerText);
-        using MemoryStream headerTempStream = new(msv6Header);
-        using BinaryReader reader = new(headerTempStream);
-        Header = MetaHeaderFactory.ReadMetaHeader(reader);
-    }
-
-    private void AppendHeader(XmlElement element)
-    {
-        if (!wMsv6Header)
-        {
-            return;
-        }
-
-        if (Header == null)
-        {
-            throw new NullReferenceException($"{nameof(Header)} is not properly initialized! If you were looking to save a texture from a TFont as a D3dtx file, that feature hasn't been implemented yet and will likely be added in the future.");// TODO: Implement saving TFont texture as D3dtx.
-        }
-        string headerB64 = System.Convert.ToBase64String(msv6Header);
-        XmlElement b64 = element.OwnerDocument.CreateElement(nameof(msv6Header));
-        b64.InnerText = headerB64;
-        _ = element.AppendChild(b64);
     }
 
     #endregion

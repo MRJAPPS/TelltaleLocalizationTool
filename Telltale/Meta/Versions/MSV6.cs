@@ -1,88 +1,124 @@
-﻿using TelltaleLocalizationTool.Helper;
+using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
-
-
-/*
- * This is a meta stream header.
- * These objects are often at the top of every telltale file.
- * They also contain info regarding the byte size of certain data chunks, along with the classes that are used (which are CRC64'd sadly).
- * Also, Telltale uses Hungarian Notation for variable naming.
-*/
 
 namespace TelltaleLocalizationTool.Telltale.Meta.Versions;
 
-/// <summary>
-/// Meta Stream Version 6 (MSV6, or 6VSM), a meta header often used in telltale files
-/// </summary>
-public class MSV6 : IMetaHeader
+[Description("Reading a MSV6 meta header")]
+public class MSV6 : ReportBase, ITelltaleObject, IMetaHeader
 {
-    /// <summary>
-    /// [4 bytes] The version of the meta stream version.
-    /// </summary>
+    #region Public props
+
     public string mMetaStreamVersion { get; set; } = "6VSM";
 
-    /// <summary>
-    /// [4 bytes] The size of the data 'header' after the meta header.
-    /// </summary>
     public uint mDefaultSectionChunkSize { get; set; }
 
-    /// <summary>
-    /// [4 bytes] The size of the debug data chunk after the meta header, which is always 0.
-    /// </summary>
     public uint mDebugSectionChunkSize { get; set; }
 
-    /// <summary>
-    /// [4 bytes] The size of the asynchronous data chunk (not the meta header, or the data chunk header, but the data itself).
-    /// </summary>
     public uint mAsyncSectionChunkSize { get; set; }
 
-    /// <summary>
-    /// [4 bytes] Amount of class name elements (CRC64 Class Names) used in the file.
-    /// </summary>
     public uint mClassNamesLength { get; set; }
 
-    /// <summary>
-    /// [12 bytes for each element] An array of class names (CRC64 Class Names) that are used in the file.
-    /// </summary>
     public ClassNames[] mClassNames { get; set; } = [];
 
-    /// <summary>
-    /// Meta Stream Header version 6 (empty constructor, only used for json deserialization)
-    /// </summary>
-    public MSV6() { }
+    #endregion
 
-    public void WriteToBinary(BinaryWriter writer)
+    #region Implement
+
+    public uint Size => checked(5 * sizeof(uint) + (uint)mClassNames.Sum(item => item.Size));
+
+    public long Position { get; private set; }
+
+    public void Write(BinaryWriter writer)
     {
-        ByteFunctions.WriteFixedString(writer, mMetaStreamVersion); // Meta Stream Keyword [4 bytes]
-        writer.Write(mDefaultSectionChunkSize); // Default Section Chunk Size [4 bytes] default section chunk size
-        writer.Write(mDebugSectionChunkSize); // Debug Section Chunk Size [4 bytes] debug section chunk size (always zero)
-        writer.Write(mAsyncSectionChunkSize); // Async Section Chunk Size [4 bytes] async section chunk size (size of the bytes after the file header)
-        writer.Write(mClassNamesLength); // mClassNamesLength [4 bytes]
+        Position = writer.BaseStream.Position;
 
-        //--------------------------mClassNames--------------------------
-        for (int i = 0; i < mClassNames.Length; i++)
+        mClassNamesLength = (uint)mClassNames.Length;
+        ByteFunctions.WriteFixedString(writer, mMetaStreamVersion);
+        writer.Write(mDefaultSectionChunkSize);
+        writer.Write(mDebugSectionChunkSize);
+        writer.Write(mAsyncSectionChunkSize);
+        writer.Write(mClassNamesLength);
+
+        foreach (ClassNames item in mClassNames)
         {
-            mClassNames[i].Write(writer);
+            item.Write(writer);
         }
+
+        Report(this, true);
     }
 
-    public void ReadFromBinary(BinaryReader reader)
+    public void Write(XmlElement element, string name)
     {
-        mMetaStreamVersion = ByteFunctions.ReadFixedString(reader, 4); // Meta Stream Keyword [4 bytes]
-        mDefaultSectionChunkSize = reader.ReadUInt32(); // Default Section Chunk Size [4 bytes] //default section chunk size
-        mDebugSectionChunkSize = reader.ReadUInt32(); // Debug Section Chunk Size [4 bytes] //debug section chunk size (always zero)
-        mAsyncSectionChunkSize = reader.ReadUInt32(); // Async Section Chunk Size [4 bytes] //async section chunk size (size of the bytes after the file header)
-        mClassNamesLength = reader.ReadUInt32(); // mClassNamesLength [4 bytes]
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(MSV6));
+        myElement.SetAttribute(nameof(name), name);
 
-        //--------------------------mClassNames--------------------------
-        mClassNames = new ClassNames[mClassNamesLength];
+        mClassNamesLength = (uint)mClassNames.Length;
+        AppendBasicTypes(myElement);
 
         for (int i = 0; i < mClassNames.Length; i++)
         {
-            mClassNames[i] = new ClassNames();
+            mClassNames[i].Write(myElement, $"{nameof(mClassNames)}_{i}");
+        }
+
+        _ = element.AppendChild(myElement);
+    }
+
+    public void Parse(BinaryReader reader)
+    {
+        Position = reader.BaseStream.Position;
+
+        mMetaStreamVersion = ByteFunctions.ReadFixedString(reader, 4);
+        mDefaultSectionChunkSize = reader.ReadUInt32();
+        mDebugSectionChunkSize = reader.ReadUInt32();
+        mAsyncSectionChunkSize = reader.ReadUInt32();
+        mClassNamesLength = reader.ReadUInt32();
+
+        mClassNames = new ClassNames[mClassNamesLength];
+        for (int i = 0; i < mClassNames.Length; i++)
+        {
+            mClassNames[i] = new();
             mClassNames[i].Parse(reader);
         }
+
+        Report(this);
     }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(MSV6), name);
+        ParseBasicTypes(myElement);
+
+        List<ClassNames> classNames = [];
+        foreach (XmlNode node in myElement.ChildNodes)
+        {
+            if (node is XmlElement itemElement && itemElement.Name == nameof(ClassNames))
+            {
+                string itemName = itemElement.GetAttribute(nameof(name));
+                ClassNames item = new();
+                item.Parse(myElement, itemName);
+                classNames.Add(item);
+            }
+        }
+        mClassNames = [.. classNames];
+
+        if (mClassNamesLength != (uint)mClassNames.Length)
+        {
+            throw new InvalidDataException("The meta header class count doesn't match its XML elements!");
+        }
+    }
+
+    #endregion
+
+    #region Header
+
+    public void WriteToBinary(BinaryWriter writer) => Write(writer);
+
+    public void ReadFromBinary(BinaryReader reader) => Parse(reader);
+
+    public uint GetHeaderByteSize() => Size;
 
     public void SetMetaSectionChunkSizes(uint defaultSectionChunkSize, uint debugSectionChunkSize, uint asyncSectionChunkSize)
     {
@@ -109,13 +145,49 @@ public class MSV6 : IMetaHeader
         return metaInfo;
     }
 
-    public uint GetHeaderByteSize()
-    {
-        return checked(5 * sizeof(uint) + 12 * (uint)mClassNames.Length);
-    }
-
     public void PrintConsole()
     {
         Console.WriteLine(GetDebugInfo());
     }
+
+    #endregion
+
+    #region XML
+
+    private void ParseBasicTypes(XmlElement element)
+    {
+        mMetaStreamVersion = element.GetAttribute(nameof(mMetaStreamVersion));
+        if (mMetaStreamVersion != "6VSM")
+        {
+            throw new InvalidDataException($"Invalid MSV6 meta stream version: {mMetaStreamVersion}");
+        }
+
+        mDefaultSectionChunkSize = uint.Parse(element.GetAttribute(nameof(mDefaultSectionChunkSize)));
+        mDebugSectionChunkSize = uint.Parse(element.GetAttribute(nameof(mDebugSectionChunkSize)));
+        mAsyncSectionChunkSize = uint.Parse(element.GetAttribute(nameof(mAsyncSectionChunkSize)));
+        mClassNamesLength = uint.Parse(element.GetAttribute(nameof(mClassNamesLength)));
+    }
+
+    private void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute mMetaStreamVersion = element.OwnerDocument.CreateAttribute(nameof(this.mMetaStreamVersion));
+        XmlAttribute mDefaultSectionChunkSize = element.OwnerDocument.CreateAttribute(nameof(this.mDefaultSectionChunkSize));
+        XmlAttribute mDebugSectionChunkSize = element.OwnerDocument.CreateAttribute(nameof(this.mDebugSectionChunkSize));
+        XmlAttribute mAsyncSectionChunkSize = element.OwnerDocument.CreateAttribute(nameof(this.mAsyncSectionChunkSize));
+        XmlAttribute mClassNamesLength = element.OwnerDocument.CreateAttribute(nameof(this.mClassNamesLength));
+
+        mMetaStreamVersion.Value = this.mMetaStreamVersion.ToString();
+        mDefaultSectionChunkSize.Value = this.mDefaultSectionChunkSize.ToString();
+        mDebugSectionChunkSize.Value = this.mDebugSectionChunkSize.ToString();
+        mAsyncSectionChunkSize.Value = this.mAsyncSectionChunkSize.ToString();
+        mClassNamesLength.Value = this.mClassNamesLength.ToString();
+
+        _ = element.Attributes.Append(mMetaStreamVersion);
+        _ = element.Attributes.Append(mDefaultSectionChunkSize);
+        _ = element.Attributes.Append(mDebugSectionChunkSize);
+        _ = element.Attributes.Append(mAsyncSectionChunkSize);
+        _ = element.Attributes.Append(mClassNamesLength);
+    }
+
+    #endregion
 }

@@ -6,7 +6,6 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Meta;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 using TelltaleLocalizationTool.Telltale.TTypes;
@@ -27,8 +26,6 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     #region private fields
 
-    private byte[] msv6Header = [];//Use this for xml export/import
-
     private uint classSizes => mName.Size + mGlyphInfos.Size;
 
     private uint defaultSectionChunkSize => classSizes + BasicTypes + mTexturePages.HeaderSizeSum;
@@ -46,9 +43,6 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         }
     }
 
-    /// <summary>
-    /// Honestly, I didn't define className as TelltaleObject because I couldn't be bothered — marking it as a //TODO for later.
-    /// </summary>
     static readonly ClassNames[] mDefaultClassNamesWD3 =
 [
     new() {
@@ -168,8 +162,8 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     public void Parse(XmlElement reader, string name)
     {
         XmlElement myElement = reader.GetSingleElement(nameof(TFont), name);
-        ParseHeader(myElement);
         ParseBasicTypes(myElement);
+        Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
         mName.Parse(myElement, nameof(mName));
         mGlyphInfos.Parse(myElement, nameof(mGlyphInfos));
         mTexturePages.Parse(myElement, nameof(mTexturePages));
@@ -198,7 +192,7 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     {
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(TFont));
         myElement.SetAttribute(nameof(name), name);
-        AppendHeader(myElement);
+        MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
         AppendBasicTypes(myElement);
         mName.Write(myElement, nameof(mName));
         mGlyphInfos.Write(myElement, nameof(mGlyphInfos));
@@ -212,17 +206,13 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     #region Header
 
     public void ParseMetaHeader(BinaryReader reader)
-    {//TODO: This method can be refactored too :| what the fuck are u doing?
+    {
         if (!rMsv6Header)
         {
             return;
         }
 
-        long Position = reader.BaseStream.Position;
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
-        reader.BaseStream.Position = Position;
-        msv6Header = new byte[Header.GetHeaderByteSize()];
-        reader.BaseStream.ReadExactly(msv6Header);
     }
 
     public void WriteMetaHeader(BinaryWriter writer)
@@ -296,27 +286,6 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         mIsDistanceField = bool.Parse(element.GetAttribute(nameof(mIsDistanceField)));
         wMsv6Header = bool.Parse(element.GetAttribute(nameof(wMsv6Header)));
         rMsv6Header = bool.Parse(element.GetAttribute(nameof(rMsv6Header)));
-    }
-
-    private void ParseHeader(XmlElement element)
-    {
-        XmlElement msv6H = element.GetSingleElement(nameof(msv6Header));
-        msv6Header = Convert.FromBase64String(msv6H.InnerText);
-        using MemoryStream headerTempStream = new(msv6Header);
-        using BinaryReader reader = new(headerTempStream);
-        Header = MetaHeaderFactory.ReadMetaHeader(reader);
-    }
-
-    private void AppendHeader(XmlElement element)
-    {
-        if (Header == null)
-        {
-            throw new NullReferenceException($"{nameof(Header)} is not properly initialized! If you were looking to save a texture from a TFont as a D3dtx file, that feature hasn't been implemented yet and will likely be added in the future.");// TODO: Implement saving TFont texture as D3dtx.
-        }
-        string headerB64 = Convert.ToBase64String(msv6Header);
-        XmlElement b64 = element.OwnerDocument.CreateElement(nameof(msv6Header));
-        b64.InnerText = headerB64;
-        _ = element.AppendChild(b64);
     }
 
     #endregion

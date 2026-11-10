@@ -1,9 +1,11 @@
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+
 namespace TelltaleLocalizationTool.Telltale.Meta;
 
 /// <summary>
 /// Interface for serializing a meta header.
 /// </summary>
-public interface IMetaHeader : ITelltaleSerializable
+public interface IMetaHeader : ITelltaleSerializable, ITelltaleObject
 {
     //Older headers don't have separate debug or async sections.
     uint mDebugSectionChunkSize => 0;

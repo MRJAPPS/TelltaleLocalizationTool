@@ -1,4 +1,5 @@
-﻿using TelltaleLocalizationTool.Telltale.Meta.Enums;
+﻿using System.Xml;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
 namespace TelltaleLocalizationTool.Telltale.Meta
@@ -33,6 +34,28 @@ namespace TelltaleLocalizationTool.Telltale.Meta
                 MetaVersion.MBIN => new MBIN(),
                 _ => throw new ArgumentException($"Unsupported Meta version: {version}")
             };
+        }
+
+        public static IMetaHeader ReadMetaHeader(XmlElement element, string name)
+        {
+            XmlNodeList nodes = element.SelectNodes($"./*[@name='{name}']")!;
+            if (nodes.Count != 1 || nodes[0] is not XmlElement headerElement)
+            {
+                throw new InvalidDataException($"Expected one meta header named '{name}' in XML!");
+            }
+
+            MetaVersion version = headerElement.Name switch
+            {
+                nameof(MSV6) => MetaVersion.MSV6,
+                nameof(MSV5) => MetaVersion.MSV5,
+                nameof(MTRE) => MetaVersion.MTRE,
+                nameof(MBIN) => MetaVersion.MBIN,
+                _ => throw new NotSupportedException($"I can't read Meta Stream XML element '{headerElement.Name}'!")
+            };
+
+            IMetaHeader header = CreateMetaHeader(version);
+            header.Parse(element, name);
+            return header;
         }
 
         public static IMetaHeader? CreateMetaHeader(MetaVersion version, Newtonsoft.Json.Linq.JObject jsonObject)

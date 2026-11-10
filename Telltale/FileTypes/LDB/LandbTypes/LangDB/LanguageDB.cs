@@ -2,8 +2,6 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
-using TelltaleLocalizationTool.Telltale.Meta.Structs;
-using TelltaleTextureTool.TelltaleTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 

@@ -1,117 +1,204 @@
+using System.ComponentModel;
+using System.Xml;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
-
-
-/*
- * This is a meta stream header.
- * These objects are often at the top of every telltale file.
- * They also contain info regarding the byte size of certain data chunks, along with the classes that are used (which are CRC64'd sadly).
- * Also, Telltale uses Hungarian Notation for variable naming.
-*/
 
 namespace TelltaleLocalizationTool.Telltale.Meta.Versions;
 
-/// <summary>
-/// Meta Type REference (MTRE, or ERTM), a meta header often used in telltale files
-/// </summary>
-public class MBIN : IMetaHeader
+[Description("Reading a MBIN meta header")]
+public class MBIN : ReportBase, ITelltaleObject, IMetaHeader
 {
-    /// <summary>
-    /// [4 bytes] The version of the meta stream version.
-    /// </summary>
+    #region Public props
+
     public string mMetaStreamVersion { get; set; } = "NIBM";
 
-    /// <summary>
-    /// [4 bytes] Amount of class name elements (CRC64 Class Names) used in the file.
-    /// </summary>
     public uint mClassNamesLength { get; set; }
 
-    /// Games using MBIN metaheader use either unhashed class names or hashed class names.
-
-    /// <summary>
-    /// [4 + string length + 4 bytes for each element] An array of class names (Unhashed Class Names) that are used in the file. Used in older games.
-    /// </summary>
-    public UnhashedClassNames[] mUnhashedClassNames { get; set; } = [];
-
-    /// <summary>
-    /// [4 + string length + 4 bytes for each element] An array of class names (Hashed Classes) that are used in the file. Used in modern games.
-    /// </summary>
     public ClassNames[] mClassNames { get; set; } = [];
 
-    /// <summary>
-    /// Meta Header (empty constructor, only used for json deserialization)
-    /// </summary>
-    public MBIN() { }
+    public UnhashedClassNames[] mUnhashedClassNames { get; set; } = [];
 
-    public void WriteToBinary(BinaryWriter writer)
+    #endregion
+
+    #region Implement
+
+    public uint Size => checked(2 * sizeof(uint) + (uint)mClassNames.Sum(item => item.Size) +
+        (uint)mUnhashedClassNames.Sum(item => item.Size));
+
+    public long Position { get; private set; }
+
+    public void Write(BinaryWriter writer)
     {
-        ByteFunctions.WriteFixedString(writer, mMetaStreamVersion); // Meta Stream Keyword [4 bytes]
-        writer.Write(mClassNamesLength); // mClassNamesLength [4 bytes]
+        Position = writer.BaseStream.Position;
 
-        //--------------------------mClassNames--------------------------
+        if (mClassNames.Length > 0 && mUnhashedClassNames.Length > 0)
+        {
+            throw new InvalidDataException("A meta header can't contain both hashed and unhashed class names!");
+        }
+
+        mClassNamesLength = checked((uint)mClassNames.Length + (uint)mUnhashedClassNames.Length);
+        ByteFunctions.WriteFixedString(writer, mMetaStreamVersion);
+        writer.Write(mClassNamesLength);
+
+        foreach (ClassNames item in mClassNames)
+        {
+            item.Write(writer);
+        }
+
+        foreach (UnhashedClassNames item in mUnhashedClassNames)
+        {
+            item.Write(writer);
+        }
+
+        Report(this, true);
+    }
+
+    public void Write(XmlElement element, string name)
+    {
+        if (mClassNames.Length > 0 && mUnhashedClassNames.Length > 0)
+        {
+            throw new InvalidDataException("A meta header can't contain both hashed and unhashed class names!");
+        }
+
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(MBIN));
+        myElement.SetAttribute(nameof(name), name);
+
+        mClassNamesLength = checked((uint)mClassNames.Length + (uint)mUnhashedClassNames.Length);
+        AppendBasicTypes(myElement);
+
         for (int i = 0; i < mClassNames.Length; i++)
         {
-            mClassNames[i].Write(writer);
+            mClassNames[i].Write(myElement, $"{nameof(mClassNames)}_{i}");
         }
 
         for (int i = 0; i < mUnhashedClassNames.Length; i++)
         {
-            mUnhashedClassNames[i].Write(writer);
+            mUnhashedClassNames[i].Write(myElement, $"{nameof(mUnhashedClassNames)}_{i}");
         }
+
+        _ = element.AppendChild(myElement);
     }
 
-    public void ReadFromBinary(BinaryReader reader)
+    public void Parse(BinaryReader reader)
     {
-        mMetaStreamVersion = ByteFunctions.ReadFixedString(reader, 4); // Meta Stream Keyword [4 bytes]
-        mClassNamesLength = reader.ReadUInt32(); // mClassNamesLength [4 bytes]
+        Position = reader.BaseStream.Position;
+
+        mMetaStreamVersion = ByteFunctions.ReadFixedString(reader, 4);
+        mClassNamesLength = reader.ReadUInt32();
 
         mClassNames = [];
         mUnhashedClassNames = [];
-        if (mClassNamesLength == 0)
+        if (mClassNamesLength > 0)
         {
-            return;
-        }
+            uint checkValue = reader.ReadUInt32();
+            reader.BaseStream.Position -= sizeof(uint);
 
-        uint checkValue = reader.ReadUInt32();
-
-        reader.BaseStream.Position -= 4;
-
-        // Interesting way to check if a string is hashed. Usually hashes are big numbers, while lengths are less than a couple of dozens.
-        if (checkValue is < 0 or > 128)
-        {
-            mClassNames = new ClassNames[mClassNamesLength];
-
-            for (int i = 0; i < mClassNames.Length; i++)
+            if (checkValue > 128)
             {
-                mClassNames[i] = new ClassNames();
-                mClassNames[i].Parse(reader);
+                mClassNames = new ClassNames[mClassNamesLength];
+                for (int i = 0; i < mClassNames.Length; i++)
+                {
+                    mClassNames[i] = new();
+                    mClassNames[i].Parse(reader);
+                }
             }
-        }
-        else
-        {
-            mUnhashedClassNames = new UnhashedClassNames[mClassNamesLength];
-
-            for (int i = 0; i < mUnhashedClassNames.Length; i++)
+            else
             {
-                mUnhashedClassNames[i] = new UnhashedClassNames();
-                mUnhashedClassNames[i].Parse(reader);
+                mUnhashedClassNames = new UnhashedClassNames[mClassNamesLength];
+                for (int i = 0; i < mUnhashedClassNames.Length; i++)
+                {
+                    mUnhashedClassNames[i] = new();
+                    mUnhashedClassNames[i].Parse(reader);
+                }
             }
         }
 
+        Report(this);
     }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(MBIN), name);
+        ParseBasicTypes(myElement);
+
+        List<ClassNames> classNames = [];
+        foreach (XmlNode node in myElement.ChildNodes)
+        {
+            if (node is XmlElement itemElement && itemElement.Name == nameof(ClassNames))
+            {
+                string itemName = itemElement.GetAttribute(nameof(name));
+                ClassNames item = new();
+                item.Parse(myElement, itemName);
+                classNames.Add(item);
+            }
+        }
+        mClassNames = [.. classNames];
+
+        List<UnhashedClassNames> unhashedClassNames = [];
+        foreach (XmlNode node in myElement.ChildNodes)
+        {
+            if (node is XmlElement itemElement && itemElement.Name == nameof(UnhashedClassNames))
+            {
+                string itemName = itemElement.GetAttribute(nameof(name));
+                UnhashedClassNames item = new();
+                item.Parse(myElement, itemName);
+                unhashedClassNames.Add(item);
+            }
+        }
+        mUnhashedClassNames = [.. unhashedClassNames];
+
+        if (mClassNames.Length > 0 && mUnhashedClassNames.Length > 0)
+        {
+            throw new InvalidDataException("A meta header can't contain both hashed and unhashed class names!");
+        }
+
+        if (mClassNamesLength != checked((uint)mClassNames.Length + (uint)mUnhashedClassNames.Length))
+        {
+            throw new InvalidDataException("The meta header class count doesn't match its XML elements!");
+        }
+    }
+
+    #endregion
+
+    #region Header
+
+    public void WriteToBinary(BinaryWriter writer) => Write(writer);
+
+    public void ReadFromBinary(BinaryReader reader) => Parse(reader);
+
+    public uint GetHeaderByteSize() => Size;
 
     public void SetMetaSectionChunkSizes(uint defaultSectionChunkSize, uint debugSectionChunkSize, uint asyncSectionChunkSize)
     {
-        return;
-    }
-    public uint GetHeaderByteSize()
-    {
-        uint size = checked(2 * sizeof(uint) + 12 * (uint)mClassNames.Length);
-        foreach (UnhashedClassNames item in mUnhashedClassNames)
-        {
-            size = checked(size + 2 * sizeof(uint) + (uint)System.Text.Encoding.UTF8.GetByteCount(item.ClassName));
-        }
-        return size;
     }
 
+    #endregion
+
+    #region XML
+
+    private void ParseBasicTypes(XmlElement element)
+    {
+        mMetaStreamVersion = element.GetAttribute(nameof(mMetaStreamVersion));
+        if (mMetaStreamVersion != "NIBM")
+        {
+            throw new InvalidDataException($"Invalid MBIN meta stream version: {mMetaStreamVersion}");
+        }
+
+        mClassNamesLength = uint.Parse(element.GetAttribute(nameof(mClassNamesLength)));
+    }
+
+    private void AppendBasicTypes(XmlElement element)
+    {
+        XmlAttribute mMetaStreamVersion = element.OwnerDocument.CreateAttribute(nameof(this.mMetaStreamVersion));
+        XmlAttribute mClassNamesLength = element.OwnerDocument.CreateAttribute(nameof(this.mClassNamesLength));
+
+        mMetaStreamVersion.Value = this.mMetaStreamVersion.ToString();
+        mClassNamesLength.Value = this.mClassNamesLength.ToString();
+
+        _ = element.Attributes.Append(mMetaStreamVersion);
+        _ = element.Attributes.Append(mClassNamesLength);
+    }
+
+    #endregion
 }
