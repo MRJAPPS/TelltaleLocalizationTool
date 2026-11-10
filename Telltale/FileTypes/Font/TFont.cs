@@ -6,6 +6,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 using TelltaleLocalizationTool.Telltale.TTypes;
@@ -46,43 +47,43 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     static readonly ClassName[] mDefaultClassNamesWD3 =
 [
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x9A3A4A9E63375381 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Font },
         mVersionCRC = 0xF28FDEE8
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0xAB4BFA2304C2292C },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Font_GlyphInfo },
         mVersionCRC = 0x3FE91201
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x53A0B3AA86983895 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.TRect_float },
         mVersionCRC = 0x376CAB81
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x3E249E7E6F38CCE2 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3Texture },
         mVersionCRC = 0xA730AB61
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x937F5D487A0988E3 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3SamplerStateBlock },
         mVersionCRC = 0xB2E3CEB0
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x8E88FBB78405598C },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.EnumPlatformType },
         mVersionCRC = 0xA4AC7DAF
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0xFA6C8889876EBA7A },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.RenderSwizzleParams },
         mVersionCRC = 0x5B484905
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x7BBCA244E61F1A07 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Vector2 },
         mVersionCRC = 0xE19FCC02
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0xEFA1BA20E620F40F },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3Texture_StreamHeader },
         mVersionCRC = 0x9AF4FC40
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = 0x584619F1AE300EEA },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3Texture_RegionStreamHeader },
         mVersionCRC = 0x5057EA61
     }
 ];

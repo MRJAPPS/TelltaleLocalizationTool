@@ -19,6 +19,7 @@ using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
 namespace TelltaleLocalizationTool.Helper;
@@ -26,6 +27,12 @@ namespace TelltaleLocalizationTool.Helper;
 public static class Extensions
 {
 
+    public static ClassNames? ToClassNames(this Symbol symbol)
+    {
+        return Enum.IsDefined(typeof(ClassNames), symbol.mCrc64)
+            ? (ClassNames)symbol.mCrc64
+            : null;
+    }
     public static bool IsHeadersEqauls(this MSV6 header, ClassName[] target)//For now, and for wd3nf, we use msv6...
     {
         if (header.mClassNamesLength != target.Length)

@@ -1,6 +1,9 @@
 ﻿using System.ComponentModel;
+using System.Globalization;
 using System.Xml;
+using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
@@ -54,12 +57,21 @@ public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject
 
     private void ParseBasicTypes(XmlElement element)
     {
-        mCrc64 = ulong.Parse(element.GetAttribute(nameof(mCrc64)));
+        string value = element.GetAttribute(nameof(mCrc64));
+
+        if (Enum.TryParse(value, out ClassNames className))
+        {
+            mCrc64 = (ulong)className;
+        }
+        else if (!ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out crc64))
+        {
+            throw new XmlException($"Invalid '{nameof(mCrc64)}' value: {value}");
+        }
     }
 
     private void AppendBasicTypes(XmlElement element)
     {
-        element.SetAttribute(nameof(mCrc64), mCrc64.ToString());
+        element.SetAttribute(nameof(mCrc64), this.ToClassNames()?.ToString() ?? mCrc64.ToString(CultureInfo.InvariantCulture));
     }
 
     #endregion

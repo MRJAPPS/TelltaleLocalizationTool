@@ -9,6 +9,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.ProjDataBIDPairs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
@@ -26,43 +27,43 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     static readonly ClassName[] mDefaultClassNamesWD3 =
     [
         new() { // LanguageDB
-        mTypeNameCRC = new Symbol { mCrc64 = 10167596401243054749 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.LanguageDB },
         mVersionCRC = 3484166325
     },
     new() { // UID::Owner
-        mTypeNameCRC = new Symbol { mCrc64 = 5213064354065280415 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.UID_Owner },
         mVersionCRC = 4008931442
     },
     new() { // UID::Generator
-        mTypeNameCRC = new Symbol { mCrc64 = 5462952281277296288 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.UID_Generator },
         mVersionCRC = 1301338751
     },
     new() { // LanguageRes
-        mTypeNameCRC = new Symbol { mCrc64 = 4314860780925021146 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.LanguageRes },
         mVersionCRC = 3740207120
     },
     new() { // Symbol
-        mTypeNameCRC = new Symbol { mCrc64 = 22238947196837808 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Symbol },
         mVersionCRC = 3040456959
     },
     new() { // LanguageResLocal
-        mTypeNameCRC = new Symbol { mCrc64 = 6873471627863899232 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.LanguageResLocal },
         mVersionCRC = 4168609454
     },
     new() { // LocalizeInfo
-        mTypeNameCRC = new Symbol { mCrc64 = 18223585787162570679 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.LocalizeInfo },
         mVersionCRC = 1148494836
     },
     new() { // Flags
-        mTypeNameCRC = new Symbol { mCrc64 = 9522928179385669185 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Flags },
         mVersionCRC = 86496959
     },
     new() { // RecordingUtils::EnumRecordingStatus
-        mTypeNameCRC = new Symbol { mCrc64 = 9141417580607954003 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.RecordingUtils_EnumRecordingStatus },
         mVersionCRC = 2762767791
     },
     new() { // LocalizationRegistry
-        mTypeNameCRC = new Symbol { mCrc64 = 12621666885870520219 },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.LocalizationRegistry },
         mVersionCRC = 4129176698
     }
     ];
