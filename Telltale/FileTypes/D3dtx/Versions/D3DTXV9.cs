@@ -316,7 +316,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         rMsv6Header = bool.Parse(element.GetAttribute(nameof(rMsv6Header)));
     }
 
-    public void AppendPixelData(XmlElement element)//TODO: Make all XML Append and Parse methods private!!!
+    private void AppendPixelData(XmlElement element)
     {
         foreach (byte[] pixelBytes in mPixelData)
         {

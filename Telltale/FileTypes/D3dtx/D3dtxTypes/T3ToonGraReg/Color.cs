@@ -61,7 +61,7 @@ public class Color : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute r, g, b, a;
         r = element.OwnerDocument.CreateAttribute(nameof(this.r));
@@ -81,7 +81,7 @@ public class Color : ReportBase, ITelltaleObject
 
     }
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         r = float.Parse(element.GetAttribute(nameof(r)));
         g = float.Parse(element.GetAttribute(nameof(g)));

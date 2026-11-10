@@ -97,7 +97,7 @@ public class UnhashedClassName : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         ClassName = element.GetAttribute(nameof(className)); // setter validates here too
 
@@ -108,7 +108,7 @@ public class UnhashedClassName : ReportBase, ITelltaleObject
         }
     }
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute ClassName = element.OwnerDocument.CreateAttribute(nameof(className));
         XmlAttribute VersionCRC = element.OwnerDocument.CreateAttribute(nameof(mVersionCRC));

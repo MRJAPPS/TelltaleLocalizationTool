@@ -141,7 +141,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute readSize, FixedLength, ZeroCount, Encoding, skipZero;
 

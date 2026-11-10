@@ -103,7 +103,7 @@ public class RenderSwizzleParams : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mSwizzle = element.OwnerDocument.CreateAttribute(nameof(this.mSwizzle));
 
@@ -112,7 +112,7 @@ public class RenderSwizzleParams : ReportBase, ITelltaleObject
         _ = element.Attributes.Append(mSwizzle);
     }
 
-    public void ParseBasicTypes(XmlElement element) => mSwizzle = uint.Parse(element.GetAttribute(nameof(mSwizzle)));
+    private void ParseBasicTypes(XmlElement element) => mSwizzle = uint.Parse(element.GetAttribute(nameof(mSwizzle)));
 
     #endregion
 }

@@ -70,12 +70,12 @@ public class ClassName : ReportBase, ITelltaleObject
     #endregion
 
     #region XML
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
-        mVersionCRC = uint.Parse(element.GetAttribute(nameof(mVersionCRC)));//MAKE IT PRIVATE TODO
+        mVersionCRC = uint.Parse(element.GetAttribute(nameof(mVersionCRC)));
     }
 
-    public void AppendBasicTypes(XmlElement element)//MAKE IT PRIVATE TODO
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mVersionCRC = element.OwnerDocument.CreateAttribute(nameof(this.mVersionCRC));
 

@@ -38,7 +38,7 @@ public class D3DTXMetadata(int version) : ReportBase, ITelltaleObject
 
     public T3SamplerStateBlock mSamplerState { get; set; } = new();
 
-    public FixedEnum<T3PlatformType> mPlatform { get; set; } = new();//TODO: Move this to TTypes filter(FixedEnum)
+    public FixedEnum<T3PlatformType> mPlatform { get; set; } = new();
 
     public TString mName { get; set; } = string.Empty;
 

@@ -62,7 +62,7 @@ public class ProjectDatabaseIDPair : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mProjectID, mDBID;
 

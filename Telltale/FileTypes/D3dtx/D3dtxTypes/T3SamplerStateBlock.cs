@@ -94,12 +94,12 @@ public class T3SamplerStateBlock : ReportBase, ITelltaleObject
     #endregion
 
     #region XML
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mData = element.OwnerDocument.CreateAttribute(nameof(this.mData));
         mData.Value = this.mData.ToString();
         _ = element.Attributes.Append(mData);
     }
-    public void ParseBasicTypes(XmlElement element) => this.mData = (T3SamplerStateValue)uint.Parse(element.GetAttribute(nameof(this.mData)));
+    private void ParseBasicTypes(XmlElement element) => this.mData = (T3SamplerStateValue)uint.Parse(element.GetAttribute(nameof(this.mData)));
     #endregion
 }

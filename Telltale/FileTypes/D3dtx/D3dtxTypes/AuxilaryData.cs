@@ -94,7 +94,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlElement Data = element.OwnerDocument.CreateElement(nameof(this.Data));
         XmlAttribute Unkown = element.OwnerDocument.CreateAttribute(nameof(this.Unkown));
@@ -109,7 +109,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
         _ = element.AppendChild(Data);
     }
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         XmlElement Data = element.GetSingleElement(nameof(this.Data));
         Unkown = ulong.Parse(element.GetAttribute(nameof(Unkown)));

@@ -101,7 +101,7 @@ public class StreamHeaderInfo(int version) : TCollectionBase<RegionStreamHeader>
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mRegionCount, mAuxDataCount, mTotalDataSize, versionAtt;
 
@@ -121,7 +121,7 @@ public class StreamHeaderInfo(int version) : TCollectionBase<RegionStreamHeader>
         element.Attributes.Append(versionAtt);
     }
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         mRegionCount = int.Parse(element.GetAttribute(nameof(mRegionCount)));
         mAuxDataCount = int.Parse(element.GetAttribute(nameof(mAuxDataCount)));

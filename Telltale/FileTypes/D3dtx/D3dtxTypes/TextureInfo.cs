@@ -64,7 +64,7 @@ public class TextureInfo : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mNumMipLevels = element.OwnerDocument.CreateAttribute(nameof(this.mNumMipLevels));
         XmlAttribute mWidth = element.OwnerDocument.CreateAttribute(nameof(this.mWidth));
@@ -85,7 +85,7 @@ public class TextureInfo : ReportBase, ITelltaleObject
         _ = element.Attributes.Append(mArraySize);
     }
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         mNumMipLevels = uint.Parse(element.GetAttribute(nameof(mNumMipLevels)));
         mWidth = uint.Parse(element.GetAttribute(nameof(mWidth)));

@@ -49,12 +49,12 @@ public class ToolProps : ReportBase, ITelltaleObject
         _ = element.AppendChild(myElement);
     }
     #region XML
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mbHasProps = element.OwnerDocument.CreateAttribute(nameof(this.mbHasProps));
         mbHasProps.Value = this.mbHasProps.ToString();
         _ = element.Attributes.Append(mbHasProps);
     }
-    public void ParseBasicTypes(XmlElement element) => this.mbHasProps = bool.Parse(element.GetAttribute(nameof(this.mbHasProps)));
+    private void ParseBasicTypes(XmlElement element) => this.mbHasProps = bool.Parse(element.GetAttribute(nameof(this.mbHasProps)));
     #endregion
 }

@@ -109,7 +109,7 @@ public class RegionStreamHeader(int version) : ReportBase, ITelltaleObject
 
     #region XML
 
-    public void AppendBasicTypes(XmlElement element)
+    private void AppendBasicTypes(XmlElement element)
     {
         XmlAttribute mFaceIndex = element.OwnerDocument.CreateAttribute(nameof(this.mFaceIndex));
         XmlAttribute mMipIndex = element.OwnerDocument.CreateAttribute(nameof(this.mMipIndex));
@@ -136,7 +136,7 @@ public class RegionStreamHeader(int version) : ReportBase, ITelltaleObject
         element.Attributes.Append(versionAttr);
     }
 
-    public void ParseBasicTypes(XmlElement element)
+    private void ParseBasicTypes(XmlElement element)
     {
         mFaceIndex = int.Parse(element.GetAttribute(nameof(mFaceIndex)));
         mMipIndex = int.Parse(element.GetAttribute(nameof(mMipIndex)));
