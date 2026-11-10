@@ -1,28 +1,67 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
+﻿using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.Structs;
 
-public struct Symbol
+[Description("Reading a symbol")]
+public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject
 {
-    public ulong mCrc64;
+    #region Public props
 
-    public Symbol(BinaryReader reader)
-    {
-        mCrc64 = reader.ReadUInt64();
-    }
+    public ulong mCrc64 { get => crc64; set => crc64 = value; }
 
-    public readonly void WriteBinaryData(BinaryWriter writer)
+    #endregion
+
+    #region Implement
+
+    public uint Size => sizeof(ulong);
+
+    public long Position { get; private set; }
+
+
+    public void Write(BinaryWriter writer)
     {
+        Position = writer.BaseStream.Position;
+
         writer.Write(mCrc64);
+
+        Report(this, true);
     }
 
-    public readonly uint GetByteSize()
+    public void Write(XmlElement element, string name)
     {
-        uint totalByteSize = 0;
-
-        totalByteSize += (uint)Marshal.SizeOf(mCrc64); //mCrc64 [8 bytes]
-
-        return totalByteSize;
+        AppendBasicTypes(element);
     }
+
+    public void Parse(BinaryReader reader)
+    {
+        Position = reader.BaseStream.Position;
+
+        mCrc64 = reader.ReadUInt64();
+
+        Report(this);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        ParseBasicTypes(reader);
+    }
+
+    #endregion
+
+    #region XML
+
+    private void ParseBasicTypes(XmlElement element)
+    {
+        mCrc64 = ulong.Parse(element.GetAttribute(nameof(mCrc64)));
+    }
+
+    private void AppendBasicTypes(XmlElement element)
+    {
+        element.SetAttribute(nameof(mCrc64), mCrc64.ToString());
+    }
+
+    #endregion
+
 }

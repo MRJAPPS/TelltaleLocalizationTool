@@ -1,5 +1,7 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
+﻿using System.ComponentModel;
+using System.Xml;
+using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.Meta.Structs;
 
 namespace TelltaleTextureTool.TelltaleTypes;
@@ -7,32 +9,81 @@ namespace TelltaleTextureTool.TelltaleTypes;
 /// <summary>
 /// This is a class name struct used in a meta header.
 /// This contains a CRC64'd string of a class name used in the file.
-/// The CRC64 string of a classname is usually all lowercase, and uses 
+/// The CRC64 string of a classname is usually all lowercase
 /// </summary>
-public struct ClassNames
+[Description("Reading a ClassName")]
+public class ClassNames : ReportBase, ITelltaleObject
 {
-    public Symbol mTypeNameCRC;
-    public uint mVersionCRC;
 
-    public ClassNames(BinaryReader reader)
-    {
-        mTypeNameCRC = new Symbol(reader);
-        mVersionCRC = reader.ReadUInt32();
-    }
+    #region Public props
 
-    public readonly void WriteBinaryData(BinaryWriter writer)
+    public Symbol mTypeNameCRC { get; set; } = new();
+    public uint mVersionCRC { get; set; }
+
+    #endregion
+
+    #region Implement
+
+    public uint Size => mTypeNameCRC.Size + sizeof(uint);
+
+    public long Position { get; private set; }
+
+
+    public void Write(BinaryWriter writer)
     {
-        mTypeNameCRC.WriteBinaryData(writer);
+        Position = writer.BaseStream.Position;
+
+        mTypeNameCRC.Write(writer);
         writer.Write(mVersionCRC);
+
+        Report(this, true);
     }
 
-    public readonly uint GetByteSize()
+    public void Write(XmlElement element, string name)
     {
-        uint totalByteSize = 0;
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(ClassNames));
 
-        totalByteSize += mTypeNameCRC.GetByteSize(); //mTypeNameCRC
-        totalByteSize += (uint)Marshal.SizeOf(mVersionCRC); //mVersionCRC [4 bytes]
+        myElement.SetAttribute(nameof(name), name);
+        mTypeNameCRC.Write(myElement, string.Empty);//We don't need a "name" in this case because symbol adds itself to this Node like an Attribute.
+        AppendBasicTypes(myElement);
 
-        return totalByteSize;
+        element.AppendChild(myElement);
     }
+
+    public void Parse(BinaryReader reader)
+    {
+        Position = reader.BaseStream.Position;
+
+        mTypeNameCRC.Parse(reader);
+        mVersionCRC = reader.ReadUInt32();
+
+        Report(this);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        XmlElement myElement = reader.GetSingleElement(nameof(ClassNames), name);
+
+        mTypeNameCRC.Parse(myElement, string.Empty);//We don't need a "name" in this case because symbol adds itself to this Node like an Attribute.
+        ParseBasicTypes(myElement);
+    }
+
+    #endregion
+
+    #region XML
+    public void ParseBasicTypes(XmlElement element)
+    {
+        mVersionCRC = uint.Parse(element.GetAttribute(nameof(mVersionCRC)));//MAKE IT PRIVATE TODO
+    }
+
+    public void AppendBasicTypes(XmlElement element)//MAKE IT PRIVATE TODO
+    {
+        XmlAttribute mVersionCRC = element.OwnerDocument.CreateAttribute(nameof(this.mVersionCRC));
+
+        mVersionCRC.Value = this.mVersionCRC.ToString();
+
+        _ = element.Attributes.Append(mVersionCRC);
+    }
+
+    #endregion
 }
