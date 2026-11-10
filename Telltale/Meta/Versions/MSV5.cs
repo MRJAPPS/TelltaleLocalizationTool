@@ -21,7 +21,7 @@ public class MSV5 : ReportBase, ITelltaleObject, IMetaHeader
 
     public uint mClassNamesLength { get; set; }
 
-    public ClassNames[] mClassNames { get; set; } = [];
+    public ClassName[] mClassNames { get; set; } = [];
 
     #endregion
 
@@ -42,7 +42,7 @@ public class MSV5 : ReportBase, ITelltaleObject, IMetaHeader
         writer.Write(mAsyncSectionChunkSize);
         writer.Write(mClassNamesLength);
 
-        foreach (ClassNames item in mClassNames)
+        foreach (ClassName item in mClassNames)
         {
             item.Write(writer);
         }
@@ -76,7 +76,7 @@ public class MSV5 : ReportBase, ITelltaleObject, IMetaHeader
         mAsyncSectionChunkSize = reader.ReadUInt32();
         mClassNamesLength = reader.ReadUInt32();
 
-        mClassNames = new ClassNames[mClassNamesLength];
+        mClassNames = new ClassName[mClassNamesLength];
         for (int i = 0; i < mClassNames.Length; i++)
         {
             mClassNames[i] = new();
@@ -91,13 +91,13 @@ public class MSV5 : ReportBase, ITelltaleObject, IMetaHeader
         XmlElement myElement = reader.GetSingleElement(nameof(MSV5), name);
         ParseBasicTypes(myElement);
 
-        List<ClassNames> classNames = [];
+        List<ClassName> classNames = [];
         foreach (XmlNode node in myElement.ChildNodes)
         {
-            if (node is XmlElement itemElement && itemElement.Name == nameof(ClassNames))
+            if (node is XmlElement itemElement && itemElement.Name == nameof(ClassName))
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
-                ClassNames item = new();
+                ClassName item = new();
                 item.Parse(myElement, itemName);
                 classNames.Add(item);
             }

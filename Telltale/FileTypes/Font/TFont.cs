@@ -43,7 +43,7 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         }
     }
 
-    static readonly ClassNames[] mDefaultClassNamesWD3 =
+    static readonly ClassName[] mDefaultClassNamesWD3 =
 [
     new() {
         mTypeNameCRC = new Symbol { mCrc64 = 0x9A3A4A9E63375381 },

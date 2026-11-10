@@ -15,9 +15,9 @@ public class MTRE : ReportBase, ITelltaleObject, IMetaHeader
 
     public uint mClassNamesLength { get; set; }
 
-    public ClassNames[] mClassNames { get; set; } = [];
+    public ClassName[] mClassNames { get; set; } = [];
 
-    public UnhashedClassNames[] mUnhashedClassNames { get; set; } = [];
+    public UnhashedClassName[] mUnhashedClassNames { get; set; } = [];
 
     #endregion
 
@@ -41,12 +41,12 @@ public class MTRE : ReportBase, ITelltaleObject, IMetaHeader
         ByteFunctions.WriteFixedString(writer, mMetaStreamVersion);
         writer.Write(mClassNamesLength);
 
-        foreach (ClassNames item in mClassNames)
+        foreach (ClassName item in mClassNames)
         {
             item.Write(writer);
         }
 
-        foreach (UnhashedClassNames item in mUnhashedClassNames)
+        foreach (UnhashedClassName item in mUnhashedClassNames)
         {
             item.Write(writer);
         }
@@ -96,7 +96,7 @@ public class MTRE : ReportBase, ITelltaleObject, IMetaHeader
 
             if (checkValue > 128)
             {
-                mClassNames = new ClassNames[mClassNamesLength];
+                mClassNames = new ClassName[mClassNamesLength];
                 for (int i = 0; i < mClassNames.Length; i++)
                 {
                     mClassNames[i] = new();
@@ -105,7 +105,7 @@ public class MTRE : ReportBase, ITelltaleObject, IMetaHeader
             }
             else
             {
-                mUnhashedClassNames = new UnhashedClassNames[mClassNamesLength];
+                mUnhashedClassNames = new UnhashedClassName[mClassNamesLength];
                 for (int i = 0; i < mUnhashedClassNames.Length; i++)
                 {
                     mUnhashedClassNames[i] = new();
@@ -122,26 +122,26 @@ public class MTRE : ReportBase, ITelltaleObject, IMetaHeader
         XmlElement myElement = reader.GetSingleElement(nameof(MTRE), name);
         ParseBasicTypes(myElement);
 
-        List<ClassNames> classNames = [];
+        List<ClassName> classNames = [];
         foreach (XmlNode node in myElement.ChildNodes)
         {
-            if (node is XmlElement itemElement && itemElement.Name == nameof(ClassNames))
+            if (node is XmlElement itemElement && itemElement.Name == nameof(ClassName))
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
-                ClassNames item = new();
+                ClassName item = new();
                 item.Parse(myElement, itemName);
                 classNames.Add(item);
             }
         }
         mClassNames = [.. classNames];
 
-        List<UnhashedClassNames> unhashedClassNames = [];
+        List<UnhashedClassName> unhashedClassNames = [];
         foreach (XmlNode node in myElement.ChildNodes)
         {
-            if (node is XmlElement itemElement && itemElement.Name == nameof(UnhashedClassNames))
+            if (node is XmlElement itemElement && itemElement.Name == nameof(UnhashedClassName))
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
-                UnhashedClassNames item = new();
+                UnhashedClassName item = new();
                 item.Parse(myElement, itemName);
                 unhashedClassNames.Add(item);
             }

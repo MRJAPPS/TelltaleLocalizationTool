@@ -23,7 +23,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     #region private fields
     // Array built from the DCArray type symbols and the updated version CRCs from your log.
-    static readonly ClassNames[] mDefaultClassNamesWD3 =
+    static readonly ClassName[] mDefaultClassNamesWD3 =
     [
         new() { // LanguageDB
         mTypeNameCRC = new Symbol { mCrc64 = 10167596401243054749 },

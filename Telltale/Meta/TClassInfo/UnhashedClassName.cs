@@ -12,7 +12,7 @@ namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 /// The CRC64 string of a classname is usually all lowercase
 /// </summary>
 [Description("Reading an unhashed ClassName (UnhashedClassName)")]
-public class UnhashedClassNames : ReportBase, ITelltaleObject
+public class UnhashedClassName : ReportBase, ITelltaleObject
 {
     // No BOM, and scream loudly on bad bytes instead of silently mangling them, Ok???.
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -67,7 +67,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
 
     public void Write(XmlElement element, string name)
     {
-        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(UnhashedClassNames));
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(UnhashedClassName));
 
         myElement.SetAttribute(nameof(name), name);
         AppendBasicTypes(myElement);
@@ -88,7 +88,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
 
     public void Parse(XmlElement reader, string name)
     {
-        XmlElement myElement = reader.GetSingleElement(nameof(UnhashedClassNames), name);
+        XmlElement myElement = reader.GetSingleElement(nameof(UnhashedClassName), name);
 
         ParseBasicTypes(myElement);
     }
@@ -104,7 +104,7 @@ public class UnhashedClassNames : ReportBase, ITelltaleObject
         if (!uint.TryParse(element.GetAttribute(nameof(mVersionCRC)), out mVersionCRC))
         {
             throw new XmlException(
-                $"Missing or invalid '{nameof(mVersionCRC)}' attribute on <{nameof(UnhashedClassNames)}> bro, can't rebuild the binary without it!.");
+                $"Missing or invalid '{nameof(mVersionCRC)}' attribute on <{nameof(UnhashedClassName)}> bro, can't rebuild the binary without it!.");
         }
     }
 

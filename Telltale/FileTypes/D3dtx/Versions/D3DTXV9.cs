@@ -26,7 +26,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
     #endregion
 
     #region private fields
-    static readonly ClassNames[] mDefaultClassNamesWD3 =
+    static readonly ClassName[] mDefaultClassNamesWD3 =
 [
     new() {
         mTypeNameCRC = new Symbol { mCrc64 = 0x3E249E7E6F38CCE2 },

@@ -11,7 +11,7 @@ namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 /// The CRC64 string of a classname is usually all lowercase
 /// </summary>
 [Description("Reading a ClassName")]
-public class ClassNames : ReportBase, ITelltaleObject
+public class ClassName : ReportBase, ITelltaleObject
 {
 
     #region Public props
@@ -40,7 +40,7 @@ public class ClassNames : ReportBase, ITelltaleObject
 
     public void Write(XmlElement element, string name)
     {
-        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(ClassNames));
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(ClassName));
 
         myElement.SetAttribute(nameof(name), name);
         mTypeNameCRC.Write(myElement, string.Empty);//We don't need a "name" in this case because symbol adds itself to this Node like an Attribute.
@@ -61,7 +61,7 @@ public class ClassNames : ReportBase, ITelltaleObject
 
     public void Parse(XmlElement reader, string name)
     {
-        XmlElement myElement = reader.GetSingleElement(nameof(ClassNames), name);
+        XmlElement myElement = reader.GetSingleElement(nameof(ClassName), name);
 
         mTypeNameCRC.Parse(myElement, string.Empty);//We don't need a "name" in this case because symbol adds itself to this Node like an Attribute.
         ParseBasicTypes(myElement);

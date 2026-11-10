@@ -26,7 +26,7 @@ namespace TelltaleLocalizationTool.Helper;
 public static class Extensions
 {
 
-    public static bool IsHeadersEqauls(this MSV6 header, ClassNames[] target)//For now, and for wd3nf, we use msv6...
+    public static bool IsHeadersEqauls(this MSV6 header, ClassName[] target)//For now, and for wd3nf, we use msv6...
     {
         if (header.mClassNamesLength != target.Length)
         {
