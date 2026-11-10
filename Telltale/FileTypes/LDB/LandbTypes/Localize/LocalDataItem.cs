@@ -30,7 +30,7 @@ public class LocalDataItem : ReportBase, ITelltaleObject
 
     public uint Size => mPrefix.Size + mText.Size + mLocalInfo.Size;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

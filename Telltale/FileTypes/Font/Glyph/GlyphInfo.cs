@@ -31,7 +31,7 @@ public class GlyphInfo : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(int) + sizeof(float) * 6 + mRect.Size + mChar.Size;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

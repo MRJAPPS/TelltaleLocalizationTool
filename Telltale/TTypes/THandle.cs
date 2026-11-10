@@ -18,7 +18,7 @@ public class THandle : ReportBase, ITelltaleObject
 
     public uint Size => hSymbolValue.Size + ISize.FOUR_ADD;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

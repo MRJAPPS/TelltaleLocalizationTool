@@ -21,7 +21,7 @@ public class ProjectDatabaseIDPair : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(uint) * 2;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

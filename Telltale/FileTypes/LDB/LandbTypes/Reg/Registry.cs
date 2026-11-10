@@ -23,7 +23,7 @@ public class Registry : ReportBase, ITelltaleObject
 
     public uint Size => mFlagIndexMap.Size + mFlagIndexMapReverse.Size + RegistrySizeInFile;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

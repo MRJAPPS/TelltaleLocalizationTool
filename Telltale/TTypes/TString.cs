@@ -66,7 +66,7 @@ public class TString(string value, bool readSize, int FixedLength, bool skipZero
 
     public bool IsReadOnly => true;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

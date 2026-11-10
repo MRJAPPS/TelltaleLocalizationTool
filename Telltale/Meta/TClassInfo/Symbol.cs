@@ -17,7 +17,7 @@ public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(ulong);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
 
     public void Write(BinaryWriter writer)

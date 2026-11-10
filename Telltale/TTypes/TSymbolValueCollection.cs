@@ -16,7 +16,7 @@ public class TSymbolValueCollection : TCollectionBase<TSymbolValue>, ITelltaleOb
 
     public uint Size => ((uint)Items.Count * new TSymbolValue().Size) + TSymbolValueCollectionSizeInFile + TSymbolValueCollectionSize;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

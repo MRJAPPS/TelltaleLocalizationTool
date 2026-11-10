@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
@@ -51,7 +51,7 @@ public class UnhashedClassName : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(uint) * 2 + Length;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Write(BinaryWriter writer)
     {

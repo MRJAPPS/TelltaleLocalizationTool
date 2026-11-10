@@ -19,7 +19,7 @@ public class LanguageResources : ReportBase, ITelltaleObject
 
     public TextCollection TextItems { get; set; } = [];
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

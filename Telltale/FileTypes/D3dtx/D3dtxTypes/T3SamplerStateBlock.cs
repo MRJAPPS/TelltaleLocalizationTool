@@ -26,7 +26,7 @@ public class T3SamplerStateBlock : ReportBase, ITelltaleObject
     #region Implemnt
     public uint Size => sizeof(uint) + T3SamplerStateBlockSizeInFile;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

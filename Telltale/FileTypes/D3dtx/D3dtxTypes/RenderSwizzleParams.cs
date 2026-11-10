@@ -48,7 +48,7 @@ public class RenderSwizzleParams : ReportBase, ITelltaleObject
     #region Implemnt
     public uint Size => sizeof(byte) * 4 + RenderSwizzleParamsSizeInFile;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Write(BinaryWriter writer)
     {

@@ -16,7 +16,7 @@ public class FChar : ITelltaleObject
 
     public uint Size => sizeof(uint);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

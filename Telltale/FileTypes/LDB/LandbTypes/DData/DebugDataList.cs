@@ -29,7 +29,7 @@ public class DebugDataList : TCollectionBase<TString>, ITelltaleObject
         }
     }
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

@@ -28,7 +28,7 @@ public class RegionStreamHeader(int version) : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(int) * 5 + sizeof(uint);//I want to write it like this, don't nitpick.
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

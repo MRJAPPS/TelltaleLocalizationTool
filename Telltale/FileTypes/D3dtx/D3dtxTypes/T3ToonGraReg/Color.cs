@@ -20,7 +20,7 @@ public class Color : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(float) * 4;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

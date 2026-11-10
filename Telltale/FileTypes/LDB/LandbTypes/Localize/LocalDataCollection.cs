@@ -36,7 +36,7 @@ public class LocalDataCollection : TCollectionBase<LocalDataItem>, ITelltaleObje
         }
     }
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

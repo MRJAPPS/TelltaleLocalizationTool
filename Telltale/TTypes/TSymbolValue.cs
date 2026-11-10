@@ -18,7 +18,7 @@ public class TSymbolValue : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(ulong);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

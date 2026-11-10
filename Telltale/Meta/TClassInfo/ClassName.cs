@@ -25,7 +25,7 @@ public class ClassName : ReportBase, ITelltaleObject
 
     public uint Size => mTypeNameCRC.Size + sizeof(uint);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
 
     public void Write(BinaryWriter writer)

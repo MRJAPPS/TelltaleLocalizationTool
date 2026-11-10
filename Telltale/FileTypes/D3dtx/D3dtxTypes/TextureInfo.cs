@@ -18,7 +18,7 @@ public class TextureInfo : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(uint) * 5;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

@@ -97,7 +97,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public uint Size =>defaultSectionChunkSize + debugSectionChunkSize;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public IMetaHeader? Header { get; private set; }
 

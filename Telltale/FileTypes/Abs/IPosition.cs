@@ -2,5 +2,5 @@
 
 public interface IPosition
 {
-    long Position { get; }//TODO: Default Value must be -1!!!
+    long Position { get; }
 }

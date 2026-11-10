@@ -19,7 +19,7 @@ public class Owner : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(uint) + ISize.FOUR_ADD;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

@@ -16,7 +16,7 @@ public class T3ToonGradientRegionItem : ReportBase, ITelltaleObject
 
     public uint Size => mColor.Size + sizeof(float);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
 
 

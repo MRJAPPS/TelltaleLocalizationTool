@@ -30,7 +30,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
 
     public uint Size => mAuxDataCount > 0 ? AuxilaryDataSizeExtra + (uint)Data.Length : 0;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

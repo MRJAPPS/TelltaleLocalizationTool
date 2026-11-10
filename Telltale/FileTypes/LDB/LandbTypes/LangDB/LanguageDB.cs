@@ -16,7 +16,7 @@ public class LanguageDB : ReportBase, ITelltaleObject
 
     public uint Size => /*HeaderSize(140) +*/ mOwner.Size + mGenerator.Size;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

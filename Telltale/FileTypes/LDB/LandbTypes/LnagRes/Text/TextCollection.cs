@@ -36,7 +36,7 @@ public class TextCollection : TCollectionBase<TextItem>, ITelltaleObject
         }
     }
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

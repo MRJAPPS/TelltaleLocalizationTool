@@ -43,7 +43,7 @@ public class TextItem : ReportBase, ITelltaleObject
         (sizeof(uint) * 3) + sizeof(float) + sizeof(Enums.ETextItemFlags)
         + mResName.Size + mhAnimation.Size + mhVoiceData.Size + mLocalData.Size + mResolvedLocalData.Size + mRecordingStatus.Size;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

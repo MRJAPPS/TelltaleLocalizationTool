@@ -32,7 +32,7 @@ public class ResolvedLocalData : ReportBase, ITelltaleObject
     public uint Size =>
         mPrefix.Size + mText.Size + mLocalInfo.Size + ResolvedLocalDataSizeInFile;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

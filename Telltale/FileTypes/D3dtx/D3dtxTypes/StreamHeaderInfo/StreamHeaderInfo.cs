@@ -33,7 +33,7 @@ public class StreamHeaderInfo(int version) : TCollectionBase<RegionStreamHeader>
         }
     }
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Write(BinaryWriter writer)
     {

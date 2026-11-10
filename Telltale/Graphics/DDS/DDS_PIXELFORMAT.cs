@@ -52,7 +52,7 @@ public class DDS_PIXELFORMAT : IParsable, IWriteable, ISize
 
     public uint Size => throw new NotImplementedException();
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

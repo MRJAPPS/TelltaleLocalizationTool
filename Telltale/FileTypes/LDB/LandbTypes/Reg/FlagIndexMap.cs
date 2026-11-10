@@ -34,7 +34,7 @@ public class FlagIndexMap : ReportBase, ITelltaleObject
         // The extra entry only contributes a uint, not a full ItemSize.
         ((uint)(KeyValues.Count - 1) * ItemSize) + FlagIndexMapSizeInFile + sizeof(uint);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

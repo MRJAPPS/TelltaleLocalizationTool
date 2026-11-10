@@ -85,7 +85,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     public uint Size => mD3dtxMetaData.Size + asyncSectionChunkSize;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public IMetaHeader? Header { get; private set; }
 

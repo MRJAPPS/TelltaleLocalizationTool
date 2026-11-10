@@ -19,7 +19,7 @@ public class Vector2 : ReportBase, ITelltaleObject
 
     public uint Size => sizeof(float) * 2;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

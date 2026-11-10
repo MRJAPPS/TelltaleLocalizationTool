@@ -121,7 +121,7 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public uint Size => defaultSectionChunkSize + asyncSectionChunkSize;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 #if IFNT
     public void Export(string fntPath)//Just for loadedFont
     {

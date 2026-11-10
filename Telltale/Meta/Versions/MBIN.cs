@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
@@ -26,7 +26,7 @@ public class MBIN : ReportBase, ITelltaleObject, IMetaHeader
     public uint Size => checked(2 * sizeof(uint) + (uint)mClassNames.Sum(item => item.Size) +
         (uint)mUnhashedClassNames.Sum(item => item.Size));
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Write(BinaryWriter writer)
     {

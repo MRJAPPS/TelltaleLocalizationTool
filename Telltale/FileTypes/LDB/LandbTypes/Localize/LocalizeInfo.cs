@@ -25,7 +25,7 @@ public class LocalizeInfo : ReportBase, ITelltaleObject
 
     public uint Size => SizeFieldBytes + sizeof(uint);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     #endregion
 

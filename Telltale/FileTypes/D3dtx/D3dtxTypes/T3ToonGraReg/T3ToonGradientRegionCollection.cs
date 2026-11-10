@@ -18,7 +18,7 @@ public class T3ToonGradientRegionCollection : TCollectionBase<T3ToonGradientRegi
 
     public uint Size => ((uint)Items.Count * new T3ToonGradientRegionItem().Size) + T3ToonGradientRegionSize + T3ToonGradientRegionSizeInFile;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

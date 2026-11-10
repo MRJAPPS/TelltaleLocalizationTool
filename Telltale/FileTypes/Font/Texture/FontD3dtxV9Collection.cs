@@ -35,7 +35,7 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
 
     public uint PixelDataSizeSum => Size - HeaderSizeSum;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

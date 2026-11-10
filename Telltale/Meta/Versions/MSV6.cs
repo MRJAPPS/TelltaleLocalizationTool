@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
@@ -29,7 +29,7 @@ public class MSV6 : ReportBase, ITelltaleObject, IMetaHeader
 
     public uint Size => checked(5 * sizeof(uint) + (uint)mClassNames.Sum(item => item.Size));
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Write(BinaryWriter writer)
     {

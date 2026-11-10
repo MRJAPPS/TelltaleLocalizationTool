@@ -22,7 +22,7 @@ public class GlyphInfoCollection : TCollectionBase<GlyphInfo>, ITelltaleObject
 
     public uint Size => GlyphInfoCollectionLenSize + GlyphInfoCollectionSizeIFile + new GlyphInfo().Size * (uint)Items.Count;
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

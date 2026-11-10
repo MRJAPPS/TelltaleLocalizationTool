@@ -92,7 +92,7 @@ public class D3DTXMetadata(int version) : ReportBase, ITelltaleObject
 
     public uint Size => BasicTypes + classTypes + Enums + (mAuxilaryData?.Size ?? 0);
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public void Parse(BinaryReader reader)
     {

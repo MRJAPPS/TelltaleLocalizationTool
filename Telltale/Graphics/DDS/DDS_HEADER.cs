@@ -75,7 +75,7 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
 
     #region Implement
 
-    public long Position { get; private set; }
+    public long Position { get; private set; } = -1;
 
     public uint Size => Extra + (sizeof(uint) * 11) * 2 + ddspf.Size;
 
