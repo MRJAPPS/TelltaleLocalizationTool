@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.Versions;
@@ -11,7 +12,7 @@ public class MSV6 : ReportBase, ITelltaleObject, IMetaHeader
 {
     #region Public props
 
-    public string mMetaStreamVersion { get; set; } = "6VSM";
+    public string mMetaStreamVersion { get; set; } = MetaMagics.MSV6;
 
     public uint mDefaultSectionChunkSize { get; set; }
 

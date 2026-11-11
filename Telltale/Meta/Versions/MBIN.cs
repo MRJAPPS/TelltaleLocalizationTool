@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.Versions;
@@ -11,7 +12,7 @@ public class MBIN : ReportBase, ITelltaleObject, IMetaHeader
 {
     #region Public props
 
-    public string mMetaStreamVersion { get; set; } = "NIBM";
+    public string mMetaStreamVersion { get; set; } = MetaMagics.MBIN;
 
     public uint mClassNamesLength { get; set; }
 

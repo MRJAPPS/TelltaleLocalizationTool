@@ -7,6 +7,8 @@ namespace TelltaleLocalizationTool.Telltale.Meta;
 /// </summary>
 public interface IMetaHeader : ITelltaleSerializable, ITelltaleObject
 {
+    public string mMetaStreamVersion { get; set; }//This should've been done a long time ago! Ugh...
+
     //Older headers don't have separate debug or async sections.
     uint mDebugSectionChunkSize => 0;
     uint mAsyncSectionChunkSize => 0;
