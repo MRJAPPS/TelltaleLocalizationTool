@@ -8,7 +8,7 @@ using TelltaleLocalizationTool.Telltale.Meta.Enums;
 namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
 [Description("Reading a symbol")]
-public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject
+public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject//We should've used TSymbolValue, but for compatibility we're treating the Symbol in the header as separate — this can be marked as a TODO for later.
 {
     #region Public props
 
@@ -76,4 +76,10 @@ public class Symbol(ulong crc64 = 0) : ReportBase, ITelltaleObject
 
     #endregion
 
+#if DEBUG
+    public override string ToString()
+    {
+        return this.ToClassNames()?.ToString() ?? mCrc64.ToString(CultureInfo.InvariantCulture);
+    }
+#endif
 }

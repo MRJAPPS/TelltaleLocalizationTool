@@ -62,7 +62,7 @@ public class TextItem : ReportBase, ITelltaleObject
         mLocalData.Parse(reader);
         mLengthOverride = reader.ReadSingle();
         mResolvedLocalData.Parse(reader);
-        mRecordingStatus.Parse(reader);
+        mRecordingStatus.Parse(reader);//WD1 MSV5 problem(RecordingUtils_EnumRecordingStatus)
         mFlags = (Enums.ETextItemFlags)reader.ReadUInt32();
 
         Report(this);
