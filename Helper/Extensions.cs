@@ -1,6 +1,7 @@
 ﻿using BCnEncoder.Decoder;
 using BCnEncoder.Shared.ImageFiles;
 using PVRTexLib;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml;
@@ -23,6 +24,16 @@ namespace TelltaleLocalizationTool.Helper;
 
 public static class Extensions
 {
+
+    public static bool Contains(this MSV6 header, ClassNames className) => header.mClassNames.Any(cn => cn == className);
+
+    public static bool Contains(this MSV5 header, ClassNames className) => header.mClassNames.Any(cn => cn == className);
+
+    public static bool Contains(this MBIN header, ClassNames className, bool unhashed = false) => unhashed ?
+        header.mClassNames.Any(cn => cn == className) : throw new NotImplementedException("I've never seen this person in my life! I have no idea about unhashed, maybe I'll figure it out later. Maybe...");
+
+    public static bool Contains(this MTRE header, ClassNames className, bool unhashed = false) => unhashed ?
+        header.mClassNames.Any(cn => cn == className) : throw new NotImplementedException("I've never seen this person in my life! I have no idea about unhashed, maybe I'll figure it out later. Maybe...");
 
     public static void ShareMetaStreamContext(this ITelltaleObject item)
     {
