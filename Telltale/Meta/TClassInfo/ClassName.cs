@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
@@ -75,6 +77,44 @@ public class ClassName : ReportBase, ITelltaleObject
         mTypeNameCRC.Parse(myElement, string.Empty);//We don't need a "name" in this case because symbol adds itself to this Node like an Attribute.
         ParseBasicTypes(myElement);
     }
+
+    #endregion
+
+    #region Overloading
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(this, obj))
+        {
+            return true;
+        }
+
+        if (obj is not ClassName other)
+        {
+            return false;
+        }
+
+        return mTypeNameCRC == other.mTypeNameCRC
+            && mVersionCRC == other.mVersionCRC;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(mTypeNameCRC, mVersionCRC);
+    }
+
+    public static bool operator ==(ClassName left, ClassName right) => left.mTypeNameCRC == right.mTypeNameCRC && left.mVersionCRC == right.mVersionCRC;
+
+    public static bool operator !=(ClassName left, ClassName right) => left.mTypeNameCRC != right.mTypeNameCRC || left.mVersionCRC != right.mVersionCRC;
+
+
+    public static bool operator ==(ClassName left, ClassNames right) => left.mTypeNameCRC.mCrc64 == (ulong)right;
+
+    public static bool operator !=(ClassName left, ClassNames right) => left.mTypeNameCRC.mCrc64 != (ulong)right;
+
+    public static bool operator ==(ClassNames left, ClassName right) => (ulong)left == right.mTypeNameCRC.mCrc64;
+
+    public static bool operator !=(ClassNames left, ClassName right) => (ulong)left != right.mTypeNameCRC.mCrc64;
 
     #endregion
 
