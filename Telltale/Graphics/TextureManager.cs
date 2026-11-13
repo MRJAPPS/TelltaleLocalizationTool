@@ -9,6 +9,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics.Image;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.Telltale.Graphics;
 
@@ -120,10 +121,10 @@ public static unsafe class TextureManager
         }
     }
 
-    public static ID3DTX GetTextureInformation(TexMetadata metadata, int version = 9)
+    public static ID3DTX GetTextureInformation(TexMetadata metadata, Games game, int version = 9)
     {
         return version == 9
-            ? (ID3DTX)new D3DTXV9
+            ? (ID3DTX)new D3DTXV9(game)
             {
                 mD3dtxMetaData = new(version)
                 {
@@ -141,7 +142,7 @@ public static unsafe class TextureManager
                     mTextureLayout = DDSHelper.GetDimensionFromDDS(metadata),
                 }
             }
-            : throw new NotImplementedException("We need a d3dtx9!");
+            : throw new NotImplementedException("We need a d3dtx9!");//TODO: We also need d3dtx v4
     }
 
     /// <summary>

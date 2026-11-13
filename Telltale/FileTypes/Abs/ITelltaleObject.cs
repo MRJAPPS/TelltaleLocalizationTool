@@ -1,3 +1,8 @@
-﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+﻿using TelltaleLocalizationTool.Telltale.Meta;
 
-public interface ITelltaleObject : ISize, IWriteable, IPosition, IParsable { }
+namespace TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+
+public interface ITelltaleObject : ISize, IWriteable, IPosition, IParsable
+{
+    public MetaStreamContext? msCtx { get; protected set; }
+}

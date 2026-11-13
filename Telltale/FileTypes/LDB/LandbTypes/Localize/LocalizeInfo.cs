@@ -2,6 +2,8 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 
@@ -21,15 +23,23 @@ public class LocalizeInfo : ReportBase, ITelltaleObject
 
     #region Public Properties
 
-    public uint Flags { get; set; }
+    public Flags<uint> Flags { get; set; } = new();
 
-    public uint Size => SizeFieldBytes + sizeof(uint);
+    public uint Size => SizeFieldBytes + Flags.Size;
 
     public long Position { get; private set; } = -1;
 
     #endregion
 
-    #region Implementation
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public void Parse(BinaryReader reader)
     {
@@ -39,14 +49,14 @@ public class LocalizeInfo : ReportBase, ITelltaleObject
         // Read it and toss it so the stream pointer lands on the flags.
         _ = reader.ReadUInt32();
 
-        Flags = reader.ReadUInt32();
+        Flags.Parse(reader);
         Report(this);
     }
 
     public void Parse(XmlElement reader, string name)
     {
         XmlElement myElement = reader.GetSingleElement(nameof(LocalizeInfo), name);
-        Flags = uint.Parse(myElement.GetAttribute(nameof(Flags)));
+        Flags.Parse(myElement, nameof(Flags));
     }
 
     public void Write(BinaryWriter writer)
@@ -54,7 +64,7 @@ public class LocalizeInfo : ReportBase, ITelltaleObject
         Position = writer.BaseStream.Position;
 
         writer.Write(Size);
-        writer.Write(Flags);
+        Flags.Write(writer);
 
         Report(this, true);
     }
@@ -64,10 +74,7 @@ public class LocalizeInfo : ReportBase, ITelltaleObject
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(LocalizeInfo));
         myElement.SetAttribute(nameof(name), name);
 
-        XmlAttribute Flags = myElement.OwnerDocument.CreateAttribute(nameof(Flags));
-        Flags.Value = this.Flags.ToString();
-        
-        myElement.Attributes.Append(Flags);
+        Flags.Write(myElement, nameof(Flags));
 
         _ = element.AppendChild(myElement);
     }

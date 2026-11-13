@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.T3ToonGraReg;
 [Description("Reading colors")]
@@ -17,6 +18,14 @@ public class Color : ReportBase, ITelltaleObject
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => sizeof(float) * 4;
 

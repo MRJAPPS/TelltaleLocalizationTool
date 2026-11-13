@@ -3,6 +3,7 @@ using System.Xml;
 using System.Xml.Linq;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 
@@ -23,7 +24,15 @@ public class Owner : ReportBase, ITelltaleObject
 
     #endregion
 
-    #region Implementation
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public void Parse(BinaryReader reader)
     {

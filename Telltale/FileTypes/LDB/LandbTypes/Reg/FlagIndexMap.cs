@@ -4,6 +4,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.TTypes;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Reg;
 
@@ -50,6 +51,14 @@ public class FlagIndexMap : ReportBase, ITelltaleObject
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public void Parse(BinaryReader reader)
     {

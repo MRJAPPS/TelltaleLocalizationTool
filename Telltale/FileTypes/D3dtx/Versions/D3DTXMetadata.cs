@@ -7,6 +7,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderI
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.T3ToonGraReg;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.TTypes;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 [Description("I'm reading a texture's metadata.")]
@@ -88,7 +89,15 @@ public class D3DTXMetadata(int version) : ReportBase, ITelltaleObject
 
     #endregion
 
-    #region Implement 
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => BasicTypes + classTypes + Enums + (mAuxilaryData?.Size ?? 0);
 

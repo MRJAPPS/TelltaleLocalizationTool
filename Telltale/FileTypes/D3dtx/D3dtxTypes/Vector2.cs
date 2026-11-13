@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 [Description("Reading coordinates of a 2D Vector")]
@@ -16,6 +17,14 @@ public class Vector2 : ReportBase, ITelltaleObject
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => sizeof(float) * 2;
 

@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 
@@ -22,6 +23,14 @@ public class ClassName : ReportBase, ITelltaleObject
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => mTypeNameCRC.Size + sizeof(uint);
 

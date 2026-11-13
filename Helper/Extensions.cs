@@ -1,12 +1,9 @@
 ﻿using BCnEncoder.Decoder;
-using BCnEncoder.Encoder;
 using BCnEncoder.Shared.ImageFiles;
 using PVRTexLib;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml;
-using System.Xml.Linq;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
@@ -18,14 +15,35 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
-using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
+using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
 namespace TelltaleLocalizationTool.Helper;
 
 public static class Extensions
 {
+
+    public static void ShareMetaStreamContext(this ITelltaleObject item)
+    {
+        PropertyInfo contextProperty = typeof(ITelltaleObject).GetProperty(nameof(ITelltaleObject.msCtx))!;
+
+        for (Type? type = item.GetType(); type != null; type = type.BaseType)
+        {
+            foreach (PropertyInfo property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            {
+                if (!property.CanRead || property.GetIndexParameters().Length != 0 || !typeof(ITelltaleObject).IsAssignableFrom(property.PropertyType))
+                {
+                    continue;
+                }
+
+                if (property.GetValue(item) is ITelltaleObject child)
+                {
+                    contextProperty.SetValue(child, item.msCtx);
+                }
+            }
+        }
+    }
 
     public static ClassNames? ToClassNames(this Symbol symbol)
     {
@@ -43,7 +61,9 @@ public static class Extensions
         {
             if (header.mClassNames[i].mVersionCRC != target[i].mVersionCRC ||
                 header.mClassNames[i].mTypeNameCRC.mCrc64 != target[i].mTypeNameCRC.mCrc64)
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -389,7 +409,7 @@ public static class Extensions
         streamHeaderInfo.mRegionCount = MipMapCount;
         //========= RegionStreamHeader(ETC2_RGBA pitch,slicePitch) =========
         int BlocksPerRow = (int)textureInfo.mWidth / 4;
-        int BlocksPerCol = (int)textureInfo.mHeight / 4;
+        _ = (int)textureInfo.mHeight / 4;
         int pitch = BlocksPerRow * BlockSizeBytesEtc2;
         int slicePitch = ddsData.PixelData.Length;
         //========= RegionStreamHeader =========
@@ -410,7 +430,7 @@ public static class Extensions
         d3dtx.WriteMsv6Header = true;
     }
 
-    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
+    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, Games game, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
     {
         int counter = 0;
         _ = Directory.CreateDirectory(outputDirectory);
@@ -436,7 +456,7 @@ public static class Extensions
             d3dtxv9.AutoPixelData = autoPixelData;
 
             d3dtxTempW.Close();
-            Converter.ConvertTextureFromD3DtxToOthersV9(tempD3dtx.Path, finalOutput, new());
+            Converter.ConvertTextureFromD3DtxToOthersV9(tempD3dtx.Path, finalOutput, new(), game);
             counter++;
         }
 
@@ -493,6 +513,9 @@ public static class Extensions
     }
 
 #if !IFNT
-    public static void Export(this TFont font, string fntPath) => font.mTexturePages.ExportTextures(font.mName, Path.GetDirectoryName(fntPath)!, bmpFontMode: true);
+    public static void Export(this TFont font, string fntPath, Games game)
+    {
+        font.mTexturePages.ExportTextures(font.mName, Path.GetDirectoryName(fntPath)!, game, bmpFontMode: true);
+    }
 #endif
 }

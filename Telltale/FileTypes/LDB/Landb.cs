@@ -12,11 +12,12 @@ using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
+using TelltaleLocalizationTool.Telltale.TTypes;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 
 [Description("Process the whole landb file")]
-public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ITelltaleFile
+public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ITelltaleFile
 {
     private const int OffsetDefDataLen = 0x4;
     private const int OffsetDefDebugDataLen = OffsetDefDataLen + 0x4;
@@ -71,7 +72,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
     private uint defaultSectionChunkSize => mLanguageDB.Size +
         mLanguageResources.Size +
         mRegistry.Size +
-        (sizeof(uint) * 2) +
+        mFlags.Size + sizeof(uint) +
         mExpandedIDRanges.Size;
 
     private uint debugSectionChunkSize => mDebugDatas.Size;
@@ -86,7 +87,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public Registry mRegistry { get; set; } = new();
 
-    public uint mFlags { get; set; }
+    public Flags<uint> mFlags { get; set; } = new();
 
     public uint mProjectID { get; set; }
 
@@ -94,9 +95,9 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public DebugDataList mDebugDatas { get; set; } = [];
 
-    
 
-    public uint Size =>defaultSectionChunkSize + debugSectionChunkSize;
+
+    public uint Size => defaultSectionChunkSize + debugSectionChunkSize;
 
     public long Position { get; private set; } = -1;
 
@@ -106,8 +107,17 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     #region Implement
 
+    public MetaStreamContext? msCtx { get; protected set; } = new(game);
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
+
     public void Parse(BinaryReader reader)
     {
+        this.ShareMetaStreamContext();
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
@@ -116,7 +126,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         mLanguageResources.Parse(reader);
         mRegistry.Parse(reader);
 
-        mFlags = reader.ReadUInt32();
+        mFlags.Parse(reader);
         mProjectID = reader.ReadUInt32();
 
         mExpandedIDRanges.Parse(reader);
@@ -130,10 +140,17 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name));
 
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
+        msCtx ??= new(game);
+        if (Header != null)
+        {
+            msCtx.Header = Header;
+        }
+        this.ShareMetaStreamContext();
 
         mLanguageDB.Parse(myElement, nameof(mLanguageDB));
         mLanguageResources.Parse(myElement, nameof(mLanguageResources));
         mRegistry.Parse(myElement, nameof(mRegistry));
+        mFlags.Parse(myElement, nameof(mFlags));
 
         ParseBasicTypes(myElement);
 
@@ -143,6 +160,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public void Write(BinaryWriter writer)
     {
+        this.ShareMetaStreamContext();
         Position = writer.BaseStream.Position;
 
         WriteMetaHeader(writer);
@@ -151,7 +169,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         mLanguageResources.Write(writer);
         mRegistry.Write(writer);
 
-        writer.Write(mFlags);
+        mFlags.Write(writer);
         writer.Write(mProjectID);
 
         mExpandedIDRanges.Write(writer);
@@ -171,6 +189,7 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         mLanguageDB.Write(myElement, nameof(mLanguageDB));
         mLanguageResources.Write(myElement, nameof(mLanguageResources));
         mRegistry.Write(myElement, nameof(mRegistry));
+        mFlags.Write(myElement, nameof(mFlags));
         AppendBasicTypes(myElement);
         mExpandedIDRanges.Write(myElement, nameof(mExpandedIDRanges));
         mDebugDatas.Write(myElement, nameof(mDebugDatas));
@@ -204,21 +223,16 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     private void ParseBasicTypes(XmlElement element)
     {
-        mFlags = uint.Parse(element.GetAttribute(nameof(mFlags)));
         mProjectID = uint.Parse(element.GetAttribute(nameof(mProjectID)));
     }
 
 
     private void AppendBasicTypes(XmlElement element)
     {
-        XmlAttribute mFlags, mProjectID;
-        mFlags = element.OwnerDocument.CreateAttribute(nameof(this.mFlags));
-        mProjectID = element.OwnerDocument.CreateAttribute(nameof(this.mProjectID));
+        XmlAttribute mProjectID = element.OwnerDocument.CreateAttribute(nameof(this.mProjectID));
 
-        mFlags.Value = this.mFlags.ToString();
         mProjectID.Value = this.mProjectID.ToString();
 
-        _ = element.Attributes.Append(mFlags);
         _ = element.Attributes.Append(mProjectID);
     }
 
@@ -230,6 +244,9 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
+        msCtx ??= new(game);
+        msCtx.Header = Header;
+        this.ShareMetaStreamContext();
     }
 
     public void WriteMetaHeader(BinaryWriter writer)
@@ -254,6 +271,9 @@ public class Landb(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
         uint asyncSectionChunkSize = Header.mAsyncSectionChunkSize;
         Header.SetMetaSectionChunkSizes(defaultSectionChunkSize, debugSectionChunkSize, asyncSectionChunkSize);
+        msCtx ??= new(game);
+        msCtx.Header = Header;
+        this.ShareMetaStreamContext();
         Header.WriteToBinary(writer);
     }
 

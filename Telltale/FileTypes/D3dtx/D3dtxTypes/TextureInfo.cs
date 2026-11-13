@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 
@@ -15,6 +16,14 @@ public class TextureInfo : ReportBase, ITelltaleObject
     public uint mArraySize { get; set; }
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => sizeof(uint) * 5;
 

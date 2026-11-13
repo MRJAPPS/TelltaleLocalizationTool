@@ -14,7 +14,7 @@ using TelltaleLocalizationTool.Telltale.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font;
 
 [Description("Reading a font!(Telltale font file)")]
-public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase
+public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase
 #if IFNT
     , IFnt
 #else
@@ -118,6 +118,14 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     #region Implement
 
+    public MetaStreamContext? msCtx { get; protected set; } = new(game);
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
+
     public IMetaHeader? Header { get; private set; }
 
     public uint Size => defaultSectionChunkSize + asyncSectionChunkSize;
@@ -142,6 +150,7 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public void Parse(BinaryReader reader)
     {
+        this.ShareMetaStreamContext();
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
@@ -165,6 +174,12 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         XmlElement myElement = reader.GetSingleElement(nameof(TFont), name);
         ParseBasicTypes(myElement);
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
+        msCtx ??= new(game);
+        if (Header != null)
+        {
+            msCtx.Header = Header;
+        }
+        this.ShareMetaStreamContext();
         mName.Parse(myElement, nameof(mName));
         mGlyphInfos.Parse(myElement, nameof(mGlyphInfos));
         mTexturePages.Parse(myElement, nameof(mTexturePages));
@@ -172,6 +187,7 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
     public void Write(BinaryWriter writer)
     {
+        this.ShareMetaStreamContext();
         Position = writer.BaseStream.Position;
 
         WriteMetaHeader(writer);
@@ -214,6 +230,9 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
+        msCtx ??= new(game);
+        msCtx.Header = Header;
+        this.ShareMetaStreamContext();
     }
 
     public void WriteMetaHeader(BinaryWriter writer)
@@ -238,6 +257,9 @@ public class TFont(bool rMsv6Header = true, bool wMsv6Header = true) : ReportBas
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(defaultSectionChunkSize, debugSectionChunkSize, asyncSectionChunkSize);
+        msCtx ??= new(game);
+        msCtx.Header = Header;
+        this.ShareMetaStreamContext();
         Header.WriteToBinary(writer);
     }
 

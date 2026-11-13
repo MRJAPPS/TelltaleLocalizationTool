@@ -12,7 +12,7 @@ using TelltaleLocalizationTool.Telltale.Meta.Versions;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 [Description("Reading a D3DTX version 9")]
-public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ID3DTX
+public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ID3DTX
 {
     #region Private constants
 
@@ -79,6 +79,14 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     #region Implement
 
+    public MetaStreamContext? msCtx { get; protected set; } = new(game);
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
+
 
     public D3DTXMetadata mD3dtxMetaData { get; set; } = new(MyVersion);
 
@@ -92,6 +100,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     public void Parse(BinaryReader reader)
     {
+        this.ShareMetaStreamContext();
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
@@ -112,6 +121,12 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
         ParseBasicTypes(myElement);
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
+        msCtx ??= new(game);
+        if (Header != null)
+        {
+            msCtx.Header = Header;
+        }
+        this.ShareMetaStreamContext();
 
         mD3dtxMetaData.Parse(myElement, nameof(mD3dtxMetaData));
 
@@ -131,6 +146,7 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
     public void Write(BinaryWriter writer)
     {
+        this.ShareMetaStreamContext();
         Position = writer.BaseStream.Position;
 
         WriteMetaHeader(writer);
@@ -280,6 +296,9 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(mD3dtxMetaData.Size, debugSectionChunkSize, asyncSectionChunkSize);
+        msCtx ??= new(game);
+        msCtx.Header = Header;
+        this.ShareMetaStreamContext();
         Header.WriteToBinary(writer);
     }
 
@@ -291,6 +310,9 @@ public class D3DTXV9(bool autoPixelData = true, bool rMsv6Header = true, bool wM
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
+        msCtx ??= new(game);
+        msCtx.Header = Header;
+        this.ShareMetaStreamContext();
     }
 
     #endregion

@@ -5,6 +5,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Localize;
 using TelltaleLocalizationTool.Telltale.TTypes;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
 
@@ -37,17 +38,25 @@ public class TextItem : ReportBase, ITelltaleObject
 
     public FixedEnum<Enums.ERecordingStatus> mRecordingStatus { get; set; } = new(Enums.ERecordingStatus.eRecordingStatus_None);
 
-    public Enums.ETextItemFlags mFlags { get; set; } = Enums.ETextItemFlags.Unknown;
+    public Flags<Enums.ETextItemFlags> mFlags { get; set; } = new(Enums.ETextItemFlags.Unknown);
 
     public uint Size =>
-        (sizeof(uint) * 3) + sizeof(float) + sizeof(Enums.ETextItemFlags)
+        (sizeof(uint) * 3) + sizeof(float) + mFlags.Size
         + mResName.Size + mhAnimation.Size + mhVoiceData.Size + mLocalData.Size + mResolvedLocalData.Size + mRecordingStatus.Size;
 
     public long Position { get; private set; } = -1;
 
     #endregion
 
-    #region Implementation
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public void Parse(BinaryReader reader)
     {
@@ -63,7 +72,7 @@ public class TextItem : ReportBase, ITelltaleObject
         mLengthOverride = reader.ReadSingle();
         mResolvedLocalData.Parse(reader);
         mRecordingStatus.Parse(reader);//WD1 MSV5 problem(RecordingUtils_EnumRecordingStatus)
-        mFlags = (Enums.ETextItemFlags)reader.ReadUInt32();
+        mFlags.Parse(reader);
 
         Report(this);
     }
@@ -80,6 +89,7 @@ public class TextItem : ReportBase, ITelltaleObject
         mLocalData.Parse(myElement, nameof(mLocalData));
         mResolvedLocalData.Parse(myElement, nameof(mResolvedLocalData));
         mRecordingStatus.Parse(myElement, nameof(mRecordingStatus));
+        mFlags.Parse(myElement, nameof(mFlags));
     }
 
     public void Write(BinaryWriter writer)
@@ -96,7 +106,7 @@ public class TextItem : ReportBase, ITelltaleObject
         writer.Write(mLengthOverride);
         mResolvedLocalData.Write(writer);
         mRecordingStatus.Write(writer);
-        writer.Write((uint)mFlags);
+        mFlags.Write(writer);
 
         Report(this, true);
     }
@@ -113,6 +123,7 @@ public class TextItem : ReportBase, ITelltaleObject
         mLocalData.Write(myElement, nameof(mLocalData));
         mResolvedLocalData.Write(myElement, nameof(mResolvedLocalData));
         mRecordingStatus.Write(myElement, nameof(mRecordingStatus));
+        mFlags.Write(myElement, nameof(mFlags));
 
         _ = element.AppendChild(myElement);
     }
@@ -123,25 +134,22 @@ public class TextItem : ReportBase, ITelltaleObject
 
     private void AppendBasicTypes(XmlElement element)
     {
-        XmlAttribute TextId, mId, mIDAlias, mLengthOverride, mFlags;
+        XmlAttribute TextId, mId, mIDAlias, mLengthOverride;
 
         TextId = element.OwnerDocument.CreateAttribute(nameof(this.TextId));
         mId = element.OwnerDocument.CreateAttribute(nameof(this.mId));
         mIDAlias = element.OwnerDocument.CreateAttribute(nameof(this.mIDAlias));
         mLengthOverride = element.OwnerDocument.CreateAttribute(nameof(this.mLengthOverride));
-        mFlags = element.OwnerDocument.CreateAttribute(nameof(this.mFlags));
 
         TextId.Value = this.TextId.ToString();
         mId.Value = this.mId.ToString();
         mIDAlias.Value = this.mIDAlias.ToString();
         mLengthOverride.Value = this.mLengthOverride.ToString();
-        mFlags.Value = this.mFlags.ToString();
 
         _ = element.Attributes.Append(TextId);
         _ = element.Attributes.Append(mId);
         _ = element.Attributes.Append(mIDAlias);
         _ = element.Attributes.Append(mLengthOverride);
-        _ = element.Attributes.Append(mFlags);
     }
 
     private void ParseBasicTypes(XmlElement element)
@@ -153,8 +161,6 @@ public class TextItem : ReportBase, ITelltaleObject
         mIDAlias = XmlConvert.ToUInt32(element.GetAttribute(nameof(mIDAlias)));
 
         mLengthOverride = XmlConvert.ToSingle(element.GetAttribute(nameof(mLengthOverride)));
-
-        mFlags = System.Enum.Parse<Enums.ETextItemFlags>(element.GetAttribute(nameof(mFlags)));
     }
 
     #endregion

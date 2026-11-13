@@ -4,6 +4,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.TTypes;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.T3ToonGraReg;
 [Description("Parsing a Collection of T3ToonGradientRegion...")]
@@ -15,6 +16,16 @@ public class T3ToonGradientRegionCollection : TCollectionBase<T3ToonGradientRegi
     private const uint T3ToonGradientRegionSizeInFile = sizeof(uint);//Blcok size,Capacity,... Why do I keep writing this? :/
 
     #endregion
+
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => ((uint)Items.Count * new T3ToonGradientRegionItem().Size) + T3ToonGradientRegionSize + T3ToonGradientRegionSizeInFile;
 
@@ -78,4 +89,5 @@ public class T3ToonGradientRegionCollection : TCollectionBase<T3ToonGradientRegi
         }
         _ = element.AppendChild(myElement);
     }
+    #endregion
 }

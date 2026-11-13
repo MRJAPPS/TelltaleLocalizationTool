@@ -3,6 +3,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.TTypes;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 [Description("Parsing AuxilaryData!")]
@@ -26,6 +27,15 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
+
     private uint AuxilaryDataSizeExtra => AuxilaryDataSize + PaddingSize + symbol.Size + UnkownSize;
 
     public uint Size => mAuxDataCount > 0 ? AuxilaryDataSizeExtra + (uint)Data.Length : 0;

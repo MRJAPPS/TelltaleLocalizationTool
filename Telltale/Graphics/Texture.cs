@@ -7,6 +7,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics.Image;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using static TelltaleLocalizationTool.Telltale.Graphics.TextureManager;
 
 namespace TelltaleLocalizationTool.Telltale.Graphics;
@@ -812,9 +813,9 @@ public unsafe partial class Texture
         }
     }
 
-    public void GetDDSInformationV9(out D3DTXV9 d3dtxv9, out ImageSection[] sections, DDSFlags flags = DDSFlags.None)
+    public void GetDDSInformationV9(out D3DTXV9 d3dtxv9, out ImageSection[] sections, Games game, DDSFlags flags = DDSFlags.None)
     {
-        d3dtxv9 = (D3DTXV9)GetTextureInformation(Image.GetMetadata());
+        d3dtxv9 = (D3DTXV9)GetTextureInformation(Image.GetMetadata(), game);
         sections = GetDDSImageSections(Image, flags);
     }
 

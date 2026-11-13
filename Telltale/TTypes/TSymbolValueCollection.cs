@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.TTypes;
 [Description("Reading a list of TSymbols")]
@@ -13,6 +14,14 @@ public class TSymbolValueCollection : TCollectionBase<TSymbolValue>, ITelltaleOb
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => ((uint)Items.Count * new TSymbolValue().Size) + TSymbolValueCollectionSizeInFile + TSymbolValueCollectionSize;
 

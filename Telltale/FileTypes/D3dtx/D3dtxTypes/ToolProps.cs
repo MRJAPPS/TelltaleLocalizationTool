@@ -2,6 +2,7 @@
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 
@@ -14,6 +15,16 @@ public class ToolProps : ReportBase, ITelltaleObject
     public bool mbHasProps { get; set; }
 
     #endregion
+
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => 1;
 
@@ -48,6 +59,8 @@ public class ToolProps : ReportBase, ITelltaleObject
         AppendBasicTypes(myElement);
         _ = element.AppendChild(myElement);
     }
+    #endregion
+
     #region XML
     private void AppendBasicTypes(XmlElement element)
     {

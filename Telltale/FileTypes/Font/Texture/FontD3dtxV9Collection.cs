@@ -5,6 +5,8 @@ using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
+using TelltaleLocalizationTool.Telltale.Meta;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 
@@ -17,6 +19,16 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
     private const uint FontD3dtxV9CollectionLenInFile = sizeof(uint);
 
     #endregion
+
+    #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size
     {
@@ -52,7 +64,7 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
             if (node is XmlElement itemElement && itemElement.Name == nameof(D3DTXV9))
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
-                D3DTXV9 d3dtxv9 = new();
+                D3DTXV9 d3dtxv9 = new(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."));
                 d3dtxv9.Parse(myElement, itemName);
                 Items.Add(d3dtxv9);
             }
@@ -91,7 +103,7 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
         Items = new(length);
         for (int i = 0; i < length; ++i)
         {
-            D3DTXV9 d3dtxv9 = new(false, false, false);
+            D3DTXV9 d3dtxv9 = new(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."), false, false, false);
             d3dtxv9.mD3dtxMetaData.Parse(reader);
             Items.Add(d3dtxv9);
         }
@@ -143,4 +155,5 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
         Report(this, extra: nameof(WritePixelData));
         Position = pos;//reset to header or default
     }
+    #endregion
 }

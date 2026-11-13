@@ -4,6 +4,7 @@ using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.Meta.Versions;
 
@@ -27,6 +28,14 @@ public class MSV6 : ReportBase, ITelltaleObject, IMetaHeader
     #endregion
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => checked(5 * sizeof(uint) + (uint)mClassNames.Sum(item => item.Size));
 

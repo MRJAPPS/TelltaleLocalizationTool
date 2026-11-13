@@ -1,18 +1,16 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
-using System.Text;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
-using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.CLI;
 
@@ -30,9 +28,10 @@ public class CliProgram : Command<Options>
             {
                 case Options.Modes.c_export:
                 case Options.Modes.c_import:
+                    Games game = GetGame(settings.Game);
                     CheckArgs(settings);
                     PrepareConfiguration();
-                    return ProcessFiles(settings, cancellationToken);
+                    return ProcessFiles(settings, game, cancellationToken);
                 case Options.Modes.c_about:
                     ShowAbout();
                     return 0;
@@ -59,6 +58,18 @@ public class CliProgram : Command<Options>
 
     #region Error Checking
 
+    private static Games GetGame(string game)
+    {
+        game = game.Trim().ToUpper();
+        if (game.Contains(',') || !Enum.TryParse(game, true, out Games value) || !Enum.IsDefined(value))
+        {
+            throw new ArgumentException($"I can't use game \"{game}\"! Use a name or number from Games: {string.Join(", ", Enum.GetValues<Games>().Select(item => $"{item} ({(int)item})"))}.");
+        }
+        return value != Games.WDS3NF
+            ? throw new NotSupportedException($"{value} isn't supported yet! We only support WDS3NF for now.")
+            : value;
+    }
+
     private static void CheckArgs(Options settings)
     {
         if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_font &&
@@ -73,9 +84,14 @@ public class CliProgram : Command<Options>
         if (settings.FileType == Options.FileTypes.c_ttf)
         {
             if (settings.Mode != Options.Modes.c_import)
+            {
                 throw new NotSupportedException("TTF is input only! We can't convert a bitmap font back to TTF.");
+            }
+
             if (!float.IsFinite(settings.GlyphSize) || settings.GlyphSize <= 0 || settings.GlyphSize >= int.MaxValue || settings.GlyphSize != MathF.Truncate(settings.GlyphSize))
+            {
                 throw new ArgumentOutOfRangeException(nameof(settings.GlyphSize), "TTF import needs --glyphSize with a positive whole pixel size!");
+            }
         }
         else if (settings.GlyphSize != -1F)
         {
@@ -192,7 +208,7 @@ public class CliProgram : Command<Options>
             Path.GetDirectoryName(input) ?? settings.Input);
         string relativeName = Path.GetFileNameWithoutExtension(input);
 
-        if (settings.FileType == Options.FileTypes.c_font || settings.FileType == Options.FileTypes.c_d3dtx || settings.FileType == Options.FileTypes.c_ttf)
+        if (settings.FileType is Options.FileTypes.c_font or Options.FileTypes.c_d3dtx or Options.FileTypes.c_ttf)
         {
             string fileDir = relativeDirectory != "." &&
                 (settings.Mode == Options.Modes.c_import || Path.GetFileName(relativeDirectory).Equals(relativeName, oic))
@@ -219,7 +235,7 @@ public class CliProgram : Command<Options>
         };
     }
 
-    private static int ProcessFiles(Options settings, CancellationToken cancellationToken)
+    private static int ProcessFiles(Options settings, Games game, CancellationToken cancellationToken)
     {
         int success = 0, failed = 0;
         AnsiConsole.Progress()
@@ -324,16 +340,16 @@ public class CliProgram : Command<Options>
                         switch (settings.FileType)
                         {
                             case Options.FileTypes.c_landb:
-                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
+                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken);
                                 break;
                             case Options.FileTypes.c_font:
-                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
+                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken);
                                 break;
                             case Options.FileTypes.c_ttf:
-                                ProcessTtf(input, output, settings.GlyphSize, ctx, current, cancellationToken);
+                                ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, cancellationToken);
                                 break;
                             case Options.FileTypes.c_d3dtx:
-                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, ctx, current, cancellationToken);
+                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken);
                                 break;
                         }
                         success++;
@@ -390,9 +406,9 @@ public class CliProgram : Command<Options>
 
     #region Landb
 
-    private static void ProcessLandb(string input, string output, bool import, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessLandb(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
-        Landb landb = new(rMsv6Header: !import);
+        Landb landb = new(rMsv6Header: !import, game: game);
         XmlDocument doc = new();
         ReportProgress(ctx, task, $"Reading {Path.GetFileName(input)}...", cancellationToken);
         if (import)
@@ -442,13 +458,13 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessTtf(string input, string output, float glyphSize, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessTtf(string input, string output, float glyphSize, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
         task.IsIndeterminate = true;
         TFont font;
         try
         {
-            font = Converter.ConvertTtfToFont(input, glyphSize,
+            font = Converter.ConvertTtfToFont(input, glyphSize, game,
                 message => ReportProgress(ctx, task, message, cancellationToken), cancellationToken);
         }
         finally
@@ -463,7 +479,7 @@ public class CliProgram : Command<Options>
         task.Increment(1);
     }
 
-    private static TFont ImportFont(BmpFontFile bmpFont, string input, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static TFont ImportFont(BmpFontFile bmpFont, string input, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
         if (bmpFont.Info == null || bmpFont.Common == null)
         {
@@ -489,7 +505,7 @@ public class CliProgram : Command<Options>
             }
             CheckExtension(atlas, Formats.ddsExtension);
         }
-        TFont font = new()
+        TFont font = new(game: game)
         {
             mBase = bmpFont.Common.Base,
             mbUnicode = bmpFont.Info.Unicode == 1,
@@ -541,7 +557,7 @@ public class CliProgram : Command<Options>
             ReportProgress(ctx, task, $"Importing atlas {page.Id}: {page.File}", cancellationToken);
             using TempFile tempAtlas = new(Path.ChangeExtension(page.File, Formats.ddsExtension));
             File.Copy(Path.Combine(inputDirectory, page.File), tempAtlas.Path, true);
-            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input)));
+            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input), game));
             task.Increment(1);
             ctx.Refresh();
         }
@@ -552,9 +568,9 @@ public class CliProgram : Command<Options>
 
     #region D3dtx
 
-    private static void ImportD3dtx(D3DTXV9 d3dtx, Texture texture)
+    private static void ImportD3dtx(D3DTXV9 d3dtx, Texture texture, Games game)
     {
-        texture.GetDDSInformationV9(out D3DTXV9 imported, out ImageSection[] sections);
+        texture.GetDDSInformationV9(out D3DTXV9 imported, out ImageSection[] sections, game);
         if (imported.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.Unknown)
         {
             throw new NotSupportedException("I can't map this image's pixel format to a Telltale surface format! Save it as a supported DDS format first.");
@@ -603,17 +619,17 @@ public class CliProgram : Command<Options>
         };
         d3dtx.mPixelData.Clear();
         //Telltale stores the smallest mip first. DDS starts with the biggest one.
-        foreach ((ImageSection section, int mip, int face) image in images.OrderByDescending(image => image.mip).ThenBy(image => image.face))
+        foreach ((ImageSection section, int mip, int face) in images.OrderByDescending(image => image.mip).ThenBy(image => image.face))
         {
-            d3dtx.mPixelData.Add(image.section.Pixels);
+            d3dtx.mPixelData.Add(section.Pixels);
             d3dtx.mD3dtxMetaData.mStreamHeader.Add(new(9)
             {
-                mMipIndex = image.mip,
-                mFaceIndex = image.face,
+                mMipIndex = mip,
+                mFaceIndex = face,
                 mMipCount = 1,
-                mDataSize = (uint)image.section.Pixels.Length,
-                mPitch = (int)image.section.RowPitch,
-                mSlicePitch = (int)image.section.SlicePitch
+                mDataSize = (uint)section.Pixels.Length,
+                mPitch = (int)section.RowPitch,
+                mSlicePitch = (int)section.SlicePitch
             });
         }
     }
@@ -631,12 +647,12 @@ public class CliProgram : Command<Options>
         throw new NotImplementedException($"The necessary conversions for your requested format haven't been implemented! You can only use {Formats.jpegExtension}, {Formats.pngExtension}, and {Formats.ddsExtension}!");
     }
 
-    private static void ProcessD3dtx(string input, string output, bool import, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
         using TempFile temp = new(output);
-        D3DTXV9 d3dtx = new();
+        D3DTXV9 d3dtx = new(game: game);
         if (import)
         {
             CheckOutputTexFormat(input);
@@ -679,7 +695,7 @@ public class CliProgram : Command<Options>
                         }
                     }
                 }
-                ImportD3dtx(d3dtx, texture);
+                ImportD3dtx(d3dtx, texture, game);
             }
             finally
             {
@@ -768,7 +784,7 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessFont(string input, string output, bool import, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessFont(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
@@ -780,13 +796,13 @@ public class CliProgram : Command<Options>
             task.Increment(1);
             task.MaxValue = bmpFont.Pages.Count + 3;
             ReportProgress(ctx, task, "Importing font glyphs and DDS atlases...", cancellationToken);
-            font = ImportFont(bmpFont, input, ctx, task, cancellationToken);
+            font = ImportFont(bmpFont, input, game, ctx, task, cancellationToken);
             ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
             font.WriteTFont(temp.Path);
         }
         else
         {
-            font = new();
+            font = new(game: game);
             font.ReadTFont(input);
             task.Increment(1);
             task.MaxValue = font.mTexturePages.Count + 3;
@@ -861,14 +877,14 @@ public class CliProgram : Command<Options>
 
     private static void ShowAbout()
     {
-        var commandsTable = new Table()
+        Table commandsTable = new Table()
             .Border(TableBorder.Rounded)
             .BorderColor(Color.SlateBlue1)
             .Title("[bold blue] Commands & Info [/]")
             .AddColumn(new TableColumn("[bold]Item[/]").NoWrap())
             .AddColumn(new TableColumn("[bold]Description[/]"));
 
-        var commandsRows = new (string Item, string Desc)[]
+        (string Item, string Desc)[] commandsRows = new (string Item, string Desc)[]
         {
         ("[cyan]github[/]",  $"[bold green underline]{Config.GithubPage}[/]"),
         ("[cyan]landb[/]",   "export .landb to XML, then import your translated XML back to .landb."),
@@ -879,6 +895,7 @@ public class CliProgram : Command<Options>
         ("[orange1]warn[/]", "[orange1]Font import needs Compressonator CLI 4.5.52.[/] Set [bold]CompressonatorPath[/] in appsettings.json!"),
         ("[orange1]warn[/]", "[orange1]TTF import needs bmfont64.exe and --glyphSize <size>.[/] Set [bold]BmfontPath64[/] in appsettings.json!"),
         ("[grey]info[/]",    "[grey]Use --batch for folders and --relative to include subfolders and keep their paths.[/]"),
+        ("[grey]game[/]",    "[grey]Use --game or -g with WDS3NF or 0. Default: WDS3NF. Other games aren't supported yet.[/]"),
         ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them.[/]"),
         };
 
@@ -887,9 +904,9 @@ public class CliProgram : Command<Options>
             .Overflow(VerticalOverflow.Ellipsis)
             .Start(ctx =>
             {
-                foreach (var (item, desc) in commandsRows)
+                foreach ((string item, string desc) in commandsRows)
                 {
-                    commandsTable.AddRow(item, desc);
+                    _ = commandsTable.AddRow(item, desc);
                     ctx.Refresh();
                     Thread.Sleep(70);
                 }
@@ -897,7 +914,7 @@ public class CliProgram : Command<Options>
 
         AnsiConsole.WriteLine();
 
-        var creditsTable = new Table()
+        Table creditsTable = new Table()
             .Border(TableBorder.Rounded)
             .BorderColor(Color.MediumPurple)
             .Title("[bold magenta] Credits & Thanks [/]")
@@ -905,7 +922,7 @@ public class CliProgram : Command<Options>
             .AddColumn(new TableColumn("[bold]Project[/]").NoWrap())
             .AddColumn(new TableColumn("[bold]Note[/]"));
 
-        var creditsRows = new (string Project, string Note)[]
+        (string Project, string Note)[] creditsRows = new (string Project, string Note)[]
         {
         ("[green]Telltale Texture Tool[/]",
          "Built on top of [link=https://github.com/Telltale-Modding-Group/Telltale-Texture-Tool][green]Telltale Texture Tool[/][/] [grey]—[/] but I've [magenta]reshaped[/] a few bits along the way to fit my needs."),
@@ -924,9 +941,9 @@ public class CliProgram : Command<Options>
             .Overflow(VerticalOverflow.Ellipsis)
             .Start(ctx =>
             {
-                foreach (var (project, note) in creditsRows)
+                foreach ((string project, string note) in creditsRows)
                 {
-                    creditsTable.AddRow(project, note);
+                    _ = creditsTable.AddRow(project, note);
                     ctx.Refresh();
                     Thread.Sleep(120);
                 }

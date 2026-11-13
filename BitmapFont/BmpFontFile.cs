@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Xml.Serialization;
+﻿using System.Xml.Serialization;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.BitmapFont;
 
@@ -55,17 +55,17 @@ public class BmpFontFile
     #region XML
     public static void SerializeToXml(BmpFontFile bmpFont, string filePath)
     {
-        var serializer = new XmlSerializer(typeof(BmpFontFile));
+        XmlSerializer serializer = new(typeof(BmpFontFile));
 
-        using var writer = new StreamWriter(filePath);
+        using StreamWriter writer = new(filePath);
         serializer.Serialize(writer, bmpFont);
     }
 
     public static BmpFontFile DeserializeFromXml(string filePath)
     {
-        var serializer = new XmlSerializer(typeof(BmpFontFile));
+        XmlSerializer serializer = new(typeof(BmpFontFile));
 
-        using var reader = new StreamReader(filePath);
+        using StreamReader reader = new(filePath);
 
         return (BmpFontFile)serializer.Deserialize(reader)!;
     }
@@ -182,8 +182,8 @@ public class BmpFontFile
             throw new InvalidDataException("This font has no texture pages! I can't export an atlas that doesn't exist.");
         }
         D3DTXV9 firstPage = font.mTexturePages.First();
-        uint width = firstPage.mD3dtxMetaData.mTextureInfo.mWidth;
-        uint height = firstPage.mD3dtxMetaData.mTextureInfo.mHeight;
+        _ = firstPage.mD3dtxMetaData.mTextureInfo.mWidth;
+        _ = firstPage.mD3dtxMetaData.mTextureInfo.mHeight;
         foreach (GlyphInfo glyph in font.mGlyphInfos)
         {
             if (glyph.mTexturePage < 0 || glyph.mTexturePage >= font.mTexturePages.Count)
@@ -229,14 +229,14 @@ public class BmpFontFile
         return ret;
     }
 
-    public static TFont ToTFont(string bmpFontFile)
+    public static TFont ToTFont(string bmpFontFile, Games game)
     {
         string inputDirectory = Path.GetDirectoryName(bmpFontFile) ?? throw new DirectoryNotFoundException($"I couldn't find the folder associated with fnt(xml)! Use an absolute path!{Environment.NewLine}\"{bmpFontFile}\"");
         BmpFontFile bmpFont = BmpFontFile.DeserializeFromXml(bmpFontFile);
-        return ToTFont(bmpFont, inputDirectory, Path.GetFileNameWithoutExtension(bmpFontFile));
+        return ToTFont(bmpFont, inputDirectory, Path.GetFileNameWithoutExtension(bmpFontFile), game: game);
     }
 
-    public static TFont ToTFont(BmpFontFile bmpFont, string inputDirectory, string fontTexNamePrefix, Action<BmpFontPage, bool>? report = null)
+    public static TFont ToTFont(BmpFontFile bmpFont, string inputDirectory, string fontTexNamePrefix, Games game, Action<BmpFontPage, bool>? report = null)
     {
         if (bmpFont.Info == null || bmpFont.Common == null)
         {
@@ -272,7 +272,7 @@ public class BmpFontFile
             }
         }
 
-        TFont font = new()
+        TFont font = new(game: game)
         {
             mBase = bmpFont.Common!.Base,
             mbUnicode = bmpFont.Info!.Unicode == 1,
@@ -292,7 +292,7 @@ public class BmpFontFile
         foreach (BmpFontPage page in pages)
         {
             report?.Invoke(page, false);
-            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(Path.Combine(inputDirectory, page.File), fontTexNamePrefix));
+            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(Path.Combine(inputDirectory, page.File), fontTexNamePrefix, game));
             report?.Invoke(page, true);
         }
 

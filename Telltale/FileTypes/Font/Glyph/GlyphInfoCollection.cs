@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderInfo;
+using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 
@@ -19,6 +20,14 @@ public class GlyphInfoCollection : TCollectionBase<GlyphInfo>, ITelltaleObject
 
 
     #region Implement
+
+    public MetaStreamContext? msCtx { get; protected set; }
+
+    MetaStreamContext? ITelltaleObject.msCtx
+    {
+        get => msCtx;
+        set => msCtx = value;
+    }
 
     public uint Size => GlyphInfoCollectionLenSize + GlyphInfoCollectionSizeIFile + new GlyphInfo().Size * (uint)Items.Count;
 

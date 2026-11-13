@@ -1,19 +1,20 @@
 ﻿using Hexa.NET.DirectXTex;
-using System.Diagnostics;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Drawing;
 using System.Text;
 using TelltaleLocalizationTool.BitmapFont;
-using TelltaleLocalizationTool.Telltale.FileTypes.Font;
-using System.Drawing;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 using TelltaleLocalizationTool.Telltale.Graphics.Image;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 
 
@@ -55,11 +56,11 @@ public static class Converter
         };
     }
 
-    public static void ConvertTextureFromD3DtxToOthersV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options)
+    public static void ConvertTextureFromD3DtxToOthersV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game)
     {
         CheckArgs(sourceFilePath, destinationFilePath);
 
-        D3DTXV9 d3dtxFile = new();
+        D3DTXV9 d3dtxFile = new(game: game);
         d3dtxFile.LoadD3DTX(sourceFilePath);
 
         DDS_Master ddsFile = new(d3dtxFile);
@@ -75,7 +76,7 @@ public static class Converter
         texture.Release();
     }
 
-    public static void ConvertTextureFromOthersToD3DtxV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, string? xmlFile = null)
+    public static void ConvertTextureFromOthersToD3DtxV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game, string? xmlFile = null)
     {
         CheckArgs(sourceFilePath, destinationFilePath);
 
@@ -84,7 +85,7 @@ public static class Converter
             throw new FormatException($"The output file format must be {Formats.d3dtxExtension}!");
         }
 
-        D3DTXV9 d3dtxMaster = new();
+        D3DTXV9 d3dtxMaster = new(game: game);
         if (File.Exists(xmlFile))
         {
             d3dtxMaster.LoadD3DTXXML(xmlFile);
@@ -114,7 +115,7 @@ public static class Converter
 
         texture.TransformTexture(options, true, true);
 
-        texture.GetDDSInformationV9(out D3DTXV9 d3dtx, out ImageSection[] sections, flags);
+        texture.GetDDSInformationV9(out D3DTXV9 d3dtx, out ImageSection[] sections, game, flags);
 
         if (options.EnableSwizzle)
         {
@@ -131,13 +132,18 @@ public static class Converter
 
     #region NEW
 
-    public static TFont ConvertTtfToFont(string input, float glyphSize, Action<string>? report = null, CancellationToken cancellationToken = default)
+    public static TFont ConvertTtfToFont(string input, float glyphSize, Games game, Action<string>? report = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         if (!Path.GetExtension(input).Equals(Formats.ttfExtension, StringComparison.OrdinalIgnoreCase))
+        {
             throw new NotSupportedException($"We need a {Formats.ttfExtension} file here!");
+        }
+
         if (!float.IsFinite(glyphSize) || glyphSize <= 0 || glyphSize >= int.MaxValue || glyphSize != MathF.Truncate(glyphSize))
+        {
             throw new ArgumentOutOfRangeException(nameof(glyphSize), "Glyph size must be a positive whole number of pixels!");
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
         string executable = Path.GetFullPath(Program.Config.BmfontPath64);
@@ -193,7 +199,7 @@ public static class Converter
                 invB=0
                 outlineThickness=0
                 chars=32-55295,57344-1114111
-                """, new UTF8Encoding(false));
+                """, new UTF8Encoding(false));//TODO: THIS IS FOR WDS3NF, Move this to map table
 
             ProcessStartInfo psi = new()
             {
@@ -214,8 +220,8 @@ public static class Converter
             ConcurrentQueue<string> messages = new();
             StringBuilder log = new();
             using Process process = new() { StartInfo = psi };
-            process.OutputDataReceived += (_, message) => { if (message.Data != null) messages.Enqueue(message.Data); };
-            process.ErrorDataReceived += (_, message) => { if (message.Data != null) messages.Enqueue(message.Data); };
+            process.OutputDataReceived += (_, message) => { if (message.Data != null) { messages.Enqueue(message.Data); } };
+            process.ErrorDataReceived += (_, message) => { if (message.Data != null) { messages.Enqueue(message.Data); } };
             report?.Invoke($"Generating {fontName} at {glyphSize} pixels with BMFont...");
             _ = process.Start();
             try
@@ -234,19 +240,27 @@ public static class Converter
             catch
             {
                 if (!process.HasExited)
+                {
                     process.Kill(true);
+                }
+
                 process.WaitForExit();
                 throw;
             }
             if (process.ExitCode != 0 || !File.Exists(fnt))
+            {
                 throw new InvalidOperationException($"BMFont couldn't generate the font (exit code {process.ExitCode})!{Environment.NewLine}{log}");
+            }
 
             report?.Invoke("Reading generated font glyphs and DDS atlases...");
             BmpFontFile bmpFont = BmpFontLoader.LoadFromFile(fnt);
             if (bmpFont.Info == null || bmpFont.Chars.Count == 0)
+            {
                 throw new InvalidDataException("BMFont didn't generate any usable glyphs!");
+            }
+
             bmpFont.Info.Size = (int)glyphSize;
-            TFont font = BmpFontFile.ToTFont(bmpFont, tempDirectory.FullName, Path.GetFileNameWithoutExtension(input),
+            TFont font = BmpFontFile.ToTFont(bmpFont, tempDirectory.FullName, Path.GetFileNameWithoutExtension(input), game,
                 (page, done) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -259,7 +273,7 @@ public static class Converter
             {
                 while (messages.TryDequeue(out string? message))
                 {
-                    log.AppendLine(message);
+                    _ = log.AppendLine(message);
                     report?.Invoke($"BMFont: {message}");
                 }
             }
@@ -274,8 +288,11 @@ public static class Converter
     {
         using BinaryReader reader = new(File.OpenRead(input));
         uint signature = ReadUInt32();
-        if (signature != 0x00010000 && signature != 0x74727565)
+        if (signature is not 0x00010000 and not 0x74727565)
+        {
             throw new InvalidDataException("This isn't a TrueType font!");
+        }
+
         ushort tables = ReadUInt16();
         reader.BaseStream.Position = 12;
         uint nameOffset = 0, nameLength = 0, headOffset = 0;
@@ -285,17 +302,28 @@ public static class Converter
             _ = ReadUInt32();
             uint offset = ReadUInt32(), length = ReadUInt32();
             if ((long)offset + length > reader.BaseStream.Length)
+            {
                 throw new InvalidDataException($"Invalid TTF table: {tag}");
+            }
+
             if (tag == "name") { nameOffset = offset; nameLength = length; }
-            if (tag == "head" && length >= 46) headOffset = offset;
+            if (tag == "head" && length >= 46)
+            {
+                headOffset = offset;
+            }
         }
         if (nameOffset == 0 || nameLength < 6)
+        {
             throw new InvalidDataException("I couldn't find the TTF name table!");
+        }
+
         reader.BaseStream.Position = nameOffset;
         _ = ReadUInt16();
         ushort names = ReadUInt16(), strings = ReadUInt16();
-        if (6L + names * 12 > nameLength || strings > nameLength)
+        if (6L + (names * 12) > nameLength || strings > nameLength)
+        {
             throw new InvalidDataException("The TTF name table is incomplete!");
+        }
 
         string? family = null;
         for (int index = 0; index < names; ++index)
@@ -303,20 +331,32 @@ public static class Converter
             ushort platform = ReadUInt16(), encoding = ReadUInt16(), language = ReadUInt16();
             ushort name = ReadUInt16(), length = ReadUInt16(), offset = ReadUInt16();
             if (name != 1 || (platform != 0 && !(platform == 3 && (encoding == 1 || encoding == 10))))
+            {
                 continue;
+            }
+
             if ((long)strings + offset + length > nameLength || length % 2 != 0)
+            {
                 throw new InvalidDataException("Invalid TTF family name!");
+            }
+
             long position = reader.BaseStream.Position;
             reader.BaseStream.Position = (long)nameOffset + strings + offset;
             string candidate = Encoding.BigEndianUnicode.GetString(reader.ReadBytes(length));
             reader.BaseStream.Position = position;
             if (string.IsNullOrWhiteSpace(candidate))
+            {
                 continue;
+            }
+
             family ??= candidate;
             if (platform == 3 && language == 0x0409) { family = candidate; break; }
         }
         if (family == null || family.IndexOfAny(['\r', '\n', '\0']) >= 0)
+        {
             throw new InvalidDataException("I couldn't read a usable Unicode family name from the TTF!");
+        }
+
         ushort style = 0;
         if (headOffset != 0)
         {
@@ -325,17 +365,29 @@ public static class Converter
         }
         return (family, (style & 1) != 0, (style & 2) != 0);
 
-        ushort ReadUInt16() => BinaryPrimitives.ReverseEndianness(reader.ReadUInt16());
-        uint ReadUInt32() => BinaryPrimitives.ReverseEndianness(reader.ReadUInt32());
+        ushort ReadUInt16()
+        {
+            return BinaryPrimitives.ReverseEndianness(reader.ReadUInt16());
+        }
+
+        uint ReadUInt32()
+        {
+            return BinaryPrimitives.ReverseEndianness(reader.ReadUInt32());
+        }
     }
 
     public static D3DTXV9 ConvertDdsToD3dtx(string ddsFile, string? fontName = default)
+    {
+        return ConvertDdsToD3dtx(ddsFile, fontName, Games.WDS3NF);
+    }
+
+    public static D3DTXV9 ConvertDdsToD3dtx(string ddsFile, string? fontName, Games game)
     {
         ArgumentNullException.ThrowIfNull(ddsFile, nameof(ddsFile));
         CheckArgsExtension(ddsFile);
 
         DdsD3dtx ddsData;
-        D3DTXV9 result = new();
+        D3DTXV9 result = new(game: game);
         using TempFile etc2rgbaDds = new(ddsFile);
 
         _ = CompressWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
@@ -353,13 +405,13 @@ public static class Converter
         }
     }
 
-    public static void ConvertDdsToD3dtx(string ddsFile, string d3dtxFile, string? fontName = default, bool writeXml = true)
+    public static void ConvertDdsToD3dtx(string ddsFile, string d3dtxFile, Games game, string? fontName = default, bool writeXml = true)
     {
         CheckArgs(ddsFile, d3dtxFile);
         CheckArgsExtension(ddsFile, d3dtxFile);
 
         DdsD3dtx ddsData;
-        D3DTXV9 d3dtx = new();
+        D3DTXV9 d3dtx = new(game: game);
         using TempFile etc2rgbaDds = new(ddsFile);
 
         _ = CompressWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
@@ -367,7 +419,9 @@ public static class Converter
         d3dtx.MapDdsToD3dtxForFont(ddsData, fontName);
         d3dtx.WriteD3DTX(d3dtxFile);
         if (writeXml)
+        {
             d3dtx.WriteD3DTXXML(Path.ChangeExtension(d3dtxFile, Formats.xmlExtension));
+        }
         //local methods:
         static void CheckArgsExtension(string ddsFile, string d3dtxFile)
         {
@@ -449,12 +503,7 @@ public static class Converter
             return @throw ? throw new ArgumentException("Input path cannot be null or empty!", nameof(input)) : false;
         }
 
-        if (string.IsNullOrWhiteSpace(output))
-        {
-            return @throw ? throw new ArgumentException("Output path cannot be null or empty!", nameof(output)) : false;
-        }
-
-        return true;
+        return !string.IsNullOrWhiteSpace(output) || (@throw ? throw new ArgumentException("Output path cannot be null or empty!", nameof(output)) : false);
     }
 
     private static void CheckArgs(string sourceFilePath, string destinationFilePath)

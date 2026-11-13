@@ -1,6 +1,7 @@
 ﻿using Spectre.Console.Cli;
 using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Enums;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.CLI;
 
@@ -46,7 +47,11 @@ public class Options : CommandSettings
     [Description("This flag must only be used with -b or --batch. When enabled, it recursively reads all files from the input folder and creates output files or folders relative to the input folder.")]
     public bool Relative { get; set; } = false;
 
-    [CommandOption("-g|--glyphSize <size>", false)]
+    [CommandOption("-g|--game <game>", true)]
+    [Description("The target game name or enum value.")]
+    public string Game { get; set; } = string.Empty;
+
+    [CommandOption("--glyphSize <size>", false)]
     [Description("Required for TTF import. Sets the glyph size in whole pixels; bmfont64.exe must be available.")]
     public float GlyphSize { get; set; } = -1F;//-1 IS NOT VALID, USER MUST GIVE US A SIZE!
 }

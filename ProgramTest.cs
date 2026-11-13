@@ -6,6 +6,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes.Text;
+using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool;
 
@@ -17,27 +18,28 @@ internal class ProgramTest
 
     private void Main(string[] args)//For now, this is for test
     {
+        const Games game = Games.WDS3NF;
         if (args.Length > 0)
         {
             if (Path.GetExtension(args[0]).Equals(".fnt"))
             {
-                TestFnt(args[0]);
+                TestFnt(args[0], game);
                 return;
             }
 
             if (Path.GetExtension(args[0]).Equals(".d3dtx"))
             {
-                TestD3dtx(args[0]);
+                TestD3dtx(args[0], game);
                 return;
             }
             if (Path.GetExtension(args[0]).Equals(".font"))
             {
-                TestFont(args[0]);
+                TestFont(args[0], game);
                 return;
             }
             if (Path.GetExtension(args[0]).Equals(".xml"))
             {
-                LandbParseWriteXml(args[0], Path.ChangeExtension(args[0], ".landb"), true);
+                LandbParseWriteXml(args[0], Path.ChangeExtension(args[0], ".landb"), game, true);
                 args[0] = Path.ChangeExtension(args[0], ".landb");
             }
             if ((!Path.GetExtension(args[0]).Equals(".landb", oic) && !Path.GetExtension(args[0]).Equals(".xml", oic)) || !File.Exists(args[0]))
@@ -49,28 +51,31 @@ internal class ProgramTest
             string inputLandb = args[0];
             string ouputLandb = GetOutputLandb(inputLandb, ".landb");
             string outoutXmlLandb = GetOutputLandb(inputLandb, ".xml");
-            ProccessLandbFile(inputLandb, ouputLandb, outoutXmlLandb);
+            ProccessLandbFile(inputLandb, ouputLandb, outoutXmlLandb, game);
         }
     }
 
-    private static void TestFnt(string fntPath)
+    private static void TestFnt(string fntPath, Games game)
     {
         if (!File.Exists(fntPath))
+        {
             throw new FileNotFoundException($"Are you sure file {Path.GetFileName(fntPath)} is in path {Path.GetDirectoryName(fntPath) ?? "WTF!?"}?");
-        TFont font = BmpFontFile.ToTFont(fntPath);
+        }
+
+        TFont font = BmpFontFile.ToTFont(fntPath, game);
         string fontPath = Path.ChangeExtension(fntPath, Formats.fontExtension);
         font.WriteTFont(fontPath);
-        TestFont(fontPath);
+        TestFont(fontPath, game);
     }
 
-    private static void TestD3dtx(string inputPath)
+    private static void TestD3dtx(string inputPath, Games game)
     {
         string firstOutputPath = Path.ChangeExtension(inputPath, ".first_output.d3dtx");
         string xmlOutputPath = Path.ChangeExtension(inputPath, ".xml");
         string secondOutputPath = Path.ChangeExtension(inputPath, ".from_xml.d3dtx");
         _ = Path.ChangeExtension(inputPath, Formats.ddsExtension);
         // Step 1: Read original, write first binary output
-        D3DTXV9 d3 = new();
+        D3DTXV9 d3 = new(game);
         using (FileStream input = new(inputPath, FileMode.Open, FileAccess.Read))
         using (FileStream output1 = new(firstOutputPath, FileMode.Create, FileAccess.Write))
         using (BinaryReader reader = new(input))
@@ -83,8 +88,8 @@ internal class ProgramTest
         string outputD3dtxFromBmp = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_bmp{Formats.d3dtxExtension}");
         string outputDdsFromBmpETC2_RGBA = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_Bmp_ETC2_RGBA{Formats.ddsExtension}");
         _ = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_dds_ETC2_RGBA{Formats.d3dtxExtension}");
-        Converter.ConvertTextureFromD3DtxToOthersV9(firstOutputPath, outputBmp, new());
-        Converter.ConvertTextureFromOthersToD3DtxV9(outputBmp, outputD3dtxFromBmp, new(), Path.ChangeExtension(firstOutputPath, Formats.xmlExtension));
+        Converter.ConvertTextureFromD3DtxToOthersV9(firstOutputPath, outputBmp, new(), game);
+        Converter.ConvertTextureFromOthersToD3DtxV9(outputBmp, outputD3dtxFromBmp, new(), game, Path.ChangeExtension(firstOutputPath, Formats.xmlExtension));
         _ = Converter.CompressWithCompressonatorCli(outputBmp, outputDdsFromBmpETC2_RGBA);
         // Step 2: Byte-by-byte comparison of original vs first output
         Console.WriteLine("Comparing original <-> first binary output...");
@@ -95,7 +100,7 @@ internal class ProgramTest
         }
 
         // Step 3: Save XML
-        D3DTXV9 d3ForXml = new();
+        D3DTXV9 d3ForXml = new(game);
         using (FileStream input = new(inputPath, FileMode.Open, FileAccess.Read))
         using (BinaryReader reader = new(input))
         {
@@ -111,7 +116,7 @@ internal class ProgramTest
         // Step 4: Load XML and write second binary output
         XmlDocument doc2 = new();
         doc2.Load(xmlOutputPath);
-        D3DTXV9 d3FromXml = new();
+        D3DTXV9 d3FromXml = new(game);
         d3FromXml.Parse(doc2.DocumentElement!, "Texture");
         using (FileStream output2 = new(secondOutputPath, FileMode.Create, FileAccess.Write))
         using (BinaryWriter writer2 = new(output2))
@@ -132,7 +137,7 @@ internal class ProgramTest
         Console.ResetColor();
     }
 
-    private static void TestFont(string inputPath)
+    private static void TestFont(string inputPath, Games game)
     {
         string outputDir = Path.GetDirectoryName(inputPath) ?? throw new NullReferenceException("I can't find your font dir!");
         string exportImportDir = Path.Combine(outputDir, "ExportImport");
@@ -143,7 +148,7 @@ internal class ProgramTest
         string outputXmlFile = Path.Combine(outputDir, $"{fontName}_test.xml");
         string outputXmlFontFile = Path.Combine(outputDir, $"{fontName}_test.xml.font");
 
-        TFont font = new();
+        TFont font = new(game);
         using (FileStream inputStream = new(inputPath, FileMode.Open, FileAccess.Read))
         using (BinaryReader reader = new(inputStream))
         using (FileStream outputStream = new(outputPath, FileMode.Create, FileAccess.Write))
@@ -154,7 +159,7 @@ internal class ProgramTest
             _ = Directory.CreateDirectory(exportImportDir);
             _ = Directory.CreateDirectory(Path.GetDirectoryName(ExportFnt)!);
             _ = Directory.CreateDirectory(Path.GetDirectoryName(ImportFnt)!);
-            font.Export(ExportFnt);
+            font.Export(ExportFnt, game);
 #if false //Export and Import aren't fully implemented yet, so for now we're just focusing on exporting font atlases until the .fnt file is fully built for export — later, that same file and its atlases can be imported.
             File.Copy(ExportFnt, ImportFnt, true);
             font.Import(ImportFnt);
@@ -176,7 +181,7 @@ internal class ProgramTest
         font.Write(odoc.DocumentElement, "myfont");
         odoc.Save(outputXmlFile);
 
-        TFont rxmlFont = new();
+        TFont rxmlFont = new(game);
         XmlDocument idoc = new();
         idoc.Load(outputXmlFile);
         if (idoc.DocumentElement == null)
@@ -242,12 +247,12 @@ internal class ProgramTest
         return identical;
     }
 
-    private static void ProccessLandbFile(string inputLandb, string outputLandb, string outputLandbXml)
+    private static void ProccessLandbFile(string inputLandb, string outputLandb, string outputLandbXml, Games game)
     {
         string extension = Path.GetExtension(inputLandb);
         if (extension.Equals(".landb", oic))
         {
-            LandbParseWrite(inputLandb, outputLandb, outputLandbXml);
+            LandbParseWrite(inputLandb, outputLandb, outputLandbXml, game);
             if (!IsEquals(inputLandb, outputLandb))
             {
                 throw new Exception("Input and output files do not match!(.landb)");
@@ -255,39 +260,39 @@ internal class ProgramTest
         }
         else if (extension.Equals(".xml"))
         {
-            LandbParseWriteXml(inputLandb, outputLandb);
+            LandbParseWriteXml(inputLandb, outputLandb, game);
             string newTemp = Path.GetTempFileName();
             File.Delete(newTemp);
             string newLandb = Path.ChangeExtension(newTemp, ".landb");
             File.Create(newLandb).Close();
             string newXml = Path.ChangeExtension(newTemp, ".xml");
             File.Create(newXml).Close();
-            ProccessLandbFile(outputLandb, newTemp, newXml);
+            ProccessLandbFile(outputLandb, newTemp, newXml, game);
             File.Delete(newXml);
             File.Delete(newLandb);
         }
     }
 
 
-    private static void LandbParseWriteXml(string inputLandbXml, string outputLandb, bool fixStrings = false)
+    private static void LandbParseWriteXml(string inputLandbXml, string outputLandb, Games game, bool fixStrings = false)
     {
         XmlDocument landbXmlDoc = new();
         landbXmlDoc.Load(inputLandbXml);
         XmlElement root = landbXmlDoc.DocumentElement ?? throw new InvalidDataException("The input XML file has no elements!");
         using FileStream outputLandbStream = new(outputLandb, FileMode.Create, FileAccess.Write);
         using BinaryWriter outputBinStreamWriter = new(outputLandbStream);
-        Landb landb = new(rMsv6Header: false);
+        Landb landb = new(game, false);
         landb.Parse(root, nameof(landb));
         if (fixStrings)
         {
             for (int i = 0; i < landb.mLanguageResources.TextItems.Count; ++i)
             {
                 TextItem item = landb.mLanguageResources.TextItems[i];
-                String temp = item.mResolvedLocalData.mText;
+                string temp = item.mResolvedLocalData.mText;
                 for (int j = 0; j < item.mResolvedLocalData.mText.Count; ++j)
                 {
-                    int charCode = (int)(item.mResolvedLocalData.mText.ToString()[j]);
-                    char @char = (item.mResolvedLocalData.mText.ToString()[j]);
+                    int charCode = item.mResolvedLocalData.mText.ToString()[j];
+                    char @char = item.mResolvedLocalData.mText.ToString()[j];
                     Console.WriteLine($"{charCode}: {@char}");
                 }
             }
@@ -295,13 +300,13 @@ internal class ProgramTest
         landb.Write(outputBinStreamWriter);
     }
 
-    private static void LandbParseWrite(string inputLandb, string outputLandb, string outputLandbXml)
+    private static void LandbParseWrite(string inputLandb, string outputLandb, string outputLandbXml, Games game)
     {
         using FileStream inputLandbStream = new(inputLandb, FileMode.Open, FileAccess.Read);
         using BinaryReader inputLansbBinStreamReader = new(inputLandbStream);
         using FileStream outputLandbStream = new(outputLandb, FileMode.Create, FileAccess.Write);
         using BinaryWriter outputBinStreamWriter = new(outputLandbStream);
-        Landb landb = new();
+        Landb landb = new(game);
         landb.Parse(inputLansbBinStreamReader);
         landb.Write(outputBinStreamWriter);
         XmlDocument doc = new();
