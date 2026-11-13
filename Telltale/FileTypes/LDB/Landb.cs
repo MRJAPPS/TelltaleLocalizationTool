@@ -21,7 +21,7 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 {
     private const int OffsetDefDataLen = 0x4;
     private const int OffsetDefDebugDataLen = OffsetDefDataLen + 0x4;
-    private const int OffsetAsyncDataLen = OffsetDefDebugDataLen + 0x4;
+    private const int OffsetAsyncDataLen = OffsetDefDebugDataLen + 0x4;//I want this line of code to stay even though it's not used — any problem with that???
 
     #region private fields
     // Array built from the DCArray type symbols and the updated version CRCs from your log.
@@ -121,6 +121,7 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
+        Utils.CheckHeader(game, Header);
 
         mLanguageDB.Parse(reader);
         mLanguageResources.Parse(reader);
@@ -140,6 +141,8 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name));
 
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
+        Utils.CheckHeader(game, Header);
+
         msCtx ??= new(game);
         if (Header != null)
         {
@@ -163,6 +166,7 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         this.ShareMetaStreamContext();
         Position = writer.BaseStream.Position;
 
+        Utils.CheckHeader(game, Header);
         WriteMetaHeader(writer);
 
         mLanguageDB.Write(writer);
@@ -185,7 +189,10 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         XmlElement textTransform = element.OwnerDocument.CreateElement("textTransform");
         textTransform.SetAttribute("mode", "none");
         _ = myElement.AppendChild(textTransform);
+
+        Utils.CheckHeader(game, Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
+
         mLanguageDB.Write(myElement, nameof(mLanguageDB));
         mLanguageResources.Write(myElement, nameof(mLanguageResources));
         mRegistry.Write(myElement, nameof(mRegistry));
