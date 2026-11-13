@@ -47,7 +47,7 @@ public class Options : CommandSettings
     [Description("This flag must only be used with -b or --batch. When enabled, it recursively reads all files from the input folder and creates output files or folders relative to the input folder.")]
     public bool Relative { get; set; } = false;
 
-    [CommandOption("-g|--game <game>", true)]
+    [CommandOption("-g|--game <game>", false)]
     [Description("The target game name or enum value.")]
     public string Game { get; set; } = string.Empty;
 

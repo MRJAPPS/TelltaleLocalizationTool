@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.TTypes;
@@ -50,6 +51,7 @@ public class FixedEnum<T> : ReportBase, ITelltaleObject
 
     public void Parse(BinaryReader reader)
     {
+        if (!CanIParseMyself()) return;
         Position = reader.BaseStream.Position;
 
         // This int is just a size marker that echoes the value’s length – we don’t need it.
@@ -78,6 +80,7 @@ public class FixedEnum<T> : ReportBase, ITelltaleObject
 
     public void Write(BinaryWriter writer)
     {
+        if (!CanIParseMyself()) return;
         Position = writer.BaseStream.Position;
 
         Type underlyingType = Enum.GetUnderlyingType(typeof(T));
@@ -110,12 +113,34 @@ public class FixedEnum<T> : ReportBase, ITelltaleObject
 
     public void Write(XmlElement element, string name)
     {
+        if (!CanIParseMyself()) return;
         XmlElement myElement = element.OwnerDocument.CreateElement(TypeName);
         myElement.SetAttribute(nameof(name), name);
 
         AppendBasicTypes(myElement);
 
         element.AppendChild(myElement);
+    }
+
+    public void Parse(XmlElement reader, string name)
+    {
+        if (!CanIParseMyself()) return;
+        XmlElement myElement = reader.GetSingleElement(TypeName, name);
+
+        ParseBasicTypes(myElement);
+
+        Report(this);
+    }
+
+    #endregion
+
+    #region XML
+
+    private void ParseBasicTypes(XmlElement myElement)
+    {
+        string value = myElement.GetAttribute(nameof(EnumItem));
+
+        EnumItem = Enum.Parse<T>(value);
     }
 
     private void AppendBasicTypes(XmlElement myElement)
@@ -125,20 +150,24 @@ public class FixedEnum<T> : ReportBase, ITelltaleObject
         myElement.Attributes.Append(EnumItem);
     }
 
-    public void Parse(XmlElement reader, string name)
+    #endregion
+
+    #region Checking
+
+    private bool CanIParseMyself()
     {
-        XmlElement myElement = reader.GetSingleElement(TypeName, name);
+        if (msCtx is null) throw new NullReferenceException($"Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to {nameof(msCtx)} part! You can report this bug to me. (We are in FixedEnum)");
+        Utils.CheckHeader(msCtx.Game, msCtx.Header);
 
-        ParseBasicTypes(myElement);
+        if (!msCtx.ContainsAt(0, Meta.Enums.ClassNames.LanguageDB)) //This particular filter needs to be applied to landb files!
+            return true;
 
-        Report(this);
-    }
-
-    private void ParseBasicTypes(XmlElement myElement)
-    {
-        string value = myElement.GetAttribute(nameof(EnumItem));
-
-        EnumItem = Enum.Parse<T>(value);
+        return msCtx.Game switch
+        {
+            Meta.Enums.Games.WDS1 => false,
+            Meta.Enums.Games.WDS3NF => true,
+            _ => throw new NotFiniteNumberException($"Your input is not valid! and we are in FixedEnum"),
+        };
     }
 
     #endregion

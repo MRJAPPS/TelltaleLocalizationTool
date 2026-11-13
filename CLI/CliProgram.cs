@@ -1,5 +1,6 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
+using System.Diagnostics;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
@@ -65,7 +66,7 @@ public class CliProgram : Command<Options>
         {
             throw new ArgumentException($"I can't use game \"{game}\"! Use a name or number from Games: {string.Join(", ", Enum.GetValues<Games>().Select(item => $"{item} ({(int)item})"))}.");
         }
-        return value != Games.WDS3NF
+        return value != Games.WDS3NF && !Debugger.IsAttached
             ? throw new NotSupportedException($"{value} isn't supported yet! We only support WDS3NF for now.")
             : value;
     }

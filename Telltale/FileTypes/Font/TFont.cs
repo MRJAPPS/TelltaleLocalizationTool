@@ -71,7 +71,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         mVersionCRC = 0xA4AC7DAF
     },
     new() {
-        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.RenderSwizzleParams },
+        mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.RenderSwizzleParams },//MSV5 problem
         mVersionCRC = 0x5B484905
     },
     new() {
@@ -135,7 +135,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     public void Export(string fntPath)//Just for loadedFont
     {
         CheckImportExportArgs(fntPath, false);
-        mTexturePages.ExportTextures(mName, Path.GetDirectoryName(fntPath)!, bmpFontMode: true);
+        mTexturePages.ExportTextures(mName, Path.GetDirectoryName(fntPath)!, game, bmpFontMode: true);
         //Next step: Generate fnt xml file from glyphs and metadata
     }
 

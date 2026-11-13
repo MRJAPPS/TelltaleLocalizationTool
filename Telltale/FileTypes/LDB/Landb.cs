@@ -117,11 +117,11 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 
     public void Parse(BinaryReader reader)
     {
-        this.ShareMetaStreamContext();
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
         Utils.CheckHeader(game, Header);
+        this.ShareMetaStreamContext();
 
         mLanguageDB.Parse(reader);
         mLanguageResources.Parse(reader);

@@ -62,6 +62,7 @@ public class TextCollection : TCollectionBase<TextItem>, ITelltaleObject
         for (int i = 0; i < Capacity; ++i)
         {
             TextItem textItem = new();
+            textItem.ShareMetaStreamContext(msCtx);
             textItem.Parse(reader);
             Items.Add(textItem);
         }
@@ -99,6 +100,7 @@ public class TextCollection : TCollectionBase<TextItem>, ITelltaleObject
         for (int i = 0; i < myElement.ChildNodes.Count; ++i)
         {
             TextItem textItem = new();
+            textItem.ShareMetaStreamContext(msCtx);
             textItem.Parse(myElement, $"{nameof(Items)}_{i}");
             Items.Add(textItem);
         }

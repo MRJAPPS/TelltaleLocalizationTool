@@ -16,6 +16,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
+using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.TClassInfo;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
@@ -35,22 +36,49 @@ public static class Extensions
     public static bool Contains(this MTRE header, ClassNames className, bool unhashed = false) => unhashed ?
         header.mClassNames.Any(cn => cn == className) : throw new NotImplementedException("I've never seen this person in my life! I have no idea about unhashed, maybe I'll figure it out later. Maybe...");
 
-    public static void ShareMetaStreamContext(this ITelltaleObject item)
+    public static void ShareMetaStreamContext(this ITelltaleObject item, MetaStreamContext? context = null)
     {
         PropertyInfo contextProperty = typeof(ITelltaleObject).GetProperty(nameof(ITelltaleObject.msCtx))!;
+        context ??= item.msCtx;
+        HashSet<object> visited = new(ReferenceEqualityComparer.Instance);
 
-        for (Type? type = item.GetType(); type != null; type = type.BaseType)
+        Share(item);
+
+        void Share(object? value)
         {
-            foreach (PropertyInfo property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            if (value is null || value is string ||
+                (value is not ITelltaleObject && value is not System.Collections.IEnumerable) || !visited.Add(value))
             {
-                if (!property.CanRead || property.GetIndexParameters().Length != 0 || !typeof(ITelltaleObject).IsAssignableFrom(property.PropertyType))
-                {
-                    continue;
-                }
+                return;
+            }
 
-                if (property.GetValue(item) is ITelltaleObject child)
+            if (value is ITelltaleObject target)
+            {
+                contextProperty.SetValue(target, context);
+
+                for (Type? type = target.GetType(); type != null; type = type.BaseType)
                 {
-                    contextProperty.SetValue(child, item.msCtx);
+                    PropertyInfo[] propertyInfos = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+                    foreach (PropertyInfo prop in propertyInfos)
+                    {
+                        if (!prop.CanRead || prop.GetIndexParameters().Length != 0 ||
+                            (!typeof(ITelltaleObject).IsAssignableFrom(prop.PropertyType) &&
+                             !typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType)))
+                        {
+                            continue;
+                        }
+
+                        Share(prop.GetValue(target));
+                    }
+                }
+            }
+
+            if (value is System.Collections.IEnumerable collection)
+            {
+                foreach (object? child in collection)
+                {
+                    Share(child);
                 }
             }
         }

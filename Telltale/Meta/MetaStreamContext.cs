@@ -22,8 +22,8 @@ public class MetaStreamContext(Games game, IMetaHeader? header = null)
 
     public bool ContainsAt(int index,ClassNames className) => Header switch
     {
-        MSV6 msv6 => msv6.mClassNames[index].Equals(className),
-        MSV5 msv5 => msv5.mClassNames[index].Equals(className),
+        MSV6 msv6 => msv6.mClassNames[index] == className,
+        MSV5 msv5 => msv5.mClassNames[index] == className,
         _ => throw new NotImplementedException($"{nameof(MTRE)} and {nameof(MBIN)} aren't implemented yet! Because I haven't gotten to a game that uses them yet."),
     };
 

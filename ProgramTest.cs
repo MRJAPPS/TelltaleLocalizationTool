@@ -159,7 +159,11 @@ internal class ProgramTest
             _ = Directory.CreateDirectory(exportImportDir);
             _ = Directory.CreateDirectory(Path.GetDirectoryName(ExportFnt)!);
             _ = Directory.CreateDirectory(Path.GetDirectoryName(ImportFnt)!);
+#if IFNT
+            font.Export(ExportFnt);
+#else
             font.Export(ExportFnt, game);
+#endif
 #if false //Export and Import aren't fully implemented yet, so for now we're just focusing on exporting font atlases until the .fnt file is fully built for export — later, that same file and its atlases can be imported.
             File.Copy(ExportFnt, ImportFnt, true);
             font.Import(ImportFnt);
