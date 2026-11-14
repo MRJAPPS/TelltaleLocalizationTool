@@ -94,6 +94,8 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
 
     public List<byte[]> mPixelData { get; set; } = [];
 
+    public int Version => MyVersion;
+
     public uint Size => mD3dtxMetaData.Size + asyncSectionChunkSize;
 
     public long Position { get; private set; } = -1;

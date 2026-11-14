@@ -15,6 +15,8 @@ public interface ID3DTX : ITelltaleFile
 
     public List<byte[]> mPixelData { get; set; }
 
+    public int Version { get; }
+
     #endregion
 
 }

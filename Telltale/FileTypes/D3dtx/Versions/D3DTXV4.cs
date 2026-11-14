@@ -44,6 +44,8 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
 
     public bool WriteMsv5Header { get => wMsv5Header; set => wMsv5Header = value; }
 
+    public D3DTXV4Metadata mD3dtxMetaData { get; set; } = new(MyVersion);
+
     #endregion
 
     #region Private props
@@ -62,12 +64,11 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         set => msCtx = value;
     }
 
-
-    public D3DTXV4Metadata mD3dtxMetaData { get; set; } = new(MyVersion);
-
     D3DTXMetadata ID3DTX.mD3dtxMetaData => mD3dtxMetaData;//Cool... I love objective programming...
 
     public List<byte[]> mPixelData { get; set; } = [];
+
+    public int Version => MyVersion;
 
     public uint Size => mD3dtxMetaData.Size + asyncSectionChunkSize;
 
