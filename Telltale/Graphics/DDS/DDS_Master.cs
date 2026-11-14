@@ -48,11 +48,11 @@ public unsafe class DDS_Master
         InitializeDDSPixelData(d3dtx);
     }
 
-    private void InitializeDDSHeader(ID3DTX d3dtx)
+    private void InitializeDDSHeader(ID3DTX d3dtx, T3SurfaceFormat? format = null)
     {
         ScratchImage image = DirectXTex.CreateScratchImage();
 
-        T3SurfaceFormat surfaceFormat = d3dtx.mD3dtxMetaData.mSurfaceFormat;
+        T3SurfaceFormat surfaceFormat = format ?? d3dtx.mD3dtxMetaData.mSurfaceFormat;
         T3SurfaceGamma surfaceGamma = d3dtx.mD3dtxMetaData.mSurfaceGamma;
         T3PlatformType platformType = d3dtx.mD3dtxMetaData.mPlatform.EnumItem;
         TextureInfo textureInfo = d3dtx.mD3dtxMetaData.mTextureInfo;

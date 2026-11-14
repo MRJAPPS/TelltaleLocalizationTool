@@ -37,7 +37,7 @@ public class T3ToonGradientRegionItem : ReportBase, ITelltaleObject
     {
         Position = reader.BaseStream.Position;
         mColor.Parse(reader);
-        mSize = reader.ReadUInt32();
+        mSize = reader.ReadSingle();
         Report(this);
     }
 
@@ -63,6 +63,7 @@ public class T3ToonGradientRegionItem : ReportBase, ITelltaleObject
 
         mColor.Write(myElement, nameof(mColor));
         AppendBasicTypes(myElement);
+        _ = element.AppendChild(myElement);
     }
 
     #endregion

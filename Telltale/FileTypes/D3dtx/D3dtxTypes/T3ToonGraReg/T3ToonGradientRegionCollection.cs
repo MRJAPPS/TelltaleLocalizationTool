@@ -58,7 +58,7 @@ public class T3ToonGradientRegionCollection : TCollectionBase<T3ToonGradientRegi
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
                 T3ToonGradientRegionItem t3Toon = new();
-                t3Toon.Parse(itemElement, itemName);
+                t3Toon.Parse(myElement, itemName);
                 Items.Add(t3Toon);
             }
         }

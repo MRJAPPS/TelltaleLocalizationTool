@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
@@ -29,8 +31,8 @@ public class CliProgram : Command<Options>
             {
                 case Options.Modes.c_export:
                 case Options.Modes.c_import:
-                    Games game = GetGame(settings.Game);
-                    CheckArgs(settings);
+                    Games game = GetGame(settings.Game, settings.FileType);
+                    CheckArgs(settings, game);
                     PrepareConfiguration();
                     return ProcessFiles(settings, game, cancellationToken);
                 case Options.Modes.c_about:
@@ -59,20 +61,28 @@ public class CliProgram : Command<Options>
 
     #region Error Checking
 
-    private static Games GetGame(string game)
+    private static Games GetGame(string game, string fileType)
     {
         game = game.Trim().ToUpper();
         if (game.Contains(',') || !Enum.TryParse(game, true, out Games value) || !Enum.IsDefined(value))
         {
             throw new ArgumentException($"I can't use game \"{game}\"! Use a name or number from Games: {string.Join(", ", Enum.GetValues<Games>().Select(item => $"{item} ({(int)item})"))}.");
         }
-        return value != Games.WDS3NF && !Debugger.IsAttached
-            ? throw new NotSupportedException($"{value} isn't supported yet! We only support WDS3NF for now.")
+        return value != Games.WDS3NF && !(value == Games.WDS1 && fileType == Options.FileTypes.c_d3dtx) && !Debugger.IsAttached
+            ? throw new NotSupportedException($"{value} isn't supported yet for this game!")
             : value;
     }
 
-    private static void CheckArgs(Options settings)
+    private static void CheckArgs(Options settings, Games game)
     {
+        if (!string.IsNullOrWhiteSpace(settings.Format))
+        {
+            if (game != Games.WDS1 || settings.FileType != Options.FileTypes.c_d3dtx || settings.Mode != Options.Modes.c_import)
+            {
+                throw new ArgumentException("--format is only used for WDS1 d3dtx import!");
+            }
+            _ = GetSurfaceFormat(settings.Format);
+        }
         if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_font &&
             !settings.Batch && Path.GetExtension(settings.Input).Equals(Formats.ttfExtension, oic))
         {
@@ -263,7 +273,7 @@ public class CliProgram : Command<Options>
                         {
                             cancellationToken.ThrowIfCancellationRequested();
                             string extension = Path.GetExtension(file).ToLowerInvariant();
-                            if (extension is not Formats.ddsExtension and not Formats.pngExtension and not Formats.jpegExtension)
+                            if (!IsOutputTexFormat(extension))
                             {
                                 continue;
                             }
@@ -314,7 +324,7 @@ public class CliProgram : Command<Options>
                 if (files.Count == 0)
                 {
                     string extension = settings.FileType == Options.FileTypes.c_d3dtx && settings.Mode == Options.Modes.c_import
-                        ? $"{Formats.ddsExtension}, {Formats.pngExtension} or {Formats.jpegExtension}"
+                        ? "DDS, PNG, JPEG, BMP, TIFF, TGA or HDR"
                         : GetExtension(settings, true);
                     throw new FileNotFoundException($"I couldn't find any {extension} files in your input folder!");
                 }
@@ -350,7 +360,7 @@ public class CliProgram : Command<Options>
                                 ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, cancellationToken);
                                 break;
                             case Options.FileTypes.c_d3dtx:
-                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken);
+                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, GetSurfaceFormat(settings.Format));
                                 break;
                         }
                         success++;
@@ -569,91 +579,50 @@ public class CliProgram : Command<Options>
 
     #region D3dtx
 
-    private static void ImportD3dtx(D3DTXV9 d3dtx, Texture texture, Games game)
+    private static T3SurfaceFormat? GetSurfaceFormat(string format)
     {
-        texture.GetDDSInformationV9(out D3DTXV9 imported, out ImageSection[] sections, game);
-        if (imported.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.Unknown)
+        return format.Trim().ToUpperInvariant() switch
         {
-            throw new NotSupportedException("I can't map this image's pixel format to a Telltale surface format! Save it as a supported DDS format first.");
-        }
-        int mipLevels = (int)imported.mD3dtxMetaData.mTextureInfo.mNumMipLevels;
-        int arraySize = (int)imported.mD3dtxMetaData.mTextureInfo.mArraySize;
-        int depth = (int)imported.mD3dtxMetaData.mTextureInfo.mDepth;
-        List<(ImageSection section, int mip, int face)> images = [];
-        int index = 0;
-        if (imported.IsVolumemap())
-        {
-            for (int mip = 0; mip < mipLevels; ++mip)
-            {
-                for (int face = 0; face < Math.Max(1, depth >> mip); ++face)
-                {
-                    images.Add((sections[index++], mip, face));
-                }
-            }
-        }
-        else
-        {
-            for (int face = 0; face < arraySize; ++face)
-            {
-                for (int mip = 0; mip < mipLevels; ++mip)
-                {
-                    images.Add((sections[index++], mip, face));
-                }
-            }
-        }
-
-        d3dtx.mD3dtxMetaData.mTextureInfo = imported.mD3dtxMetaData.mTextureInfo;
-        d3dtx.mD3dtxMetaData.mSurfaceFormat = imported.mD3dtxMetaData.mSurfaceFormat;
-        d3dtx.mD3dtxMetaData.mSurfaceGamma = imported.mD3dtxMetaData.mSurfaceGamma;
-        d3dtx.mD3dtxMetaData.mTextureLayout = imported.mD3dtxMetaData.mTextureLayout;
-        if (imported.IsCubemap())
-        {
-            d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize /= 6;
-            d3dtx.mD3dtxMetaData.mTextureLayout = d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize > 1
-                ? T3TextureLayout.TextureCubemapArray : T3TextureLayout.TextureCubemap;
-        }
-        d3dtx.mD3dtxMetaData.mStreamHeader = new(9)
-        {
-            mRegionCount = sections.Length,
-            mAuxDataCount = d3dtx.mD3dtxMetaData.mStreamHeader.mAuxDataCount,
-            mTotalDataSize = sections.Sum(section => section.Pixels.Length)
+            "" or "AUTO" => null,
+            "ETC1" or "ETC1_RGB" => T3SurfaceFormat.ETC1_RGB,
+            "ARGB8" => T3SurfaceFormat.ARGB8,
+            "ARGB4" => T3SurfaceFormat.ARGB4,
+            _ => throw new ArgumentException("Use auto, ETC1, ARGB8 or ARGB4 for --format!")
         };
-        d3dtx.mPixelData.Clear();
-        //Telltale stores the smallest mip first. DDS starts with the biggest one.
-        foreach ((ImageSection section, int mip, int face) in images.OrderByDescending(image => image.mip).ThenBy(image => image.face))
+    }
+
+    private static void ImportD3dtx(ID3DTX d3dtx, Texture texture, Games game, T3SurfaceFormat? format)
+    {
+        if (d3dtx is D3DTXV4 d3dtxv4)
         {
-            d3dtx.mPixelData.Add(section.Pixels);
-            d3dtx.mD3dtxMetaData.mStreamHeader.Add(new(9)
-            {
-                mMipIndex = mip,
-                mFaceIndex = face,
-                mMipCount = 1,
-                mDataSize = (uint)section.Pixels.Length,
-                mPitch = (int)section.RowPitch,
-                mSlicePitch = (int)section.SlicePitch
-            });
+            Converter.ImportTextureV4(d3dtxv4, texture, game, format);
+            SimpleAnsiConsole.ShowInfo($"Texture format: {d3dtxv4.mD3dtxMetaData.mSurfaceFormat}");
+            return;
         }
+        texture.GetDDSInformation(out ID3DTX imported, out ImageSection[] sections, game, d3dtx.mD3dtxMetaData.mVersion);
+        d3dtx.ModifyD3DTX(imported, sections);
+    }
+
+    private static bool IsOutputTexFormat(string extension)
+    {
+        return extension is Formats.ddsExtension or Formats.pngExtension or Formats.jpegExtension or
+            Formats.bmpExtension or Formats.tifExtension or Formats.tgaExtension or Formats.hdrExtension;
     }
 
     private static void CheckOutputTexFormat(string fileNameOrFormat)
     {
-        string format = Path.GetExtension(fileNameOrFormat).ToLowerInvariant();
-        switch (format)
+        if (!IsOutputTexFormat(Path.GetExtension(fileNameOrFormat).ToLowerInvariant()))
         {
-            case Formats.jpegExtension:
-            case Formats.pngExtension:
-            case Formats.ddsExtension:
-                return;
+            throw new NotImplementedException("Use DDS, PNG, JPEG, BMP, TIFF (.tif), TGA or HDR for your texture!");
         }
-        throw new NotImplementedException($"The necessary conversions for your requested format haven't been implemented! You can only use {Formats.jpegExtension}, {Formats.pngExtension}, and {Formats.ddsExtension}!");
     }
 
-    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, T3SurfaceFormat? surfaceFormat)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
         using TempFile temp = new(output);
-        D3DTXV9 d3dtx = new(game: game);
+        ID3DTX d3dtx = D3dtxFactory.CreateD3dtx(game);
         if (import)
         {
             CheckOutputTexFormat(input);
@@ -683,7 +652,7 @@ public class CliProgram : Command<Options>
                     {
                         texture.GenerateMipMaps(mipLevels);
                     }
-                    if (!d3dtx.mD3dtxMetaData.mSurfaceFormat.IsFormatIncompatibleWithDDS())
+                    if (d3dtx is not D3DTXV4 && !d3dtx.mD3dtxMetaData.mSurfaceFormat.IsFormatIncompatibleWithDDS())
                     {
                         DXGIFormat format = DDSHelper.GetDXGIFormat(d3dtx.mD3dtxMetaData.mSurfaceFormat, d3dtx.mD3dtxMetaData.mSurfaceGamma);
                         if (Hexa.NET.DirectXTex.DirectXTex.IsCompressed((int)format))
@@ -696,7 +665,7 @@ public class CliProgram : Command<Options>
                         }
                     }
                 }
-                ImportD3dtx(d3dtx, texture, game);
+                ImportD3dtx(d3dtx, texture, game, surfaceFormat);
             }
             finally
             {
@@ -738,14 +707,7 @@ public class CliProgram : Command<Options>
                     {
                         throw new NotSupportedException("Use DDS for cubemaps, texture arrays and 3D textures! One picture can't hold all their faces or slices.");
                     }
-                    if (Path.GetExtension(output).Equals(Formats.pngExtension, oic))
-                    {
-                        texture.SaveAsPNG(temp.Path);
-                    }
-                    else
-                    {
-                        texture.SaveAsJPEG(temp.Path);
-                    }
+                    texture.SaveTexture(temp.Path, Converter.GetTextureTypeFromExtension(output.ToLowerInvariant()));
                 }
                 finally
                 {
@@ -891,12 +853,13 @@ public class CliProgram : Command<Options>
         ("[cyan]landb[/]",   "export .landb to XML, then import your translated XML back to .landb."),
         ("[cyan]font[/]",    "export .font to .fnt (XML) and DDS atlases, then import .fnt back to .font."),
         ("[cyan]ttf[/]",     "import a .ttf with a chosen font size; bmfont64.exe generates .fnt files into a folder, then the tool converts them to .font."),
-        ("[cyan]d3dtx[/]",   "export .d3dtx to DDS, PNG or JPEG with .d3dtx.xml metadata, then import the image and its metadata back to .d3dtx."),
-        ("[grey]info[/]",    "[grey]D3dtx batch export uses DDS. Batch import reads DDS, PNG and JPEG from the input folder and each texture's subfolder.[/]"),
+        ("[cyan]d3dtx[/]",   "export .d3dtx to DDS, PNG, JPEG, BMP, TIFF (.tif), TGA or HDR with .d3dtx.xml metadata, then import the image and its metadata back to .d3dtx."),
+        ("[grey]info[/]",    "[grey]D3dtx batch export uses DDS. Batch import reads all supported image formats from the input folder and each texture's subfolder.[/]"),
+        ("[grey]format[/]",  "[grey]WDS1 import automatically selects ETC1 for opaque images, ARGB4 for exact 4-bit RGBA, or ARGB8. Override with --format ETC1, ARGB8 or ARGB4. ETC1 discards alpha.[/]"),
         ("[orange1]warn[/]", "[orange1]Font import needs Compressonator CLI 4.5.52.[/] Set [bold]CompressonatorPath[/] in appsettings.json!"),
         ("[orange1]warn[/]", "[orange1]TTF import needs bmfont64.exe and --glyphSize <size>.[/] Set [bold]BmfontPath64[/] in appsettings.json!"),
         ("[grey]info[/]",    "[grey]Use --batch for folders and --relative to include subfolders and keep their paths.[/]"),
-        ("[grey]game[/]",    "[grey]Use --game or -g with WDS3NF or 0. Default: WDS3NF. Other games aren't supported yet.[/]"),
+        ("[grey]game[/]",    "[grey]Use --game or -g with WDS3NF (0) or WDS1 (1). WDS1 supports d3dtx version 4.[/]"),
         ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them.[/]"),
         };
 
@@ -923,8 +886,8 @@ public class CliProgram : Command<Options>
             .AddColumn(new TableColumn("[bold]Project[/]").NoWrap())
             .AddColumn(new TableColumn("[bold]Note[/]"));
 
-        (string Project, string Note)[] creditsRows = new (string Project, string Note)[]
-        {
+        (string Project, string Note)[] creditsRows =
+        [
         ("[green]Telltale Texture Tool[/]",
          "Built on top of [link=https://github.com/Telltale-Modding-Group/Telltale-Texture-Tool][green]Telltale Texture Tool[/][/] [grey]—[/] but I've [magenta]reshaped[/] a few bits along the way to fit my needs."),
         ("[green]TelltaleInspector[/]",
@@ -935,7 +898,7 @@ public class CliProgram : Command<Options>
          "To save myself [grey]the headache[/] of implementing [orange1]TTF parsing[/] from scratch, I leaned on [link=https://www.angelcode.com/products/bmfont/][green]bmfont64[/][/]. It's [grey]not mandatory[/] here [grey]—[/] but the input format is always [cyan]FNT (XML flavor)[/], which bmfont64 generates for you."),
         ("[green]@ByteAndPlay[/]",
          "All of these tools are also downloadable from my Telegram channel: [link=https://t.me/ByteAndPlay][green]@ByteAndPlay[/][/]."),
-        };
+        ];
 
         AnsiConsole.Live(creditsTable)
             .AutoClear(false)

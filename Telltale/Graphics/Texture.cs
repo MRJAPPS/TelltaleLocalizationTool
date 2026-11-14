@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
@@ -702,7 +703,7 @@ public unsafe partial class Texture
         {
             if (Metadata.Depth == 1)
             {
-                _ = DirectXTex.SaveToHDRFile(Image.GetImage(0, 0, 0), filePath);
+                DirectXTex.SaveToHDRFile(Image.GetImage(0, 0, 0), filePath).ThrowIf();
             }
             else
             {
@@ -725,11 +726,14 @@ public unsafe partial class Texture
         }
     }
 
-    public void SaveAsWIC(string filePath)
+    public void SaveAsWIC(string filePath, WICCodecs codec = WICCodecs.CodecBmp)
     {
         Decompress();
 
-        if (Image.GetMetadata().Format is ((int)DXGIFormat.R8G8_UNORM) or ((int)DXGIFormat.R8G8_SNORM))
+        if (Image.GetMetadata().Format is not ((int)DXGIFormat.R8_UNORM) and
+            not ((int)DXGIFormat.B8G8R8A8_UNORM) and
+            not ((int)DXGIFormat.B8G8R8X8_UNORM) and
+            not ((int)DXGIFormat.R8G8B8A8_UNORM))
         {
             Convert(DXGIFormat.R8G8B8A8_UNORM);
         }
@@ -738,7 +742,7 @@ public unsafe partial class Texture
         {
             if (Metadata.Depth == 1)
             {
-                DirectXTex.SaveToWICFile(Image.GetImage(0, 0, 0), WICFlags.None, DirectXTex.GetWICCodec(WICCodecs.CodecBmp), filePath, null, default).ThrowIf();
+                DirectXTex.SaveToWICFile(Image.GetImage(0, 0, 0), WICFlags.None, DirectXTex.GetWICCodec(codec), filePath, null, default).ThrowIf();
             }
             else
             {
@@ -746,7 +750,7 @@ public unsafe partial class Texture
                 {
                     StringBuilder sb = new();
                     _ = sb.Append(filePath).Append('_').Append(i);
-                    DirectXTex.SaveToWICFile(Image.GetImage(0, 0, i), WICFlags.None, DirectXTex.GetWICCodec(WICCodecs.CodecBmp), filePath, null, default).ThrowIf();
+                    DirectXTex.SaveToWICFile(Image.GetImage(0, 0, i), WICFlags.None, DirectXTex.GetWICCodec(codec), filePath, null, default).ThrowIf();
                 }
             }
         }
@@ -756,7 +760,7 @@ public unsafe partial class Texture
             {
                 StringBuilder sb = new();
                 _ = sb.Append(filePath).Append('_').Append(i);
-                DirectXTex.SaveToWICFile(Image.GetImage(0, i, 0), WICFlags.None, DirectXTex.GetWICCodec(WICCodecs.CodecBmp), filePath, null, default).ThrowIf();
+                DirectXTex.SaveToWICFile(Image.GetImage(0, i, 0), WICFlags.None, DirectXTex.GetWICCodec(codec), filePath, null, default).ThrowIf();
             }
         }
     }
@@ -776,15 +780,7 @@ public unsafe partial class Texture
             case TextureType.BMP:
                 SaveAsWIC(filePath); break;
             case TextureType.PNG:
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    SaveAsWIC(filePath);
-                }
-                else if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    SaveAsPNG(filePath);
-                }
-                break;
+                SaveAsPNG(filePath); break;
             case TextureType.JPEG:
                 SaveAsJPEG(filePath); break;
             case TextureType.HDR:
@@ -792,7 +788,7 @@ public unsafe partial class Texture
             case TextureType.TGA:
                 SaveAsTGA(filePath); break;
             case TextureType.TIFF:
-                SaveAsWIC(filePath); break;
+                SaveAsWIC(filePath, WICCodecs.CodecTiff); break;
             default:
                 throw new NotImplementedException("Don't be lazy, enter a valid format! This shouldn't even happen — it was already handled.");
         }
@@ -811,6 +807,12 @@ public unsafe partial class Texture
             Image.Release();
             Image = transformedImage;
         }
+    }
+
+    public void GetDDSInformation(out ID3DTX d3dtx, out ImageSection[] sections, Games game, int version, DDSFlags flags = DDSFlags.None)
+    {
+        d3dtx = GetTextureInformation(Image.GetMetadata(), game, version);
+        sections = GetDDSImageSections(Image, flags);
     }
 
     public void GetDDSInformationV9(out D3DTXV9 d3dtxv9, out ImageSection[] sections, Games game, DDSFlags flags = DDSFlags.None)

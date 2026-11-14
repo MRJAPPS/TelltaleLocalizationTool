@@ -46,7 +46,7 @@ public static class Extensions
 
         void Share(object? value)
         {
-            if (value is null || value is string ||
+            if (value is null || value is string || value is byte[] ||
                 (value is not ITelltaleObject && value is not System.Collections.IEnumerable) || !visited.Add(value))
             {
                 return;
@@ -409,7 +409,7 @@ public static class Extensions
 
     public static void MapDdsToD3dtxForFont(this D3DTXV9 d3dtx, DdsD3dtx ddsData = default, string? fontName = default)
     {
-        D3DTXMetadata metadata = d3dtx.mD3dtxMetaData;
+        D3DTXV9Metadata metadata = d3dtx.mD3dtxMetaData;
         TextureInfo textureInfo = metadata.mTextureInfo;
         StreamHeaderInfo streamHeaderInfo = metadata.mStreamHeader;
         RegionStreamHeader regionStreamHeaderForAdd;
@@ -495,7 +495,7 @@ public static class Extensions
             d3dtxv9.AutoPixelData = autoPixelData;
 
             d3dtxTempW.Close();
-            Converter.ConvertTextureFromD3DtxToOthersV9(tempD3dtx.Path, finalOutput, new(), game);
+            Converter.ConvertTextureFromD3DtxToOthers(tempD3dtx.Path, finalOutput, new(), game);
             counter++;
         }
 

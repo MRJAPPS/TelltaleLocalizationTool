@@ -35,7 +35,8 @@ public class RegionStreamHeader(int version) : ReportBase, ITelltaleObject
         set => msCtx = value;
     }
 
-    public uint Size => sizeof(int) * 5 + sizeof(uint);//I want to write it like this, don't nitpick.
+    public uint Size => (version >= 5 ? sizeof(int) : 0U) + (version >= 3 ? sizeof(int) * 2 + sizeof(uint) : 0U) +
+        (version >= 4 ? sizeof(int) : 0U) + (version >= 9 ? sizeof(int) : 0U);
 
     public long Position { get; private set; } = -1;
 
@@ -66,6 +67,11 @@ public class RegionStreamHeader(int version) : ReportBase, ITelltaleObject
         if (version >= 9)
         {
             mSlicePitch = reader.ReadInt32();
+        }
+
+        if (version < 9)
+        {
+            mSlicePitch = (int)mDataSize;
         }
 
         Report(this);

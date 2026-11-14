@@ -7,13 +7,13 @@ using TelltaleLocalizationTool.Telltale.Meta;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 
 [Description("I've hit some texture info — reading TextureInfo now...")]
-public class TextureInfo : ReportBase, ITelltaleObject
+public class TextureInfo(int version = 9) : ReportBase, ITelltaleObject
 {
     public uint mNumMipLevels { get; set; }
     public uint mWidth { get; set; }
     public uint mHeight { get; set; }
-    public uint mDepth { get; set; }
-    public uint mArraySize { get; set; }
+    public uint mDepth { get; set; } = 1;
+    public uint mArraySize { get; set; } = 1;
 
     #region Implement
 
@@ -25,7 +25,7 @@ public class TextureInfo : ReportBase, ITelltaleObject
         set => msCtx = value;
     }
 
-    public uint Size => sizeof(uint) * 5;
+    public uint Size => sizeof(uint) * (version >= 8 ? 5U : 3U);
 
     public long Position { get; private set; } = -1;
 
@@ -36,8 +36,11 @@ public class TextureInfo : ReportBase, ITelltaleObject
         mNumMipLevels = reader.ReadUInt32();
         mWidth = reader.ReadUInt32();
         mHeight = reader.ReadUInt32();
-        mDepth = reader.ReadUInt32();
-        mArraySize = reader.ReadUInt32();
+        if (version >= 8)
+        {
+            mDepth = reader.ReadUInt32();
+            mArraySize = reader.ReadUInt32();
+        }
 
         Report(this);
     }
@@ -55,8 +58,11 @@ public class TextureInfo : ReportBase, ITelltaleObject
         writer.Write(mNumMipLevels);
         writer.Write(mWidth);
         writer.Write(mHeight);
-        writer.Write(mDepth);
-        writer.Write(mArraySize);
+        if (version >= 8)
+        {
+            writer.Write(mDepth);
+            writer.Write(mArraySize);
+        }
 
         Report(this, true);
     }

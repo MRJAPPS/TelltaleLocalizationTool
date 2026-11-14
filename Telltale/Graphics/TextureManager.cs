@@ -123,26 +123,24 @@ public static unsafe class TextureManager
 
     public static ID3DTX GetTextureInformation(TexMetadata metadata, Games game, int version = 9)
     {
-        return version == 9
-            ? (ID3DTX)new D3DTXV9(game)
-            {
-                mD3dtxMetaData = new(version)
-                {
-
-                    mTextureInfo = new()
-                    {
-                        mWidth = (uint)metadata.Width,
-                        mHeight = (uint)metadata.Height,
-                        mDepth = (uint)metadata.Depth,
-                        mArraySize = (uint)metadata.ArraySize,
-                        mNumMipLevels = (uint)metadata.MipLevels,
-                    },
-                    mSurfaceFormat = DDSHelper.GetTelltaleSurfaceFormat((DXGIFormat)metadata.Format),
-                    mSurfaceGamma = DirectXTex.IsSRGB(metadata.Format) ? T3SurfaceGamma.sRGB : T3SurfaceGamma.Linear,
-                    mTextureLayout = DDSHelper.GetDimensionFromDDS(metadata),
-                }
-            }
-            : throw new NotImplementedException("We need a d3dtx9!");//TODO: We also need d3dtx v4
+        ID3DTX d3dtx = version switch
+        {
+            4 => new D3DTXV4(game),
+            9 => new D3DTXV9(game),
+            _ => throw new NotSupportedException($"D3DTX version {version} isn't supported!")
+        };
+        d3dtx.mD3dtxMetaData.mTextureInfo = new(version)
+        {
+            mWidth = (uint)metadata.Width,
+            mHeight = (uint)metadata.Height,
+            mDepth = (uint)metadata.Depth,
+            mArraySize = (uint)metadata.ArraySize,
+            mNumMipLevels = (uint)metadata.MipLevels
+        };
+        d3dtx.mD3dtxMetaData.mSurfaceFormat = DDSHelper.GetTelltaleSurfaceFormat((DXGIFormat)metadata.Format);
+        d3dtx.mD3dtxMetaData.mSurfaceGamma = DirectXTex.IsSRGB(metadata.Format) ? T3SurfaceGamma.sRGB : T3SurfaceGamma.Linear;
+        d3dtx.mD3dtxMetaData.mTextureLayout = DDSHelper.GetDimensionFromDDS(metadata);
+        return d3dtx;
     }
 
     /// <summary>

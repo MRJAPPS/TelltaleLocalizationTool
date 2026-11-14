@@ -52,7 +52,7 @@ public class TSymbolValueCollection : TCollectionBase<TSymbolValue>, ITelltaleOb
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
                 TSymbolValue symbol = new();
-                symbol.Parse(itemElement, itemName);
+                symbol.Parse(myElement, itemName);
                 Items.Add(symbol);
             }
         }

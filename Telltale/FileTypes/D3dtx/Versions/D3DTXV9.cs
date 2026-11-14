@@ -88,7 +88,9 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
     }
 
 
-    public D3DTXMetadata mD3dtxMetaData { get; set; } = new(MyVersion);
+    public D3DTXV9Metadata mD3dtxMetaData { get; set; } = new(MyVersion);
+
+    D3DTXMetadata ID3DTX.mD3dtxMetaData => mD3dtxMetaData;
 
     public List<byte[]> mPixelData { get; set; } = [];
 
@@ -100,10 +102,11 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
 
     public void Parse(BinaryReader reader)
     {
-        this.ShareMetaStreamContext();
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
+        this.ShareMetaStreamContext();
+
 
         mD3dtxMetaData.Parse(reader);
 
@@ -140,6 +143,10 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         {
             int dataSize = (int)item.mDataSize;
             byte[] imageData = reader.ReadBytes(dataSize);
+            if (imageData.Length != dataSize)
+            {
+                throw new EndOfStreamException("The texture's pixel data is incomplete!");
+            }
             mPixelData.Add(imageData);
         }
     }
@@ -186,87 +193,66 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
 
     public void ModifyD3DTX(ID3DTX d3dtx, ImageSection[] imageSections)
     {
-        d3dtx.mD3dtxMetaData.mTextureInfo = d3dtx.mD3dtxMetaData.mTextureInfo;
-        d3dtx.mD3dtxMetaData.mSurfaceFormat = d3dtx.mD3dtxMetaData.mSurfaceFormat;
-        d3dtx.mD3dtxMetaData.mSurfaceGamma = d3dtx.mD3dtxMetaData.mSurfaceGamma;
-
-        mPixelData.Clear();
-        mPixelData = TextureManager.GetPixelDataListFromSections(imageSections);
-
-        d3dtx.mD3dtxMetaData.mStreamHeader = new(MyVersion)
+        if (d3dtx.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.Unknown)
         {
-            mRegionCount = imageSections.Length,
-            mAuxDataCount = mD3dtxMetaData.mStreamHeader.mAuxDataCount,
-            mTotalDataSize = (int)ByteFunctions.GetByteArrayListElementsCount(mPixelData)
-        };
-
-        for (int i = 0; i < d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount; i++)
-        {
-            RegionStreamHeader item = new(MyVersion)
-            {
-                mDataSize = (uint)mPixelData[i].Length,
-                mMipCount = 1, // mMipCount is a strange variable, it is always 1 for every single texture
-                mPitch = (int)imageSections[i].RowPitch,
-                mSlicePitch = (int)imageSections[i].SlicePitch,
-            };
-            d3dtx.mD3dtxMetaData.mStreamHeader.Add(item);
+            throw new NotSupportedException("I can't map this image's pixel format to a Telltale surface format! Save it as a supported DDS format first.");
         }
-
-        if (d3dtx.IsCubemap())
+        int mipLevels = (int)d3dtx.mD3dtxMetaData.mTextureInfo.mNumMipLevels;
+        int arraySize = (int)d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize;
+        int depth = (int)d3dtx.mD3dtxMetaData.mTextureInfo.mDepth;
+        List<(ImageSection section, int mip, int face)> images = [];
+        int index = 0;
+        if (d3dtx.IsVolumemap())
         {
-            d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize /= 6;
-            d3dtx.mD3dtxMetaData.mTextureLayout = d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize > 1 ? T3TextureLayout.TextureCubemapArray : T3TextureLayout.TextureCubemap;
-
-            int interval = d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount / (int)d3dtx.mD3dtxMetaData.mTextureInfo.mNumMipLevels;
-            // Example a cube array textures with 5 mips will have 30 regions (6 faces * 5 mips)
-            // If the array is 2 element there will be 60 regions (6 faces * 5 mips * 2 elements)
-            // The mip index will be the region index % interval
-            for (int i = 0; i < d3dtx.mD3dtxMetaData.mStreamHeader.Count; i++)
+            for (int mip = 0; mip < mipLevels; ++mip)
             {
-                d3dtx.mD3dtxMetaData.mStreamHeader[i].mFaceIndex = i % (6 * (int)d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize); // Unknown guess, it could be 6 or 6 * mArraySize
-                d3dtx.mD3dtxMetaData.mStreamHeader[i].mMipIndex = (d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount - i - 1) / interval;
-            }
-        }
-
-        else if (d3dtx.IsVolumemap())
-        {
-            d3dtx.mD3dtxMetaData.mTextureLayout = T3TextureLayout.Texture3D;
-
-            int currDepth = (int)d3dtx.mD3dtxMetaData.mTextureInfo.mDepth;
-            int currentMipIndex = (int)(d3dtx.mD3dtxMetaData.mTextureInfo.mNumMipLevels - 1);
-            int copyOfDepth = currDepth;
-
-            int depthIndex = 0;
-            int faceIndex = 0;
-
-            for (int i = 0; i < d3dtx.mD3dtxMetaData.mStreamHeader.Count; i++)
-            {
-                d3dtx.mD3dtxMetaData.mStreamHeader[d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount - currDepth + depthIndex++].mFaceIndex = faceIndex++; // NOTE: This could be different for 3D textures. I don't have information at the moment.
-                d3dtx.mD3dtxMetaData.mStreamHeader[i].mMipIndex = currentMipIndex;
-
-                if (depthIndex == copyOfDepth)
+                for (int face = 0; face < Math.Max(1, depth >> mip); ++face)
                 {
-                    currentMipIndex--;
-
-                    copyOfDepth = Math.Max(copyOfDepth / 2, 1);
-                    currDepth += copyOfDepth;
-
-                    depthIndex = 0;
-                    faceIndex = 0;
+                    images.Add((imageSections[index++], mip, face));
                 }
             }
         }
         else
         {
-            d3dtx.mD3dtxMetaData.mTextureLayout = d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize > 1 ? T3TextureLayout.Texture2DArray : T3TextureLayout.Texture2D;
-
-            int interval = d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount / (int)d3dtx.mD3dtxMetaData.mTextureInfo.mNumMipLevels;
-
-            for (int i = 0; i < d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount; i++)
+            for (int face = 0; face < arraySize; ++face)
             {
-                d3dtx.mD3dtxMetaData.mStreamHeader[i].mFaceIndex = i % (int)d3dtx.mD3dtxMetaData.mTextureInfo.mArraySize;
-                d3dtx.mD3dtxMetaData.mStreamHeader[i].mMipIndex = (d3dtx.mD3dtxMetaData.mStreamHeader.mRegionCount - i - 1) / interval;
+                for (int mip = 0; mip < mipLevels; ++mip)
+                {
+                    images.Add((imageSections[index++], mip, face));
+                }
             }
+        }
+
+        mD3dtxMetaData.mTextureInfo = d3dtx.mD3dtxMetaData.mTextureInfo;
+        mD3dtxMetaData.mSurfaceFormat = d3dtx.mD3dtxMetaData.mSurfaceFormat;
+        mD3dtxMetaData.mSurfaceGamma = d3dtx.mD3dtxMetaData.mSurfaceGamma;
+        mD3dtxMetaData.mTextureLayout = d3dtx.mD3dtxMetaData.mTextureLayout;
+        if (d3dtx.IsCubemap())
+        {
+            mD3dtxMetaData.mTextureInfo.mArraySize /= 6;
+            mD3dtxMetaData.mTextureLayout = mD3dtxMetaData.mTextureInfo.mArraySize > 1
+                ? T3TextureLayout.TextureCubemapArray : T3TextureLayout.TextureCubemap;
+        }
+        mD3dtxMetaData.mStreamHeader = new(9)
+        {
+            mRegionCount = imageSections.Length,
+            mAuxDataCount = mD3dtxMetaData.mStreamHeader.mAuxDataCount,
+            mTotalDataSize = imageSections.Sum(section => section.Pixels.Length)
+        };
+        mPixelData.Clear();
+        //Telltale stores the smallest mip first. DDS starts with the biggest one.
+        foreach ((ImageSection section, int mip, int face) in images.OrderByDescending(image => image.mip).ThenBy(image => image.face))
+        {
+            mPixelData.Add(section.Pixels);
+            mD3dtxMetaData.mStreamHeader.Add(new(9)
+            {
+                mMipIndex = mip,
+                mFaceIndex = face,
+                mMipCount = 1,
+                mDataSize = (uint)section.Pixels.Length,
+                mPitch = (int)section.RowPitch,
+                mSlicePitch = (int)section.SlicePitch
+            });
         }
     }
 

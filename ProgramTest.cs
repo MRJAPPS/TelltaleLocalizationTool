@@ -88,7 +88,7 @@ internal class ProgramTest
         string outputD3dtxFromBmp = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_bmp{Formats.d3dtxExtension}");
         string outputDdsFromBmpETC2_RGBA = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_Bmp_ETC2_RGBA{Formats.ddsExtension}");
         _ = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_dds_ETC2_RGBA{Formats.d3dtxExtension}");
-        Converter.ConvertTextureFromD3DtxToOthersV9(firstOutputPath, outputBmp, new(), game);
+        Converter.ConvertTextureFromD3DtxToOthers(firstOutputPath, outputBmp, new(), game);
         Converter.ConvertTextureFromOthersToD3DtxV9(outputBmp, outputD3dtxFromBmp, new(), game, Path.ChangeExtension(firstOutputPath, Formats.xmlExtension));
         _ = Converter.CompressWithCompressonatorCli(outputBmp, outputDdsFromBmpETC2_RGBA);
         // Step 2: Byte-by-byte comparison of original vs first output

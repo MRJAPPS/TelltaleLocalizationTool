@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
@@ -56,11 +57,11 @@ public static class Converter
         };
     }
 
-    public static void ConvertTextureFromD3DtxToOthersV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game)
+    public static void ConvertTextureFromD3DtxToOthers(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game)
     {
         CheckArgs(sourceFilePath, destinationFilePath);
 
-        D3DTXV9 d3dtxFile = new(game: game);
+        ID3DTX d3dtxFile = D3dtxFactory.CreateD3dtx(game);
         d3dtxFile.LoadD3DTX(sourceFilePath);
 
         DDS_Master ddsFile = new(d3dtxFile);
@@ -71,12 +72,32 @@ public static class Converter
             options.Used3dtxXml ? Formats.d3dtxXmlExtension : Formats.xmlExtension));
 
         Texture texture = new(array, TextureType.D3DTX);
-        texture.TransformTexture(options, true, false);
-        texture.SaveTexture(destinationFilePath, GetTextureTypeFromExtension(destinationFilePath));
-        texture.Release();
+        try
+        {
+            texture.TransformTexture(options, true, false);
+            texture.SaveTexture(destinationFilePath, GetTextureTypeFromExtension(destinationFilePath));
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            texture.Release();
+        }
     }
 
     public static void ConvertTextureFromOthersToD3DtxV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game, string? xmlFile = null)
+    {
+        ConvertTextureFromOthersToD3Dtx(sourceFilePath, destinationFilePath, options, game, xmlFile);
+    }
+
+    public static void ConvertTextureFromOthersToD3DtxV4(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game, string? xmlFile = null, T3SurfaceFormat? format = null)
+    {
+        ConvertTextureFromOthersToD3Dtx(sourceFilePath, destinationFilePath, options, game, xmlFile, format);
+    }
+
+    public static void ConvertTextureFromOthersToD3Dtx(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game, string? xmlFile = null, T3SurfaceFormat? format = null)
     {
         CheckArgs(sourceFilePath, destinationFilePath);
 
@@ -85,7 +106,7 @@ public static class Converter
             throw new FormatException($"The output file format must be {Formats.d3dtxExtension}!");
         }
 
-        D3DTXV9 d3dtxMaster = new(game: game);
+        ID3DTX d3dtxMaster = D3dtxFactory.CreateD3dtx(game);
         if (File.Exists(xmlFile))
         {
             d3dtxMaster.LoadD3DTXXML(xmlFile);
@@ -99,34 +120,164 @@ public static class Converter
 
         Texture texture = new(sourceFilePath, GetTextureTypeFromExtension(sourceFilePath), flags);
 
-        if (d3dtxMaster.mD3dtxMetaData.mType is T3TextureType.eTxBumpmap or T3TextureType.eTxNormalMap)
+        try
         {
-            options.IsTelltaleNormalMap = true;
+            if (d3dtxMaster.mD3dtxMetaData.mType is T3TextureType.eTxBumpmap or T3TextureType.eTxNormalMap)
+            {
+                options.IsTelltaleNormalMap = true;
+            }
+            else if (d3dtxMaster.mD3dtxMetaData.mType is T3TextureType.eTxNormalXYMap)
+            {
+                options.IsTelltaleNormalMap = true;
+            }
+
+            if (d3dtxMaster.mD3dtxMetaData.mSurfaceGamma is T3SurfaceGamma.sRGB)
+            {
+                options.IsSRGB = true;
+            }
+
+            if (d3dtxMaster is D3DTXV4)
+            {
+                options = new(options) { EnableAutomaticCompression = false, EnableTelltaleNormalMap = false };
+            }
+            texture.TransformTexture(options, true, true);
+
+            if (d3dtxMaster is D3DTXV4 d3dtxv4)
+            {
+                ImportTextureV4(d3dtxv4, texture, game, format);
+                d3dtxMaster.WriteD3DTX(destinationFilePath);
+                return;
+            }
+
+            texture.GetDDSInformation(out ID3DTX d3dtx, out ImageSection[] sections, game, d3dtxMaster.mD3dtxMetaData.mVersion, flags);
+
+            if (options.EnableSwizzle)
+            {
+                d3dtx.mD3dtxMetaData.mPlatform.EnumItem = options.PlatformType;
+            }
+
+            d3dtxMaster.ModifyD3DTX(d3dtx, sections);
         }
-        else if (d3dtxMaster.mD3dtxMetaData.mType is T3TextureType.eTxNormalXYMap)
+        catch
         {
-            options.IsTelltaleNormalMap = true;
+            throw;
         }
-
-        if (d3dtxMaster.mD3dtxMetaData.mSurfaceGamma is T3SurfaceGamma.sRGB)
+        finally
         {
-            options.IsSRGB = true;
+            texture.Release();
         }
-
-        texture.TransformTexture(options, true, true);
-
-        texture.GetDDSInformationV9(out D3DTXV9 d3dtx, out ImageSection[] sections, game, flags);
-
-        if (options.EnableSwizzle)
-        {
-            d3dtx.mD3dtxMetaData.mPlatform.EnumItem = options.PlatformType;
-        }
-
-        d3dtxMaster.ModifyD3DTX(d3dtx, sections);
-
-        texture.Release();
 
         d3dtxMaster.WriteD3DTX(destinationFilePath);
+    }
+
+    public static void ImportTextureV4(D3DTXV4 d3dtx, Texture texture, Games game, T3SurfaceFormat? format = null)
+    {
+        if (format is not null and not T3SurfaceFormat.ETC1_RGB and not T3SurfaceFormat.ARGB8 and not T3SurfaceFormat.ARGB4)
+        {
+            throw new NotSupportedException("D3DTX version 4 import supports ETC1, ARGB8 and ARGB4!");
+        }
+        texture.GetDDSInformation(out ID3DTX source, out _, game, 4);
+        if (source.IsCubemap() || source.IsVolumemap() || source.mD3dtxMetaData.mTextureInfo.mArraySize != 1)
+        {
+            throw new NotSupportedException("D3DTX version 4 only supports 2D textures!");
+        }
+
+        using TempFile inputDds = new("texture.dds");
+        using TempFile convertedDds = new("texture.dds");
+        //Compressonator can't read every packed DDS format (including ARGB4).
+        texture.Decompress(DXGIFormat.R8G8B8A8_UNORM);
+        texture.Convert(DXGIFormat.R8G8B8A8_UNORM);
+        texture.GetDDSInformation(out source, out ImageSection[] sourceSections, game, 4);
+        format ??= GetSurfaceFormatV4(sourceSections);
+        texture.SaveAsDDS(inputDds.Path);
+        _ = CompressWithCompressonatorCli(inputDds.Path, convertedDds.Path,
+            format == T3SurfaceFormat.ETC1_RGB ? format.Value : T3SurfaceFormat.ARGB8);
+        if (format == T3SurfaceFormat.ETC1_RGB)
+        {
+            ImageSection[] sections = GetETC1ImageSections(convertedDds.Path, source);
+            source.mD3dtxMetaData.mSurfaceFormat = format.Value;
+            d3dtx.ModifyD3DTX(source, sections);
+            return;
+        }
+        Texture converted = new(convertedDds.Path, TextureType.DDS);
+        try
+        {
+            if (format == T3SurfaceFormat.ARGB4)
+            {
+                converted.Convert(DXGIFormat.B4G4R4A4_UNORM);
+            }
+            converted.GetDDSInformation(out ID3DTX imported, out ImageSection[] sections, game, 4);
+            if (imported.mD3dtxMetaData.mSurfaceFormat != format)
+            {
+                throw new InvalidDataException($"The converted texture isn't {format}!");
+            }
+            d3dtx.ModifyD3DTX(imported, sections);
+        }
+        finally
+        {
+            converted.Release();
+        }
+    }
+
+    private static T3SurfaceFormat GetSurfaceFormatV4(ImageSection[] sections)
+    {
+        bool opaque = true, argb4 = true;
+        foreach (ImageSection section in sections)
+        {
+            for (nuint row = 0; row < section.Height; ++row)
+            {
+                for (nuint column = 0; column < section.Width; ++column)
+                {
+                    int offset = checked((int)(row * section.RowPitch + column * 4));
+                    opaque &= section.Pixels[offset + 3] == byte.MaxValue;
+                    for (int channel = 0; channel < 4; ++channel)
+                    {
+                        argb4 &= section.Pixels[offset + channel] % 17 == 0;
+                    }
+                    if (!opaque && !argb4)
+                    {
+                        return T3SurfaceFormat.ARGB8;
+                    }
+                }
+            }
+        }
+        return opaque ? T3SurfaceFormat.ETC1_RGB : argb4 ? T3SurfaceFormat.ARGB4 : T3SurfaceFormat.ARGB8;
+    }
+
+    private static ImageSection[] GetETC1ImageSections(string filePath, ID3DTX source)
+    {
+        using BinaryReader reader = new(File.OpenRead(filePath));
+        byte[] header = reader.ReadBytes(128);
+        uint width = source.mD3dtxMetaData.mTextureInfo.mWidth;
+        uint height = source.mD3dtxMetaData.mTextureInfo.mHeight;
+        uint mipLevels = source.mD3dtxMetaData.mTextureInfo.mNumMipLevels;
+        if (header.Length != 128 || BitConverter.ToUInt32(header, 0) != 0x20534444 ||
+            BitConverter.ToUInt32(header, 4) != 124 || BitConverter.ToUInt32(header, 76) != 32 ||
+            BitConverter.ToUInt32(header, 80) != 4 || BitConverter.ToUInt32(header, 84) != 0x20435445 ||
+            BitConverter.ToUInt32(header, 12) != height || BitConverter.ToUInt32(header, 16) != width ||
+            Math.Max(1U, BitConverter.ToUInt32(header, 28)) != mipLevels)
+        {
+            throw new InvalidDataException("Compressonator didn't produce the expected ETC1 DDS texture!");
+        }
+        ImageSection[] sections = new ImageSection[mipLevels];
+        for (int i = 0; i < sections.Length; ++i)
+        {
+            uint rowPitch = ((width + 3) / 4) * 8;
+            uint slicePitch = rowPitch * ((height + 3) / 4);
+            byte[] pixels = reader.ReadBytes(checked((int)slicePitch));
+            if (pixels.Length != slicePitch)
+            {
+                throw new EndOfStreamException("The ETC1 mip data is incomplete!");
+            }
+            sections[i] = new() { Width = width, Height = height, RowPitch = rowPitch, SlicePitch = slicePitch, Pixels = pixels };
+            width = Math.Max(1U, width / 2);
+            height = Math.Max(1U, height / 2);
+        }
+        if (reader.BaseStream.Position != reader.BaseStream.Length)
+        {
+            throw new InvalidDataException("The ETC1 DDS has unexpected data after its mip levels!");
+        }
+        return sections;
     }
 
 
@@ -455,7 +606,12 @@ public static class Converter
 
     public static bool CompressWithCompressonatorCli(string input, string output, T3SurfaceFormat format = T3SurfaceFormat.ETC2_RGBA, bool @throw = true)
     {
-        string compressAlgo = format.ToString();
+        string compressAlgo = format switch
+        {
+            T3SurfaceFormat.ARGB8 => "ARGB_8888",
+            T3SurfaceFormat.ETC1_RGB => "ETC_RGB",
+            _ => format.ToString()
+        };
         string excutable = Program.Config.CompressonatorPath;
         string args = $"-fd {compressAlgo} \"{input}\" \"{output}\"";
 
@@ -477,8 +633,10 @@ public static class Converter
         using Process process = new() { StartInfo = psi };
         _ = process.Start();
 
-        string stdo = process.StandardOutput.ReadToEnd();
-        string stde = process.StandardError.ReadToEnd();
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+        string stdo = outputTask.GetAwaiter().GetResult();
+        string stde = errorTask.GetAwaiter().GetResult();
 
         process.WaitForExit();
 

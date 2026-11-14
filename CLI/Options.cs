@@ -51,6 +51,10 @@ public class Options : CommandSettings
     [Description("The target game name or enum value.")]
     public string Game { get; set; } = string.Empty;
 
+    [CommandOption("--format <format>", false)]
+    [Description("WDS1 d3dtx import format: auto (default), ETC1, ARGB8 or ARGB4. Auto checks alpha and 4-bit channel precision in every mip.")]
+    public string Format { get; set; } = string.Empty;
+
     [CommandOption("--glyphSize <size>", false)]
     [Description("Required for TTF import. Sets the glyph size in whole pixels; bmfont64.exe must be available.")]
     public float GlyphSize { get; set; } = -1F;//-1 IS NOT VALID, USER MUST GIVE US A SIZE!

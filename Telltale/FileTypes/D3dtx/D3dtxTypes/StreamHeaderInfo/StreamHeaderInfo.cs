@@ -95,6 +95,7 @@ public class StreamHeaderInfo(int version) : TCollectionBase<RegionStreamHeader>
     {
         XmlElement myElement = reader.GetSingleElement(nameof(StreamHeaderInfo), name);
         ParseBasicTypes(myElement);
+        Items.Clear();//For safety
         foreach (XmlNode node in myElement.ChildNodes)
         {
             if (node is XmlElement itemElement && itemElement.Name == nameof(RegionStreamHeader))

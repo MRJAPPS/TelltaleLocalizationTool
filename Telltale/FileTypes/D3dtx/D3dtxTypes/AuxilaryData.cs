@@ -68,6 +68,10 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
 
         XmlElement myElement = reader.GetSingleElement(nameof(AuxilaryData), name);
         ParseBasicTypes(myElement);
+        if (myElement.SelectSingleNode($"./TSymbolValue[@name='{nameof(symbol)}']") != null)
+        {
+            symbol.Parse(myElement, nameof(symbol));
+        }
     }
 
     public void Write(BinaryWriter writer)
@@ -78,7 +82,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
             return;
         }
 
-        writer.Write(Data.Length + AuxilaryDataSizeExtra);
+        writer.Write(Size);
         symbol.Write(writer);
         writer.Write(Padding);
         writer.Write(Unkown);
@@ -97,6 +101,7 @@ public class AuxilaryData(int mAuxDataCount) : ReportBase, ITelltaleObject
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(AuxilaryData));
         myElement.SetAttribute(nameof(name), name);
         AppendBasicTypes(myElement);
+        symbol.Write(myElement, nameof(symbol));
         _ = element.AppendChild(myElement);
     }
 
