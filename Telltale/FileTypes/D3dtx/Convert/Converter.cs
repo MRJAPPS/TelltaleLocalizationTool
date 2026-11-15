@@ -74,16 +74,7 @@ public static class Converter
         //The msCtx value isn't always null in D3dtx, TFont, and Landb!
         if (d3dtxFile.msCtx!.Game == Games.WDS1 && d3dtxFile.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.ETC1_RGB)
         {
-            //The ETC1_RGB decoder in TelltaleTextureTool doesn't work properly! Implementing a new decoder in C# is also beyond my knowledge right now (I'll implement it later if I remember), and it's better to do the decoding via the compressonatorcli tool too, from dds...
-            using TempFile ddsEtc1Input = new($"{T3SurfaceFormat.ETC1_RGB}_{d3dtxFile.msCtx!.Game}.dds");
-
-            DDS_HEADER etc1Header = new();
-            etc1Header.SetMeToEtc1DefaultHeader(d3dtxFile.mD3dtxMetaData.mTextureInfo.mWidth, d3dtxFile.mD3dtxMetaData.mTextureInfo.mHeight,
-                (uint)d3dtxFile.mD3dtxMetaData.mStreamHeader.Sum(streamH => streamH.mDataSize));
-            // D3DTX stores mips data in reverse order
-            etc1Header.WriteMeToDdsFile(ddsEtc1Input.Path, d3dtxFile.mPixelData.AsEnumerable().Reverse());
-
-            _ = MagicWithCompressonatorCli(ddsEtc1Input.Path, destinationFilePath, T3SurfaceFormat.ARGB8);
+            ConvertWds1Etc1Rgb(destinationFilePath, d3dtxFile);
         }
         else
         {
@@ -102,6 +93,20 @@ public static class Converter
                 texture.Release();
             }
         }
+    }
+
+    private static void ConvertWds1Etc1Rgb(string destinationFilePath, ID3DTX d3dtxFile)
+    {
+        //The ETC1_RGB decoder in TelltaleTextureTool doesn't work properly! Implementing a new decoder in C# is also beyond my knowledge right now (I'll implement it later if I remember), and it's better to do the decoding via the compressonatorcli tool too, from dds...
+        using TempFile ddsEtc1Input = new($"{T3SurfaceFormat.ETC1_RGB}_{d3dtxFile.msCtx!.Game}.dds");
+
+        DDS_HEADER etc1Header = new();
+        etc1Header.SetMeToEtc1DefaultHeader(d3dtxFile.mD3dtxMetaData.mTextureInfo.mWidth, d3dtxFile.mD3dtxMetaData.mTextureInfo.mHeight,
+            (uint)d3dtxFile.mD3dtxMetaData.mStreamHeader.Sum(streamH => streamH.mDataSize));
+        // D3DTX stores mips data in reverse order
+        etc1Header.WriteMeToDdsFile(ddsEtc1Input.Path, d3dtxFile.mPixelData.AsEnumerable().Reverse());
+
+        _ = MagicWithCompressonatorCli(ddsEtc1Input.Path, destinationFilePath, T3SurfaceFormat.ARGB8);
     }
 
     public static void ConvertTextureFromOthersToD3DtxV9(string sourceFilePath, string destinationFilePath, ImageAdvancedOptions options, Games game, string? xmlFile = null)

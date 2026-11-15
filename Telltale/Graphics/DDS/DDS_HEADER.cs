@@ -139,7 +139,7 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
     {
         Position = reader.BaseStream.Position;
         CheckMagic(reader);//Skip magic
-        reader.ReadUInt32();//Skip size
+        var size = reader.ReadUInt32() + sizeof(uint);//Skip size(uint for magic)
 
         dwFlags = reader.ReadUInt32();
         dwHeight = reader.ReadUInt32();
@@ -150,12 +150,17 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
         for (int i = 0; i < dwReserved1.Length; ++i)
             dwReserved1[i] = reader.ReadUInt32();//Skip...
         ddspf.Parse(reader);
-        dwCaps = reader.ReadUInt32();
-        dwCaps2 = reader.ReadUInt32();
+        if (reader.BaseStream.Position < size)
+            dwCaps = reader.ReadUInt32();
+        if (reader.BaseStream.Position < size)
+            dwCaps2 = reader.ReadUInt32();
         dwCaps3 = reader.ReadUInt32();
-        dwCaps4 = reader.ReadUInt32();
-        dwReserved2 = reader.ReadUInt32();
-        dwReserved3 = reader.ReadUInt32();
+        if (reader.BaseStream.Position < size)
+            dwCaps4 = reader.ReadUInt32();
+        if (reader.BaseStream.Position < size)
+            dwReserved2 = reader.ReadUInt32();
+        if (reader.BaseStream.Position < size)
+            dwReserved3 = reader.ReadUInt32();
     }
 
     public void Parse(XmlElement reader, string name)
