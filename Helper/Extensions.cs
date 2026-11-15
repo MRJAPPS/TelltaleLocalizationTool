@@ -1,7 +1,6 @@
 ﻿using BCnEncoder.Decoder;
 using BCnEncoder.Shared.ImageFiles;
 using PVRTexLib;
-using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml;
@@ -90,21 +89,12 @@ public static class Extensions
             ? (ClassNames)symbol.mCrc64
             : null;
     }
-    public static bool IsHeadersEqauls(this MSV6 header, ClassName[] target)//For now, and for wd3nf, we use msv6...
+
+    public static byte[] Slice(this byte[] bytes, int index, int len)
     {
-        if (header.mClassNamesLength != target.Length)
-        {
-            return false;
-        }
-        for (int i = 0; i < header.mClassNamesLength; ++i)
-        {
-            if (header.mClassNames[i].mVersionCRC != target[i].mVersionCRC ||
-                header.mClassNames[i].mTypeNameCRC.mCrc64 != target[i].mTypeNameCRC.mCrc64)
-            {
-                return false;
-            }
-        }
-        return true;
+        byte[] result = new byte[len];
+        Buffer.BlockCopy(bytes, index, result, 0, len);
+        return result;
     }
 
     public static XmlElement GetSingleElement(this XmlElement element, string tagName, string? name = null)
@@ -406,70 +396,150 @@ public static class Extensions
         }
     }
 
+    public static void MapDdsToD3dtx(this D3DTXV4 d3dtx, DdsD3dtx ddsData = default, string? name = default, T3SurfaceFormat? format = null)
+    {
+        D3DTXV4Metadata metadata = d3dtx.mD3dtxMetaData;
+        TextureInfo textureInfo = metadata.mTextureInfo;
+        StreamHeaderInfo streamHeaderInfo = metadata.mStreamHeader;
+        RegionStreamHeader regionStreamHeaderForAdd;
+        Config config = Program.Config;
 
-    public static void MapDdsToD3dtxForFont(this D3DTXV9 d3dtx, DdsD3dtx ddsData = default, string? fontName = default)
+        if (d3dtx.msCtx is null)
+        {
+            throw new NullReferenceException($"{nameof(MapDdsToD3dtx)}(V:{d3dtx.Version})...({nameof(d3dtx)}.{nameof(ITelltaleObject.msCtx)} is null!");
+        }
+
+        switch (d3dtx.msCtx.Game)
+        {
+            case Games.WDS1:
+                {
+                    const int MipMapCount = 1, AuxDataCount = 0, DefInxe = 0;
+                    //========= Metadata =========
+                    metadata.mVersion = d3dtx.Version;
+                    metadata.mName = name ?? Config.ByteAndPlay;
+                    metadata.mImportName = Config.GithubPage;
+                    metadata.mImportScale = config.mImportScale_v4_wds1_android;
+                    metadata.mSurfaceFormat = format ?? T3SurfaceFormat.ARGB8;//ARGB8 used for fonts
+                    metadata.mType = config.mType_v4_wds1_android;
+                    metadata.mHDRLightmapScale = 5f;
+                    metadata.mToonGradientCutoff = config.mToonGradientCutoff_v4_wds1_android;
+                    metadata.mColorMode = config.mColorMode_v4_wds1_android;
+                    metadata.mUVOffset = new() { mX = config.mUVOffset_v4_wds1_android[0], mY = config.mUVOffset_v4_wds1_android[1] };
+                    metadata.mUVScale = new() { mX = config.mUVScale_v4_wds1_android[0], mY = config.mUVScale_v4_wds1_android[1] };
+                    metadata.mAlphaMode = format switch
+                    {
+                        T3SurfaceFormat.ARGB8 => T3TextureAlphaMode.AlphaBlend,
+                        T3SurfaceFormat.ARGB4 => T3TextureAlphaMode.AlphaBlend,
+                        _ => T3TextureAlphaMode.NoAlpha
+                    };
+                    //========= TextureInfo =========
+                    textureInfo.mDepth = config.mDepth_v4_wds1_android;
+                    textureInfo.mArraySize = MipMapCount;
+                    textureInfo.mWidth = ddsData.Width;
+                    textureInfo.mHeight = ddsData.Height;
+                    textureInfo.mNumMipLevels = config.mNumMipLevels_v4_wds1_android;
+                    //========= StreamHeaderInfo =========
+                    streamHeaderInfo.mAuxDataCount = AuxDataCount;
+                    streamHeaderInfo.mTotalDataSize = ddsData.PixelData.Length;
+                    streamHeaderInfo.mRegionCount = MipMapCount;
+
+                    //WARNING: Width and height must be divisible by 4!
+                    //========= RegionStreamHeader(ETC1_RGB pitch,slicePitch) =========
+                    int slicePitch = ddsData.PixelData.Length;
+                    _ = Utils.GetBiggestDdsMipBytesLength((int)textureInfo.mWidth, (int)textureInfo.mHeight, metadata.mSurfaceFormat, out int pitch, $"As far as I know, your T3SurfaceFormat({nameof(metadata.mSurfaceFormat)}) input for {nameof(D3DTXV4)} isn't valid!");
+                    //========= RegionStreamHeader =========
+                    regionStreamHeaderForAdd = new(metadata.mVersion)
+                    {
+                        mDataSize = (uint)ddsData.PixelData.Length,
+                        mFaceIndex = DefInxe,
+                        mMipCount = MipMapCount,
+                        mMipIndex = DefInxe,
+                        mPitch = pitch,
+                        mSlicePitch = slicePitch
+                    };
+                    streamHeaderInfo.Add(regionStreamHeaderForAdd);
+                    //========= PixelData =========
+                    d3dtx.mPixelData.Add(ddsData.PixelData);
+                    //========= D3dtx =========
+                    d3dtx.ReadMsv5Header = false;
+                    d3dtx.WriteMsv5Header = true;
+                }
+                break;
+            default: throw new NotImplementedException($"I still can't build a {nameof(D3DTXV4)} file from an empty DDS for game {nameof(d3dtx.msCtx.Game)}!");
+
+        }
+    }
+
+    public static void MapDdsToD3dtx(this D3DTXV9 d3dtx, DdsD3dtx ddsData = default, string? name = default)
     {
         D3DTXV9Metadata metadata = d3dtx.mD3dtxMetaData;
         TextureInfo textureInfo = metadata.mTextureInfo;
         StreamHeaderInfo streamHeaderInfo = metadata.mStreamHeader;
         RegionStreamHeader regionStreamHeaderForAdd;
         Config config = Program.Config;
-        const int MipMapCount = 1, AuxDataCount = 0, DefInxe = 0, BlockSizeBytesEtc2 = 16;
-        //========= Metadata =========
-        metadata.mVersion = 9;
-        metadata.mSamplerState.mData = config.mSamplerState;
-        metadata.mPlatform.EnumItem = config.mPlatform;
-        metadata.mName = fontName ?? "MyFont";
-        metadata.mImportName = Config.GithubPage;
-        metadata.mImportScale = config.mImportScale;
-        metadata.mToolProps.mbHasProps = config.mToolProps;
-        metadata.mSurfaceFormat = T3SurfaceFormat.ETC2_RGBA;
-        metadata.mTextureLayout = config.mTextureLayout;
-        metadata.mSurfaceGamma = config.mSurfaceGamma;
-        metadata.mSurfaceMultisample = config.mSurfaceMultisample;
-        metadata.mType = config.mType;
-        metadata.mSwizzle.mSwizzle = config.mSwizzle;
-        metadata.mSpecularGlossExponent = config.mSpecularGlossExponent;
-        metadata.mHDRLightmapScale = config.mHDRLightmapScale;
-        metadata.mToonGradientCutoff = config.mToonGradientCutoff;
-        metadata.mAlphaMode = config.mAlphaMode;
-        metadata.mColorMode = config.mColorMode;
-        metadata.mUVOffset = new() { mX = config.mUVOffset[0], mY = config.mUVOffset[1] };
-        metadata.mUVScale = new() { mX = config.mUVScale[0], mY = config.mUVScale[1] };
-        //========= TextureInfo =========
-        textureInfo.mDepth = config.mDepth;
-        textureInfo.mArraySize = MipMapCount;
-        textureInfo.mWidth = ddsData.Width;
-        textureInfo.mHeight = ddsData.Height;
-        textureInfo.mNumMipLevels = MipMapCount;
-        //========= StreamHeaderInfo =========
-        streamHeaderInfo.mAuxDataCount = AuxDataCount;
-        streamHeaderInfo.mTotalDataSize = ddsData.PixelData.Length;
-        streamHeaderInfo.mRegionCount = MipMapCount;
-        //========= RegionStreamHeader(ETC2_RGBA pitch,slicePitch) =========
-        int BlocksPerRow = (int)textureInfo.mWidth / 4;
-        _ = (int)textureInfo.mHeight / 4;
-        int pitch = BlocksPerRow * BlockSizeBytesEtc2;
-        int slicePitch = ddsData.PixelData.Length;
-        //========= RegionStreamHeader =========
-        regionStreamHeaderForAdd = new(metadata.mVersion)
-        {
-            mDataSize = (uint)ddsData.PixelData.Length,
-            mFaceIndex = DefInxe,
-            mMipCount = MipMapCount,
-            mMipIndex = DefInxe,
-            mPitch = pitch,
-            mSlicePitch = slicePitch
-        };
-        streamHeaderInfo.Add(regionStreamHeaderForAdd);
-        //========= PixelData =========
-        d3dtx.mPixelData.Add(ddsData.PixelData);
-        //========= D3dtx =========
-        d3dtx.ReadMsv6Header = false;
-        d3dtx.WriteMsv6Header = true;
-    }
 
-    public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, Games game, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
+        switch (d3dtx.msCtx!.Game)//The msCtx value isn't always null in D3dtx, TFont, and Landb!
+        {
+            case Games.WDS3NF:
+                {//I know, we could've used features like Reflection to build just one truly general-purpose and flexible function, but trust me, getting hooked on Reflection can become a debugging headache later, and honestly I don't have the patience to implement it right now — maybe later...
+                    const int MipMapCount = 1, AuxDataCount = 0, DefInxe = 0;
+                    //========= Metadata =========
+                    metadata.mVersion = d3dtx.Version;
+                    metadata.mSamplerState.mData = config.mSamplerState_v9_wds3nf_android;
+                    metadata.mPlatform.EnumItem = config.mPlatform_v9_wds3nf_android;
+                    metadata.mName = name ?? Config.ByteAndPlay;
+                    metadata.mImportName = Config.GithubPage;
+                    metadata.mImportScale = config.mImportScale_v9_wds3nf_android;
+                    metadata.mToolProps.mbHasProps = config.mToolProps_v9_wds3nf_android;
+                    metadata.mSurfaceFormat = T3SurfaceFormat.ETC2_RGBA;
+                    metadata.mTextureLayout = config.mTextureLayout_v9_wds3nf_android;
+                    metadata.mSurfaceGamma = config.mSurfaceGamma_v9_wds3nf_android;
+                    metadata.mSurfaceMultisample = config.mSurfaceMultisample_v9_wds3nf_android;
+                    metadata.mType = config.mType_v9_wds3nf_android;
+                    metadata.mSwizzle.mSwizzle = config.mSwizzle_v9_wds3nf_android;
+                    metadata.mSpecularGlossExponent = config.mSpecularGlossExponent_v9_wds3nf_android;
+                    metadata.mHDRLightmapScale = config.mHDRLightmapScale_v9_wds3nf_android;
+                    metadata.mToonGradientCutoff = config.mToonGradientCutoff_v9_wds3nf_android;
+                    metadata.mAlphaMode = config.mAlphaMode_v9_wds3nf_android;
+                    metadata.mColorMode = config.mColorMode_v9_wds3nf_android;
+                    metadata.mUVOffset = new() { mX = config.mUVOffset_v9_wds3nf_android[0], mY = config.mUVOffset_v9_wds3nf_android[1] };
+                    metadata.mUVScale = new() { mX = config.mUVScale_v9_wds3nf_android[0], mY = config.mUVScale_v9_wds3nf_android[1] };
+                    //========= TextureInfo =========
+                    textureInfo.mDepth = config.mDepth_v9_wds3nf_android;
+                    textureInfo.mArraySize = MipMapCount;
+                    textureInfo.mWidth = ddsData.Width;
+                    textureInfo.mHeight = ddsData.Height;
+                    textureInfo.mNumMipLevels = config.mNumMipLevels_v9_wds3nf_android;
+                    //========= StreamHeaderInfo =========
+                    streamHeaderInfo.mAuxDataCount = AuxDataCount;
+                    streamHeaderInfo.mTotalDataSize = ddsData.PixelData.Length;
+                    streamHeaderInfo.mRegionCount = MipMapCount;
+                    //WARNING: Width and height must be divisible by 4!
+                    //========= RegionStreamHeader(ETC2_RGBA pitch,slicePitch) =========
+                    int slicePitch = ddsData.PixelData.Length;
+                    _ = Utils.GetBiggestDdsMipBytesLength((int)textureInfo.mWidth, (int)textureInfo.mHeight, metadata.mSurfaceFormat, out int pitch, $"As far as I know, your T3SurfaceFormat({nameof(metadata.mSurfaceFormat)}) input for {nameof(D3DTXV9)} isn't valid!");
+                    //========= RegionStreamHeader =========
+                    regionStreamHeaderForAdd = new(metadata.mVersion)
+                    {
+                        mDataSize = (uint)ddsData.PixelData.Length,
+                        mFaceIndex = DefInxe,
+                        mMipCount = MipMapCount,
+                        mMipIndex = DefInxe,
+                        mPitch = pitch,
+                        mSlicePitch = slicePitch
+                    };
+                    streamHeaderInfo.Add(regionStreamHeaderForAdd);
+                    //========= PixelData =========
+                    d3dtx.mPixelData.Add(ddsData.PixelData);
+                    //========= D3dtx =========
+                    d3dtx.ReadMsv6Header = false;
+                    d3dtx.WriteMsv6Header = true;
+                }
+                break;
+            default: throw new NotImplementedException($"I still can't build a d3dtx(version 9) file from an empty DDS for game {nameof(d3dtx.msCtx.Game)}!");
+        }
+    }
+    //TODO: FONT EXPORT IMPORT MSV5 WDS1
     public static void ExportTextures(this FontD3dtxCollection d3dtxList, string fontName, string outputDirectory, Games game, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
     {
         int counter = 0;
@@ -535,6 +605,9 @@ public static class Extensions
         using FileStream inputFs = new(inputFile, FileMode.Open, FileAccess.Read);
         using BinaryReader reader = new(inputFs);
         ddsHeader.Parse(reader);
+        /*
+         I know this way of grabbing PixelData is flawed... I just realized it myself! Still, fixing it here would mean implementing the DDS structure more deeply. The problem is that a DDS file can have multiple mips, but I'm reading all the remaining bytes after the header, which may include different mips! Not a big deal though... I handled this in GetD3dtxDataFormDds, which slices the pixel byte array based on the compression algorithm or encoding and keeps only the first mip, since it's the largest mip in DDS, unlike d3dtx where it's the other way around. I'm marking adding and implementing the other mips as a TODO for later.
+         */
         return reader.ReadBytes((int)(inputFs.Length - inputFs.Position));
     }
 

@@ -71,19 +71,36 @@ public static class Converter
             options.WriteXmlAsideOutputTex ? destinationFilePath : sourceFilePath,
             options.Used3dtxXml ? Formats.d3dtxXmlExtension : Formats.xmlExtension));
 
-        Texture texture = new(array, TextureType.D3DTX);
-        try
+        //The msCtx value isn't always null in D3dtx, TFont, and Landb!
+        if (d3dtxFile.msCtx!.Game == Games.WDS1 && d3dtxFile.mD3dtxMetaData.mSurfaceFormat == T3SurfaceFormat.ETC1_RGB)
         {
-            texture.TransformTexture(options, true, false);
-            texture.SaveTexture(destinationFilePath, GetTextureTypeFromExtension(destinationFilePath));
+            //The ETC1_RGB decoder in TelltaleTextureTool doesn't work properly! Implementing a new decoder in C# is also beyond my knowledge right now (I'll implement it later if I remember), and it's better to do the decoding via the compressonatorcli tool too, from dds...
+            using TempFile ddsEtc1Input = new($"{T3SurfaceFormat.ETC1_RGB}_{d3dtxFile.msCtx!.Game}.dds");
+
+            DDS_HEADER etc1Header = new();
+            etc1Header.SetMeToEtc1DefaultHeader(d3dtxFile.mD3dtxMetaData.mTextureInfo.mWidth, d3dtxFile.mD3dtxMetaData.mTextureInfo.mHeight,
+                (uint)d3dtxFile.mD3dtxMetaData.mStreamHeader.Sum(streamH => streamH.mDataSize));
+            // D3DTX stores mips data in reverse order
+            etc1Header.WriteMeToDdsFile(ddsEtc1Input.Path, d3dtxFile.mPixelData.AsEnumerable().Reverse());
+
+            _ = MagicWithCompressonatorCli(ddsEtc1Input.Path, destinationFilePath, T3SurfaceFormat.ARGB8);
         }
-        catch
+        else
         {
-            throw;
-        }
-        finally
-        {
-            texture.Release();
+            Texture texture = new(array, TextureType.D3DTX);
+            try
+            {
+                texture.TransformTexture(options, true, false);
+                texture.SaveTexture(destinationFilePath, GetTextureTypeFromExtension(destinationFilePath));
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                texture.Release();
+            }
         }
     }
 
@@ -141,7 +158,6 @@ public static class Converter
                 options = new(options) { EnableAutomaticCompression = false, EnableTelltaleNormalMap = false };
             }
             texture.TransformTexture(options, true, true);
-
             if (d3dtxMaster is D3DTXV4 d3dtxv4)
             {
                 ImportTextureV4(d3dtxv4, texture, game, format);
@@ -190,7 +206,7 @@ public static class Converter
         texture.GetDDSInformation(out source, out ImageSection[] sourceSections, game, 4);
         format ??= GetSurfaceFormatV4(sourceSections);
         texture.SaveAsDDS(inputDds.Path);
-        _ = CompressWithCompressonatorCli(inputDds.Path, convertedDds.Path,
+        _ = MagicWithCompressonatorCli(inputDds.Path, convertedDds.Path,
             format == T3SurfaceFormat.ETC1_RGB ? format.Value : T3SurfaceFormat.ARGB8);
         if (format == T3SurfaceFormat.ETC1_RGB)
         {
@@ -527,24 +543,32 @@ public static class Converter
         }
     }
 
-    public static D3DTXV9 ConvertDdsToD3dtx(string ddsFile, string? fontName = default)
-    {
-        return ConvertDdsToD3dtx(ddsFile, fontName, Games.WDS3NF);
-    }
-
-    public static D3DTXV9 ConvertDdsToD3dtx(string ddsFile, string? fontName, Games game)
+    public static ID3DTX ConvertDdsToD3dtx(string ddsFile, string? name, Games game, T3SurfaceFormat format)
     {
         ArgumentNullException.ThrowIfNull(ddsFile, nameof(ddsFile));
         CheckArgsExtension(ddsFile);
 
         DdsD3dtx ddsData;
-        D3DTXV9 result = new(game: game);
-        using TempFile etc2rgbaDds = new(ddsFile);
+        ID3DTX result = D3dtxFactory.CreateD3dtx(game);
+        using TempFile ddsResult = new(ddsFile);
 
-        _ = CompressWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
-        ddsData = GetD3dtxDataFormDds(etc2rgbaDds.Path);
-        result.MapDdsToD3dtxForFont(ddsData, fontName);
+        _ = MagicWithCompressonatorCli(ddsFile, ddsResult.Path, format);
+        ddsData = GetD3dtxDataFormDds(ddsResult.Path, format);
+        CallMapDdsToD3dtx();
         return result;
+        void CallMapDdsToD3dtx()
+        {
+            switch (result.Version)
+            {
+                case 9:
+                    ((D3DTXV9)result).MapDdsToD3dtx(ddsData, name);
+                    break;
+                case 4:
+                    ((D3DTXV4)result).MapDdsToD3dtx(ddsData, name, format);
+                    break;
+                default: throw new NotImplementedException($"This version({result.Version}) of D3dtx isn't implemented yet — come back later.");
+            }
+        }
         //local methods:
         static void CheckArgsExtension(string ddsFile)
         {
@@ -565,9 +589,9 @@ public static class Converter
         D3DTXV9 d3dtx = new(game: game);
         using TempFile etc2rgbaDds = new(ddsFile);
 
-        _ = CompressWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
-        ddsData = GetD3dtxDataFormDds(etc2rgbaDds.Path);
-        d3dtx.MapDdsToD3dtxForFont(ddsData, fontName);
+        _ = MagicWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
+        ddsData = GetD3dtxDataFormDds(etc2rgbaDds.Path, T3SurfaceFormat.ETC2_RGBA);
+        d3dtx.MapDdsToD3dtx(ddsData, fontName);
         d3dtx.WriteD3DTX(d3dtxFile);
         if (writeXml)
         {
@@ -604,7 +628,7 @@ public static class Converter
         return new Size((int)result.Metadata.Width, (int)result.Metadata.Height);
     }
 
-    public static bool CompressWithCompressonatorCli(string input, string output, T3SurfaceFormat format = T3SurfaceFormat.ETC2_RGBA, bool @throw = true)
+    public static bool MagicWithCompressonatorCli(string input, string output, T3SurfaceFormat format = T3SurfaceFormat.ETC2_RGBA, bool @throw = true)
     {
         string compressAlgo = format switch
         {
@@ -672,11 +696,18 @@ public static class Converter
         }
     }
 
-    private static DdsD3dtx GetD3dtxDataFormDds(string ddsFile)
+    private static DdsD3dtx GetD3dtxDataFormDds(string ddsFile, T3SurfaceFormat format)
     {
         DDS_HEADER ddsHeader = new();
         ddsHeader.Load_DDS_HEADER(ddsFile);
-        return new(ddsHeader.dwWidth, ddsHeader.dwHeight, ddsHeader.Get_DDS_DATA(ddsFile));
+        byte[] pixelData = ddsHeader.Get_DDS_DATA(ddsFile);
+
+        int len = Utils.GetBiggestDdsMipBytesLength((int)ddsHeader.dwWidth, (int)ddsHeader.dwHeight, format, out _);
+        //The point of adding this section is to make sure the first mip is always present! We don't care about the rest!
+        pixelData = pixelData.Slice(0, len);
+        ddsHeader.dwMipMapCount = 1;
+
+        return new(ddsHeader.dwWidth, ddsHeader.dwHeight, pixelData);
     }
 
     #endregion
