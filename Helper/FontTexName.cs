@@ -1,4 +1,5 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;
 
@@ -88,10 +89,10 @@ public class FontTexName
     {
         return $"{fontName}*{(bmfontMode ? bmpFontSparator : DefSeparator)}*{Converter.GetExtensionFromTextureType(fromTextureType)}";
     }
-    public static string GetFontTexOutputName(string fontName, TextureType toTextureType, bool bmpFontMode, int counter, D3DTXV9 d3dtxv9)
+    public static string GetFontTexOutputName(string fontName, TextureType toTextureType, bool bmpFontMode, int counter, ID3DTX d3dtxv)
     {
         return bmpFontMode ? $"{fontName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}" :
-                        $"{fontName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{d3dtxv9.mD3dtxMetaData.mName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
+                        $"{fontName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{d3dtxv.mD3dtxMetaData.mName}{(bmpFontMode ? bmpFontSparator : DefSeparator)}{counter}{Converter.GetExtensionFromTextureType(toTextureType)}";
     }
     #endregion
 }

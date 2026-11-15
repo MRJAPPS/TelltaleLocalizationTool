@@ -1,5 +1,6 @@
 ﻿using System.Xml.Serialization;
 using TelltaleLocalizationTool.Helper;
+using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
@@ -136,7 +137,7 @@ public class BmpFontFile
         List<BmpFontPage> result = new(font.mTexturePages.Count);
         for (int i = 0; i < font.mTexturePages.Count; ++i)
         {
-            D3DTXV9 texture = font.mTexturePages[i];
+            ID3DTX texture = font.mTexturePages[i];
             BmpFontPage fontPage = new()
             {
                 File = FontTexName.GetFontTexOutputName(font.mName, TextureType.DDS, true, i, texture),
@@ -181,7 +182,7 @@ public class BmpFontFile
         {
             throw new InvalidDataException("This font has no texture pages! I can't export an atlas that doesn't exist.");
         }
-        D3DTXV9 firstPage = font.mTexturePages.First();
+        ID3DTX firstPage = font.mTexturePages.First();
         _ = firstPage.mD3dtxMetaData.mTextureInfo.mWidth;
         _ = firstPage.mD3dtxMetaData.mTextureInfo.mHeight;
         foreach (GlyphInfo glyph in font.mGlyphInfos)
@@ -292,7 +293,7 @@ public class BmpFontFile
         foreach (BmpFontPage page in pages)
         {
             report?.Invoke(page, false);
-            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(Path.Combine(inputDirectory, page.File), fontTexNamePrefix, game));
+            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(Path.Combine(inputDirectory, page.File), fontTexNamePrefix, game, Utils.GetDefaultFormat(game)));
             report?.Invoke(page, true);
         }
 

@@ -569,7 +569,7 @@ public class CliProgram : Command<Options>
             ReportProgress(ctx, task, $"Importing atlas {page.Id}: {page.File}", cancellationToken);
             using TempFile tempAtlas = new(Path.ChangeExtension(page.File, Formats.ddsExtension));
             File.Copy(Path.Combine(inputDirectory, page.File), tempAtlas.Path, true);
-            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input), game));
+            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input), game, Utils.GetDefaultFormat(game)));
             task.Increment(1);
             ctx.Refresh();
         }

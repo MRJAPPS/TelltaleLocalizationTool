@@ -90,7 +90,7 @@ internal class ProgramTest
         _ = Path.Combine(Path.GetDirectoryName(outputBmp)!, $"{Path.GetFileNameWithoutExtension(outputBmp)}.from_dds_ETC2_RGBA{Formats.d3dtxExtension}");
         Converter.ConvertTextureFromD3DtxToOthers(firstOutputPath, outputBmp, new(), game);
         Converter.ConvertTextureFromOthersToD3DtxV9(outputBmp, outputD3dtxFromBmp, new(), game, Path.ChangeExtension(firstOutputPath, Formats.xmlExtension));
-        _ = Converter.CompressWithCompressonatorCli(outputBmp, outputDdsFromBmpETC2_RGBA);
+        _ = Converter.MagicWithCompressonatorCli(outputBmp, outputDdsFromBmpETC2_RGBA);
         // Step 2: Byte-by-byte comparison of original vs first output
         Console.WriteLine("Comparing original <-> first binary output...");
         bool firstEqual = CompareFilesByteByByte(inputPath, firstOutputPath);
