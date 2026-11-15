@@ -470,10 +470,11 @@ public static class Extensions
     }
 
     public static void ExportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string outputDirectory, Games game, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
+    public static void ExportTextures(this FontD3dtxCollection d3dtxList, string fontName, string outputDirectory, Games game, TextureType toTextureType = TextureType.DDS, bool bmpFontMode = false)
     {
         int counter = 0;
         _ = Directory.CreateDirectory(outputDirectory);
-        foreach (D3DTXV9 d3dtxv9 in d3dtxList)
+        foreach (D3DTXV9 d3dtxv9 in d3dtxList)//WatchOut! D3DTXV9->ID3DTX... TODO
         {
             bool autoPixelData = d3dtxv9.AutoPixelData;
             bool writeHeader = d3dtxv9.WriteMsv6Header;
@@ -501,7 +502,7 @@ public static class Extensions
 
     }
 
-    public static void ImportTextures(this FontD3dtxV9Collection d3dtxList, string fontName, string inputDirectory, TextureType fromTextureType = TextureType.DDS, bool bmfontMode = false)
+    public static void ImportTextures(this FontD3dtxCollection d3dtxList, string fontName, string inputDirectory, Games game, TextureType fromTextureType = TextureType.DDS, bool bmfontMode = false)
     {
         IEnumerable<FontTexName> fontTexNames = FontTexName.GetSortedTexFiles(inputDirectory,
             FontTexName.GetSearchPattern(fontName, fromTextureType, bmfontMode),
@@ -509,8 +510,8 @@ public static class Extensions
         foreach (FontTexName fontTexName in fontTexNames)
         {
             string input = fontTexName.FullPath;
-            D3DTXV9 d3dtxv9 = Converter.ConvertDdsToD3dtx(input, fontName);
-            d3dtxList.Add(d3dtxv9);
+            ID3DTX d3dtx = Converter.ConvertDdsToD3dtx(input, fontName, game, Utils.GetDefaultFormat(game));
+            d3dtxList.Add(d3dtx);
         }
     }
 

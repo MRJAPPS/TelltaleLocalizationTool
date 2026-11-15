@@ -110,7 +110,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 
     public GlyphInfoCollection mGlyphInfos { get; set; } = [];
 
-    public FontD3dtxV9Collection mTexturePages { get; set; } = [];
+    public FontD3dtxCollection mTexturePages { get; set; } = [];
 
     public bool mIsDistanceField { get; set; }
 

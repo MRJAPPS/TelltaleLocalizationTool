@@ -1,17 +1,14 @@
 ﻿using System.ComponentModel;
-using System.Reflection.PortableExecutable;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
-using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.Meta;
-using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 
 [Description("Got to the cool part — now I need to read the font textures!")]
-public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
+public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
 {
     #region Private constants
 
@@ -58,7 +55,7 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
     public void Parse(XmlElement reader, string name)
     {
         //TODO: Refactor this — the collection parsing pattern is the same everywhere, and you've written it for every single collection when you could just make this a function with a few parameters.
-        XmlElement myElement = reader.GetSingleElement(nameof(FontD3dtxV9Collection), name);
+        XmlElement myElement = reader.GetSingleElement(nameof(FontD3dtxCollection), name);
         foreach (XmlNode node in myElement.ChildNodes)
         {
             if (node is XmlElement itemElement && itemElement.Name == nameof(D3DTXV9))
@@ -84,7 +81,7 @@ public class FontD3dtxV9Collection() : TCollectionBase<D3DTXV9>, ITelltaleObject
     public void Write(XmlElement element, string name)
     {
         //TODO: Refactor this too...
-        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(FontD3dtxV9Collection));
+        XmlElement myElement = element.OwnerDocument.CreateElement(nameof(FontD3dtxCollection));
         myElement.SetAttribute(nameof(name), name);
         int counter = 0;
         foreach (D3DTXV9 item in Items)
