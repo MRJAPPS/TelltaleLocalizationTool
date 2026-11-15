@@ -13,7 +13,63 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
     private const int dwReserved1Len = 11;
     #endregion
 
-    #region Public
+    #region Public methods
+
+    public void SetMeToEtc1DefaultHeader(
+       uint dwWidth,
+       uint dwHeight,
+       uint pitchOrLinearSize)
+    {
+        dwFlags = 0x00081007;
+
+        this.dwWidth = dwWidth;
+        this.dwHeight = dwHeight;
+        dwPitchOrLinearSize = pitchOrLinearSize;
+
+        dwDepth = 1;
+        dwMipMapCount = 1;
+        dwReserved1 = new uint[dwReserved1Len];
+
+        // 32-byte pixel format, FourCC: "ETC ".
+        byte[] pixelFormatBytes = Convert.FromHexString(
+            "20000000" +
+            "04000000" +
+            "45544320" +
+            "00000000" +
+            "00000000" +
+            "00000000" +
+            "00000000" +
+            "00000000");
+
+        ddspf = new DDS_PIXELFORMAT();
+
+        using (var stream = new MemoryStream(pixelFormatBytes))
+        using (var reader = new BinaryReader(stream))
+        {
+            ddspf.Parse(reader);
+        }
+
+        dwCaps = 0x00001000;
+        dwCaps2 = 0;
+        dwCaps3 = 0;
+        dwCaps4 = 0;
+        dwReserved2 = 0;
+    }
+
+    public void WriteMeToDdsFile(string ddsFileName, IEnumerable<byte[]> mips)
+    {
+        using FileStream fs = new(ddsFileName, FileMode.Open, FileAccess.Write);
+        using BinaryWriter bw = new(fs);
+        Write(bw);
+        foreach (byte[] mip in mips)
+        {
+            bw.Write(mip);
+        }
+    }
+
+    #endregion
+
+    #region Public props
 
     /// <summary>
     /// Flags to indicate which members contain valid data.
@@ -109,8 +165,30 @@ public class DDS_HEADER : IParsable, IWriteable, ISize
 
     public void Write(BinaryWriter writer)
     {
-        throw new NotImplementedException($"We only use {nameof(DDS_HEADER)} to read and skip past the header, not to write it.");
+        ArgumentNullException.ThrowIfNull(writer);
+
+        writer.Write(ddsMagic);
+        writer.Write(124u); // Excludes magic.
+
+        writer.Write(dwFlags);
+        writer.Write(dwHeight);
+        writer.Write(dwWidth);
+        writer.Write(dwPitchOrLinearSize);
+        writer.Write(dwDepth);
+        writer.Write(dwMipMapCount);
+
+        for (int i = 0; i < dwReserved1Len; ++i)
+            writer.Write(dwReserved1[i]);
+
+        ddspf.Write(writer); // Must write exactly 32 bytes.
+
+        writer.Write(dwCaps);
+        writer.Write(dwCaps2);
+        writer.Write(dwCaps3);
+        writer.Write(dwCaps4);
+        writer.Write(dwReserved2);
     }
+
 
     public void Write(XmlElement element, string name)
     {

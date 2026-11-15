@@ -64,11 +64,12 @@ public class CliProgram : Command<Options>
     private static Games GetGame(string game, string fileType)
     {
         game = game.Trim().ToUpper();
-        if (game.Contains(',') || !Enum.TryParse(game, true, out Games value) || !Enum.IsDefined(value))
-        {
-            throw new ArgumentException($"I can't use game \"{game}\"! Use a name or number from Games: {string.Join(", ", Enum.GetValues<Games>().Select(item => $"{item} ({(int)item})"))}.");
-        }
-        return value != Games.WDS3NF && !(value == Games.WDS1 && fileType == Options.FileTypes.c_d3dtx) && !Debugger.IsAttached
+        return game.Contains(',') || !Enum.TryParse(game, true, out Games value) || !Enum.IsDefined(value)
+            ? throw new ArgumentException($"I can't use game \"{game}\"! Use a name or number from Games: {string.Join(", ", Enum.GetValues<Games>().Select(item => $"{item} ({(int)item})"))}.")
+            : value != Games.WDS3NF && !(value == Games.WDS1 && fileType == Options.FileTypes.c_d3dtx)
+#if DEBUG
+            && !Debugger.IsAttached
+#endif
             ? throw new NotSupportedException($"{value} isn't supported yet for this game!")
             : value;
     }
