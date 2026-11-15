@@ -1,4 +1,5 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
@@ -7,6 +8,55 @@ namespace TelltaleLocalizationTool.Helper;
 public static class Utils
 {
     #region Map
+
+    public static int GetBiggestDdsMipBytesLength(int width, int height, T3SurfaceFormat format, out int pitch, string? errorMessage = null)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            throw new ArgumentOutOfRangeException($"{nameof(width)}({width}) and {nameof(height)}({height}) must be greater than zero! thank you for your attention to this matter...");
+        }
+
+        const int blockDimension = 4;
+        const int etc1BytesPerBlock = 8;
+        const int etc2BytesPerBlock = 16;
+        const int argb8BytesPerPixel = 4;
+        const int argb4BytesPerPixel = 2;
+
+        switch (format)
+        {
+            case T3SurfaceFormat.ETC1_RGB:
+                {//https://registry.khronos.org/OpenGL/extensions/OES/OES_compressed_ETC1_RGB8_texture.txt
+                    int blocksWide = (width + blockDimension - 1) / blockDimension;
+                    int blocksHigh = (height + blockDimension - 1) / blockDimension;
+                    pitch = blocksWide * etc1BytesPerBlock;
+                    return pitch * blocksHigh;
+                }
+
+            case T3SurfaceFormat.ETC2_RGBA:
+                {//https://registry.khronos.org/OpenGL-Refpages/es3.0/html/glCompressedTexImage2D.xhtml (for 8bitAlpha)
+                    int blocksWide = (width + blockDimension - 1) / blockDimension;
+                    int blocksHigh = (height + blockDimension - 1) / blockDimension;
+                    pitch = blocksWide * etc2BytesPerBlock;
+                    return pitch * blocksHigh;
+                }
+            //https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
+            //https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dformat#unsigned-formats
+            case T3SurfaceFormat.ARGB8:
+                {
+                    pitch = width * argb8BytesPerPixel;
+                    return pitch * height;
+                }
+
+            case T3SurfaceFormat.ARGB4:
+                {
+                    pitch = width * argb4BytesPerPixel;
+                    return pitch * height;
+                }
+
+            default:
+                throw new FormatException(errorMessage ?? $"GetBiggestDdsMipBytesLength error: Unsupported format '{format}'.");
+        }
+    }
 
     public static T3SurfaceFormat GetDefaultFormat(Games game)
     {
