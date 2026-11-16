@@ -66,11 +66,6 @@ public class CliProgram : Command<Options>
         game = game.Trim().ToUpper();
         return game.Contains(',') || !Enum.TryParse(game, true, out Games value) || !Enum.IsDefined(value)
             ? throw new ArgumentException($"I can't use game \"{game}\"! Use a name or number from Games: {string.Join(", ", Enum.GetValues<Games>().Select(item => $"{item} ({(int)item})"))}.")
-            : value != Games.WDS3NF && !(value == Games.WDS1 && fileType == Options.FileTypes.c_d3dtx)
-#if DEBUG
-            && !Debugger.IsAttached
-#endif
-            ? throw new NotSupportedException($"{value} isn't supported yet for this game!")
             : value;
     }
 
