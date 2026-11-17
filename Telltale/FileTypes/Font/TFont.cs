@@ -250,7 +250,6 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         {
             return;
         }
-        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv6Header)
         {
@@ -266,6 +265,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
             };
             Header = defaultHeaderForWalkingDead3NewF;
         }
+        Utils.CheckHeader(game, Header);
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(defaultSectionChunkSize, debugSectionChunkSize, asyncSectionChunkSize);

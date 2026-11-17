@@ -226,7 +226,6 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         {
             return;
         }
-        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv5Header)
         {
@@ -242,6 +241,7 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
             };
             Header = defaultHeaderForWalkingDead1;
         }
+        Utils.CheckHeader(game, Header);
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(mD3dtxMetaData.Size, debugSectionChunkSize, asyncSectionChunkSize);

@@ -269,7 +269,6 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         {
             return;
         }
-        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv6Header)
         {
@@ -278,11 +277,14 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         else if (Header == null)
         {
             //Recreate header
-            MSV6 defaultHeaderForWalkingDead3NewF = new();
-            defaultHeaderForWalkingDead3NewF.mClassNamesLength = (uint)mDefaultClassNamesWD3.Length;
-            defaultHeaderForWalkingDead3NewF.mClassNames = mDefaultClassNamesWD3;
+            MSV6 defaultHeaderForWalkingDead3NewF = new()
+            {
+                mClassNamesLength = (uint)mDefaultClassNamesWD3.Length,
+                mClassNames = mDefaultClassNamesWD3
+            };
             Header = defaultHeaderForWalkingDead3NewF;
         }
+        Utils.CheckHeader(game, Header);
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(mD3dtxMetaData.Size, debugSectionChunkSize, asyncSectionChunkSize);
