@@ -1,6 +1,5 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
-using System.Diagnostics;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
@@ -171,9 +170,9 @@ public class CliProgram : Command<Options>
         }
     }
 
-    private static void CheckOutput(string output)
+    private static void CheckOutput(string output, bool force = false)
     {
-        if (File.Exists(output) || Directory.Exists(output))
+        if (Directory.Exists(output) || (File.Exists(output) && !force))
         {
             throw new IOException($"\"{output}\" already exists! Choose another output path.");
         }
@@ -342,21 +341,21 @@ public class CliProgram : Command<Options>
                     current = ctx.AddTask(Markup.Escape(Path.GetFileName(input)), maxValue: 3);
                     try
                     {
-                        CheckOutput(output);
+                        CheckOutput(output, settings.Force);
                         SimpleAnsiConsole.ShowInfo($"{settings.Mode}: \"{input}\"");
                         switch (settings.FileType)
                         {
                             case Options.FileTypes.c_landb:
-                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken);
+                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, settings.Force);
                                 break;
                             case Options.FileTypes.c_font:
-                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken);
+                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, settings.Force);
                                 break;
                             case Options.FileTypes.c_ttf:
-                                ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, cancellationToken);
+                                ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, cancellationToken, settings.Force);
                                 break;
                             case Options.FileTypes.c_d3dtx:
-                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, GetSurfaceFormat(settings.Format));
+                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, GetSurfaceFormat(settings.Format), settings.Force);
                                 break;
                         }
                         success++;
@@ -402,18 +401,18 @@ public class CliProgram : Command<Options>
         ctx.Refresh();
     }
 
-    private static void SaveResult(TempFile temp, string output, CancellationToken cancellationToken)
+    private static void SaveResult(TempFile temp, string output, CancellationToken cancellationToken, bool force)
     {
         cancellationToken.ThrowIfCancellationRequested();
         _ = Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-        File.Copy(temp.Path, output);
+        File.Copy(temp.Path, output, force);
     }
 
     #endregion
 
     #region Landb
 
-    private static void ProcessLandb(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessLandb(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, bool force)
     {
         Landb landb = new(rMsv6Header: !import, game: game);
         XmlDocument doc = new();
@@ -457,7 +456,7 @@ public class CliProgram : Command<Options>
         {
             doc.Save(temp.Path);
         }
-        SaveResult(temp, output, cancellationToken);
+        SaveResult(temp, output, cancellationToken, force);
         task.Increment(1);
     }
 
@@ -465,7 +464,7 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessTtf(string input, string output, float glyphSize, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessTtf(string input, string output, float glyphSize, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, bool force)
     {
         task.IsIndeterminate = true;
         TFont font;
@@ -482,7 +481,7 @@ public class CliProgram : Command<Options>
         ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
         using TempFile temp = new(output);
         font.WriteTFont(temp.Path);
-        SaveResult(temp, output, cancellationToken);
+        SaveResult(temp, output, cancellationToken, force);
         task.Increment(1);
     }
 
@@ -613,7 +612,7 @@ public class CliProgram : Command<Options>
         }
     }
 
-    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, T3SurfaceFormat? surfaceFormat)
+    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, T3SurfaceFormat? surfaceFormat, bool force)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
@@ -631,7 +630,7 @@ public class CliProgram : Command<Options>
             {
                 throw new FileNotFoundException($"Your texture needs its {Formats.d3dtxXmlExtension} file next to it! I can't guess the original metadata.");
             }
-            d3dtx.LoadD3DTXXML(xmlFile);
+            d3dtx.LoadFromXML(xmlFile);
             task.Increment(1);
             ReportProgress(ctx, task, "Importing d3dtx texture and metadata...", cancellationToken);
             Texture texture = new(input, Converter.GetTextureTypeFromExtension(input.ToLowerInvariant()));
@@ -669,16 +668,17 @@ public class CliProgram : Command<Options>
             }
             task.Increment(1);
             ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
-            d3dtx.WriteD3DTX(temp.Path);
-            SaveResult(temp, output, cancellationToken);
+            d3dtx.WriteToFile(temp.Path);
+            SaveResult(temp, output, cancellationToken, force);
         }
         else
         {
             CheckOutputTexFormat(output);
             string xmlFile = Path.ChangeExtension(output, Formats.d3dtxXmlExtension);
-            CheckOutput(xmlFile);
+            CheckOutput(xmlFile, force);
+            bool xmlAlreadyExisted = File.Exists(xmlFile);
             using TempFile tempXml = new(xmlFile);
-            d3dtx.LoadD3DTX(input);
+            d3dtx.LoadFromFile(input);
             task.Increment(1);
             ReportProgress(ctx, task, "Exporting d3dtx texture...", cancellationToken);
             DDS_Master dds = new(d3dtx);
@@ -710,19 +710,19 @@ public class CliProgram : Command<Options>
                     texture.Release();
                 }
             }
-            d3dtx.WriteD3DTXXML(tempXml.Path);
+            d3dtx.WriteToXML(tempXml.Path);
             task.Increment(1);
             ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)} and metadata...", cancellationToken);
             bool savedXml = false;
             try
             {
-                SaveResult(tempXml, xmlFile, cancellationToken);
+                SaveResult(tempXml, xmlFile, cancellationToken, force);
                 savedXml = true;
-                SaveResult(temp, output, cancellationToken);
+                SaveResult(temp, output, cancellationToken, force);
             }
             catch
             {
-                if (savedXml)
+                if (savedXml && !xmlAlreadyExisted)
                 {
                     try
                     {
@@ -743,7 +743,7 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessFont(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
+    private static void ProcessFont(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, bool force)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
@@ -774,7 +774,7 @@ public class CliProgram : Command<Options>
             for (int i = 0; i < bmpFont.Pages.Count; ++i)
             {
                 bmpFont.Pages[i].File = $"{fontName}_{i}{Formats.ddsExtension}";
-                CheckOutput(Path.Combine(outputFntsDir.FullName, bmpFont.Pages[i].File));
+                CheckOutput(Path.Combine(outputFntsDir.FullName, bmpFont.Pages[i].File), force);
             }
             BmpFontFile.SerializeToXml(bmpFont, temp.Path);
             task.Increment(1);
@@ -796,11 +796,15 @@ public class CliProgram : Command<Options>
                 {
                     string atlas = Path.Combine(outputFntsDir.FullName, bmpFont.Pages[i].File);
                     ReportProgress(ctx, task, $"Saving atlas {i}: {bmpFont.Pages[i].File}", cancellationToken);
-                    SaveResult(tempAtlases[i], atlas, cancellationToken);
-                    savedAtlases.Add(atlas);
+                    bool atlasAlreadyExisted = File.Exists(atlas);
+                    SaveResult(tempAtlases[i], atlas, cancellationToken, force);
+                    if (!atlasAlreadyExisted)
+                    {
+                        savedAtlases.Add(atlas);
+                    }
                 }
                 ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
-                SaveResult(temp, output, cancellationToken);
+                SaveResult(temp, output, cancellationToken, force);
             }
             catch
             {
@@ -828,7 +832,7 @@ public class CliProgram : Command<Options>
             task.Increment(1);
             return;
         }
-        SaveResult(temp, output, cancellationToken);
+        SaveResult(temp, output, cancellationToken, force);
         task.Increment(1);
     }
 
@@ -843,8 +847,8 @@ public class CliProgram : Command<Options>
             .AddColumn(new TableColumn("[bold]Item[/]").NoWrap())
             .AddColumn(new TableColumn("[bold]Description[/]"));
 
-        (string Item, string Desc)[] commandsRows = new (string Item, string Desc)[]
-        {
+        (string Item, string Desc)[] commandsRows =
+        [
         ("[cyan]github[/]",  $"[bold green underline]{Config.GithubPage}[/]"),
         ("[cyan]landb[/]",   "export .landb to XML, then import your translated XML back to .landb."),
         ("[cyan]font[/]",    "export .font to .fnt (XML) and DDS atlases, then import .fnt back to .font."),
@@ -857,7 +861,7 @@ public class CliProgram : Command<Options>
         ("[grey]info[/]",    "[grey]Use --batch for folders and --relative to include subfolders and keep their paths.[/]"),
         ("[grey]game[/]",    "[grey]Use --game or -g with WDS3NF (0) or WDS1 (1). WDS1 supports d3dtx version 4.[/]"),
         ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them.[/]"),
-        };
+        ];
 
         AnsiConsole.Live(commandsTable)
             .AutoClear(false)
