@@ -346,16 +346,16 @@ public class CliProgram : Command<Options>
                         switch (settings.FileType)
                         {
                             case Options.FileTypes.c_landb:
-                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, settings.Force);
+                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
                                 break;
                             case Options.FileTypes.c_font:
-                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, settings.Force);
+                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
                                 break;
                             case Options.FileTypes.c_ttf:
-                                ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, cancellationToken, settings.Force);
+                                ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, settings.Force, cancellationToken);
                                 break;
                             case Options.FileTypes.c_d3dtx:
-                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, cancellationToken, GetSurfaceFormat(settings.Format), settings.Force);
+                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, GetSurfaceFormat(settings.Format), settings.Force, cancellationToken);
                                 break;
                         }
                         success++;
@@ -401,7 +401,7 @@ public class CliProgram : Command<Options>
         ctx.Refresh();
     }
 
-    private static void SaveResult(TempFile temp, string output, CancellationToken cancellationToken, bool force)
+    private static void SaveResult(TempFile temp, string output, bool force, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         _ = Directory.CreateDirectory(Path.GetDirectoryName(output)!);
@@ -412,7 +412,7 @@ public class CliProgram : Command<Options>
 
     #region Landb
 
-    private static void ProcessLandb(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, bool force)
+    private static void ProcessLandb(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
     {
         Landb landb = new(rMsv6Header: !import, game: game);
         XmlDocument doc = new();
@@ -456,7 +456,7 @@ public class CliProgram : Command<Options>
         {
             doc.Save(temp.Path);
         }
-        SaveResult(temp, output, cancellationToken, force);
+        SaveResult(temp, output, force, cancellationToken);
         task.Increment(1);
     }
 
@@ -464,7 +464,7 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessTtf(string input, string output, float glyphSize, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, bool force)
+    private static void ProcessTtf(string input, string output, float glyphSize, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
     {
         task.IsIndeterminate = true;
         TFont font;
@@ -481,7 +481,7 @@ public class CliProgram : Command<Options>
         ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
         using TempFile temp = new(output);
         font.WriteTFont(temp.Path);
-        SaveResult(temp, output, cancellationToken, force);
+        SaveResult(temp, output, force, cancellationToken);
         task.Increment(1);
     }
 
@@ -612,7 +612,7 @@ public class CliProgram : Command<Options>
         }
     }
 
-    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, T3SurfaceFormat? surfaceFormat, bool force)
+    private static void ProcessD3dtx(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, T3SurfaceFormat? surfaceFormat, bool force, CancellationToken cancellationToken)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
@@ -669,7 +669,7 @@ public class CliProgram : Command<Options>
             task.Increment(1);
             ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
             d3dtx.WriteToFile(temp.Path);
-            SaveResult(temp, output, cancellationToken, force);
+            SaveResult(temp, output, force, cancellationToken);
         }
         else
         {
@@ -716,9 +716,9 @@ public class CliProgram : Command<Options>
             bool savedXml = false;
             try
             {
-                SaveResult(tempXml, xmlFile, cancellationToken, force);
+                SaveResult(tempXml, xmlFile, force, cancellationToken);
                 savedXml = true;
-                SaveResult(temp, output, cancellationToken, force);
+                SaveResult(temp, output, force, cancellationToken);
             }
             catch
             {
@@ -743,7 +743,7 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessFont(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken, bool force)
+    private static void ProcessFont(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
     {
         string inputFileName = Path.GetFileName(input);
         ReportProgress(ctx, task, $"Reading {inputFileName}...", cancellationToken);
@@ -797,14 +797,14 @@ public class CliProgram : Command<Options>
                     string atlas = Path.Combine(outputFntsDir.FullName, bmpFont.Pages[i].File);
                     ReportProgress(ctx, task, $"Saving atlas {i}: {bmpFont.Pages[i].File}", cancellationToken);
                     bool atlasAlreadyExisted = File.Exists(atlas);
-                    SaveResult(tempAtlases[i], atlas, cancellationToken, force);
+                    SaveResult(tempAtlases[i], atlas, force, cancellationToken);
                     if (!atlasAlreadyExisted)
                     {
                         savedAtlases.Add(atlas);
                     }
                 }
                 ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
-                SaveResult(temp, output, cancellationToken, force);
+                SaveResult(temp, output, force, cancellationToken);
             }
             catch
             {
@@ -832,7 +832,7 @@ public class CliProgram : Command<Options>
             task.Increment(1);
             return;
         }
-        SaveResult(temp, output, cancellationToken, force);
+        SaveResult(temp, output, force, cancellationToken);
         task.Increment(1);
     }
 
