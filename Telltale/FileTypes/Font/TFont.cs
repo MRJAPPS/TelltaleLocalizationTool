@@ -159,11 +159,17 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         mbUnicode = ByteFunctions.ReadTelltaleBoolean(reader);
         mHeight = reader.ReadSingle();
         mBase = reader.ReadSingle();
-        mWiiScale = reader.ReadSingle();
+
+        if (game != Games.WDS1)
+            mWiiScale = reader.ReadSingle();
+
         mFontScale = reader.ReadSingle();
         mGlyphInfos.Parse(reader);
         mTexturePages.ParseMetadata(reader);
-        mIsDistanceField = ByteFunctions.ReadTelltaleBoolean(reader);//TODO: TBOOL
+
+        if (game != Games.WDS1)
+            mIsDistanceField = ByteFunctions.ReadTelltaleBoolean(reader);//TODO: TBOOL
+
         mTexturePages.ParsePixelData(reader);
 
         Report(this);
@@ -245,7 +251,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     }
 
     public void WriteMetaHeader(BinaryWriter writer)
-    {       
+    {
         if (!wMsv6Header)
         {
             return;

@@ -104,7 +104,9 @@ public class FontD3dtxCollection : TCollectionBase<ID3DTX>, ITelltaleObject
         {
             ID3DTX d3dtx = D3dtxFactory.CreateD3dtx(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."));
 
-            d3dtx.GetType().GetProperty(nameof(ID3DTX.msCtx), BindingFlags.Instance | BindingFlags.Public)!.SetValue(d3dtx, msCtx);
+            d3dtx.WriteMsvHeader = true;
+            d3dtx.ReadMsvHeader = false;
+            d3dtx.GetType().GetProperty(nameof(ID3DTX.msCtx), BindingFlags.Instance | BindingFlags.Public)!.SetValue(d3dtx, msCtx);//TODO: make setter public
             d3dtx.ShareMetaStreamContext();
            
             d3dtx.mD3dtxMetaData.Parse(reader);
