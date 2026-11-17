@@ -64,11 +64,7 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
 
     #region public props
 
-    public bool AutoPixelData { get => autoPixelData; set => autoPixelData = value; }
-
-    public bool ReadMsv6Header { get => rMsv6Header; set => rMsv6Header = value; }
-
-    public bool WriteMsv6Header { get => wMsv6Header; set => wMsv6Header = value; }
+    public D3DTXV9Metadata mD3dtxMetaData { get; set; } = new(MyVersion);
 
     #endregion
 
@@ -80,6 +76,12 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
 
     #region Implement
 
+    public bool AutoPixelData { get => autoPixelData; set => autoPixelData = value; }
+
+    public bool ReadMsvHeader { get => rMsv6Header; set => rMsv6Header = value; }
+
+    public bool WriteMsvHeader { get => wMsv6Header; set => wMsv6Header = value; }
+
     public MetaStreamContext? msCtx { get; protected set; } = new(game);
 
     MetaStreamContext? ITelltaleObject.msCtx
@@ -87,9 +89,6 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         get => msCtx;
         set => msCtx = value;
     }
-
-
-    public D3DTXV9Metadata mD3dtxMetaData { get; set; } = new(MyVersion);
 
     D3DTXMetadata ID3DTX.mD3dtxMetaData => mD3dtxMetaData;
 

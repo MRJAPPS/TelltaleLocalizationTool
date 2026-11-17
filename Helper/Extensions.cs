@@ -461,8 +461,8 @@ public static class Extensions
                     //========= PixelData =========
                     d3dtx.mPixelData.Add(ddsData.PixelData);
                     //========= D3dtx =========
-                    d3dtx.ReadMsv5Header = false;
-                    d3dtx.WriteMsv5Header = true;
+                    d3dtx.ReadMsvHeader = false;
+                    d3dtx.WriteMsvHeader = true;
                 }
                 break;
             default: throw new NotImplementedException($"I still can't build a {nameof(D3DTXV4)} file from an empty DDS for game {nameof(d3dtx.msCtx.Game)}!");
@@ -532,8 +532,8 @@ public static class Extensions
                     //========= PixelData =========
                     d3dtx.mPixelData.Add(ddsData.PixelData);
                     //========= D3dtx =========
-                    d3dtx.ReadMsv6Header = false;
-                    d3dtx.WriteMsv6Header = true;
+                    d3dtx.ReadMsvHeader = false;
+                    d3dtx.WriteMsvHeader = true;
                 }
                 break;
             default: throw new NotImplementedException($"I still can't build a d3dtx(version 9) file from an empty DDS for game {nameof(d3dtx.msCtx.Game)}!");
@@ -544,13 +544,13 @@ public static class Extensions
     {
         int counter = 0;
         _ = Directory.CreateDirectory(outputDirectory);
-        foreach (D3DTXV9 d3dtxv9 in d3dtxList)//WatchOut! D3DTXV9->ID3DTX... TODO
+        foreach (ID3DTX d3dtxv in d3dtxList)
         {
-            bool autoPixelData = d3dtxv9.AutoPixelData;
-            bool writeHeader = d3dtxv9.WriteMsv6Header;
+            bool autoPixelData = d3dtxv.AutoPixelData;
+            bool writeHeader = d3dtxv.WriteMsvHeader;
             //I know I could add an in-memory method to the Converter class for converting D3dtx to any format, but I prefer using it this way...
-            string outputName = FontTexName.GetFontTexOutputName(fontName, toTextureType, bmpFontMode, counter, d3dtxv9);
-            string outputD3dtxName = $"{d3dtxv9.mD3dtxMetaData.mName}{Converter.GetExtensionFromTextureType(TextureType.D3DTX)}";
+            string outputName = FontTexName.GetFontTexOutputName(fontName, toTextureType, bmpFontMode, counter, d3dtxv);
+            string outputD3dtxName = $"{d3dtxv.mD3dtxMetaData.mName}{Converter.GetExtensionFromTextureType(TextureType.D3DTX)}";
 
             string finalOutput = Path.Combine(outputDirectory, outputName);
             string tempD3dtxPath = Path.Combine(outputDirectory, outputD3dtxName);
@@ -559,11 +559,11 @@ public static class Extensions
             using FileStream tempFs = new(tempD3dtx.Path, FileMode.Create, FileAccess.Write);
             using BinaryWriter d3dtxTempW = new(tempFs);
 
-            d3dtxv9.AutoPixelData = true;
-            d3dtxv9.WriteMsv6Header = true;
-            d3dtxv9.Write(d3dtxTempW);
-            d3dtxv9.WriteMsv6Header = false;
-            d3dtxv9.AutoPixelData = autoPixelData;
+            d3dtxv.AutoPixelData = true;
+            d3dtxv.WriteMsvHeader = true;
+            d3dtxv.Write(d3dtxTempW);
+            d3dtxv.WriteMsvHeader = false;
+            d3dtxv.AutoPixelData = autoPixelData;
 
             d3dtxTempW.Close();
             Converter.ConvertTextureFromD3DtxToOthers(tempD3dtx.Path, finalOutput, new(), game);

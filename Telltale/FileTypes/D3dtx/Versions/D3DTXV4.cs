@@ -38,12 +38,6 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
 
     #region public props
 
-    public bool AutoPixelData { get => autoPixelData; set => autoPixelData = value; }
-
-    public bool ReadMsv5Header { get => rMsv5Header; set => rMsv5Header = value; }
-
-    public bool WriteMsv5Header { get => wMsv5Header; set => wMsv5Header = value; }
-
     public D3DTXV4Metadata mD3dtxMetaData { get; set; } = new(MyVersion);
 
     #endregion
@@ -55,6 +49,12 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
     #endregion
 
     #region Implement
+
+    public bool AutoPixelData { get => autoPixelData; set => autoPixelData = value; }
+
+    public bool ReadMsvHeader { get => rMsv5Header; set => rMsv5Header = value; }
+
+    public bool WriteMsvHeader { get => wMsv5Header; set => wMsv5Header = value; }
 
     public MetaStreamContext? msCtx { get; protected set; } = new(game);
 

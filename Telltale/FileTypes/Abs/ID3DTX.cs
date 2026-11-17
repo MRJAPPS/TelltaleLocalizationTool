@@ -11,6 +11,12 @@ public interface ID3DTX : ITelltaleFile
 
     #region Common
 
+    public bool AutoPixelData { get; set; }
+
+    public bool WriteMsvHeader { get; set; }
+
+    public bool ReadMsvHeader { get; set; }
+
     D3DTXMetadata mD3dtxMetaData { get; }
 
     public List<byte[]> mPixelData { get; set; }

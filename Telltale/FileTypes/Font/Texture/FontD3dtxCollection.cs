@@ -1,19 +1,21 @@
 ﻿using System.ComponentModel;
+using System.Reflection;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.Meta;
 
 namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 
 [Description("Got to the cool part — now I need to read the font textures!")]
-public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
+public class FontD3dtxCollection : TCollectionBase<ID3DTX>, ITelltaleObject
 {
     #region Private constants
 
-    private const uint FontD3dtxV9CollectionSizeInFile = sizeof(uint);
-    private const uint FontD3dtxV9CollectionLenInFile = sizeof(uint);
+    private const uint FontD3dtxCollectionSizeInFile = sizeof(uint);
+    private const uint FontD3dtxCollectionLenInFile = sizeof(uint);
 
     #endregion
 
@@ -31,16 +33,16 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
     {
         get
         {
-            uint size = FontD3dtxV9CollectionSizeInFile + FontD3dtxV9CollectionLenInFile;
-            foreach (D3DTXV9 d3dtxv9 in Items)
+            uint size = FontD3dtxCollectionSizeInFile + FontD3dtxCollectionLenInFile;
+            foreach (ID3DTX d3dtx in Items)
             {
-                size += d3dtxv9.Size;
+                size += d3dtx.Size;
             }
             return size;
         }
     }
 
-    public uint HeaderSizeSum => (uint)Items.Sum(item => item.mD3dtxMetaData.Size) + FontD3dtxV9CollectionSizeInFile + FontD3dtxV9CollectionLenInFile;
+    public uint HeaderSizeSum => (uint)Items.Sum(item => item.mD3dtxMetaData.Size) + FontD3dtxCollectionSizeInFile + FontD3dtxCollectionLenInFile;
 
     public uint PixelDataSizeSum => Size - HeaderSizeSum;
 
@@ -58,12 +60,12 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
         XmlElement myElement = reader.GetSingleElement(nameof(FontD3dtxCollection), name);
         foreach (XmlNode node in myElement.ChildNodes)
         {
-            if (node is XmlElement itemElement && itemElement.Name == nameof(D3DTXV9))
+            if (node is XmlElement itemElement && itemElement.Name == nameof(ID3DTX))
             {
                 string itemName = itemElement.GetAttribute(nameof(name));
-                D3DTXV9 d3dtxv9 = new(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."));
-                d3dtxv9.Parse(myElement, itemName);
-                Items.Add(d3dtxv9);
+                ID3DTX d3dtxv = D3dtxFactory.CreateD3dtx(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."));
+                d3dtxv.Parse(myElement, itemName);
+                Items.Add(d3dtxv);
             }
         }
     }
@@ -84,7 +86,7 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(FontD3dtxCollection));
         myElement.SetAttribute(nameof(name), name);
         int counter = 0;
-        foreach (D3DTXV9 item in Items)
+        foreach (ID3DTX item in Items)
         {
             item.Write(myElement, $"{nameof(item)}_{counter++}");
         }
@@ -100,9 +102,13 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
         Items = new(length);
         for (int i = 0; i < length; ++i)
         {
-            D3DTXV9 d3dtxv9 = new(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."), false, false, false);
-            d3dtxv9.mD3dtxMetaData.Parse(reader);
-            Items.Add(d3dtxv9);
+            ID3DTX d3dtx = D3dtxFactory.CreateD3dtx(msCtx?.Game ?? throw new NullReferenceException("Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to msCtx part! You can report this bug to me."));
+
+            d3dtx.GetType().GetProperty(nameof(ID3DTX.msCtx), BindingFlags.Instance | BindingFlags.Public)!.SetValue(d3dtx, msCtx);
+            d3dtx.ShareMetaStreamContext();
+           
+            d3dtx.mD3dtxMetaData.Parse(reader);
+            Items.Add(d3dtx);
         }
 
         Report(this, extra: nameof(ParseMetadata));
@@ -114,7 +120,7 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
         Position = reader.BaseStream.Position;
 
         //Now we need to read AsyncData — which is really just reading PixelData for each texture, in the same order we read them before.
-        foreach (D3DTXV9 item in Items)
+        foreach (ID3DTX item in Items)
         {
             item.ParsePixelDatas(reader);
         }
@@ -130,9 +136,9 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
         writer.Write(HeaderSizeSum);
         writer.Write(Items.Count);
 
-        foreach (D3DTXV9 d3dtxv9 in Items)
+        foreach (ID3DTX d3dtxv in Items)
         {
-            d3dtxv9.mD3dtxMetaData.Write(writer);
+            d3dtxv.mD3dtxMetaData.Write(writer);
         }
 
         Report(this, true, nameof(WriteMetaData));
@@ -144,9 +150,9 @@ public class FontD3dtxCollection() : TCollectionBase<ID3DTX>, ITelltaleObject
         Position = writer.BaseStream.Position;
 
         //Now we need to write AsyncData — which is really just writing PixelData for each texture, in the same order we read them before.
-        foreach (D3DTXV9 d3dtxv9 in Items)
+        foreach (ID3DTX d3dtxv in Items)
         {
-            d3dtxv9.WritePixelDatas(writer);
+            d3dtxv.WritePixelDatas(writer);
         }
 
         Report(this, extra: nameof(WritePixelData));
