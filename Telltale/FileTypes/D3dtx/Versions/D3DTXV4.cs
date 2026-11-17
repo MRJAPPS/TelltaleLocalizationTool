@@ -81,7 +81,6 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
-        this.ShareMetaStreamContext();
 
         mD3dtxMetaData.Parse(reader);
 
@@ -98,7 +97,10 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         XmlElement myElement = reader.GetSingleElement(nameof(D3DTXV4), name);
 
         ParseBasicTypes(myElement);
+        
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv5Header);
+        Utils.CheckHeader(game, Header);
+
         msCtx ??= new(game);
         if (Header != null)
         {
@@ -151,6 +153,8 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         mD3dtxMetaData.Write(myElement, nameof(mD3dtxMetaData));
 
         AppendBasicTypes(myElement);
+
+        Utils.CheckHeader(game, Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv5Header);
 
         AppendPixelData(myElement);
@@ -222,6 +226,7 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         {
             return;
         }
+        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv5Header)
         {
@@ -250,12 +255,15 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
     {
         if (!rMsv5Header)
         {
+            this.ShareMetaStreamContext();
             return;
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
+        Utils.CheckHeader(game, Header);
+        Utils.CheckSectionsV56($"The sections({nameof(D3DTXV4)} are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }
 

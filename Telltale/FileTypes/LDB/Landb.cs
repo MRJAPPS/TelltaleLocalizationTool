@@ -3,6 +3,7 @@ using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Localize;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.DData;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes;
@@ -120,8 +121,6 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
-        Utils.CheckHeader(game, Header);
-        this.ShareMetaStreamContext();
 
         mLanguageDB.Parse(reader);
         mLanguageResources.Parse(reader);
@@ -166,7 +165,6 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         this.ShareMetaStreamContext();
         Position = writer.BaseStream.Position;
 
-        Utils.CheckHeader(game, Header);
         WriteMetaHeader(writer);
 
         mLanguageDB.Write(writer);
@@ -247,12 +245,15 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     {
         if (!rMsv6Header)
         {
+            this.ShareMetaStreamContext();
             return;
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
+        Utils.CheckHeader(game, Header);
+        Utils.CheckSectionsV56($"The sections({nameof(D3DTXV4)} are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }
 
@@ -262,6 +263,7 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         {
             return;
         }
+        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv6Header)
         {

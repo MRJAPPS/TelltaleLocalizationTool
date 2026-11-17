@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
@@ -107,8 +108,6 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
-        this.ShareMetaStreamContext();
-
 
         mD3dtxMetaData.Parse(reader);
 
@@ -126,6 +125,8 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
 
         ParseBasicTypes(myElement);
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
+        Utils.CheckHeader(game, Header);
+
         msCtx ??= new(game);
         if (Header != null)
         {
@@ -178,6 +179,7 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         mD3dtxMetaData.Write(myElement, nameof(mD3dtxMetaData));
 
         AppendBasicTypes(myElement);
+        Utils.CheckHeader(game, Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
 
         AppendPixelData(myElement);
@@ -268,6 +270,7 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
         {
             return;
         }
+        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv6Header)
         {
@@ -294,12 +297,15 @@ public class D3DTXV9(Games game, bool autoPixelData = true, bool rMsv6Header = t
     {
         if (!rMsv6Header)
         {
+            this.ShareMetaStreamContext();
             return;
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
+        Utils.CheckHeader(game, Header);
+        Utils.CheckSectionsV56($"The sections({nameof(D3DTXV9)}) are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }
 

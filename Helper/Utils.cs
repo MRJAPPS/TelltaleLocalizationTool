@@ -1,4 +1,5 @@
-﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
+﻿using System.Reflection.PortableExecutable;
+using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
@@ -71,6 +72,28 @@ public static class Utils
     #endregion
 
     #region Checking
+
+    public static void CheckSectionsV56(string errorMessage, IMetaHeader? header, long fileLen, long filePos)
+
+    {
+        if (header is MSV6 hdr6)
+        {
+            long sectionSize = (long)hdr6.mDefaultSectionChunkSize + hdr6.mDebugSectionChunkSize + hdr6.mAsyncSectionChunkSize;
+            if (sectionSize > fileLen - filePos)
+            {
+                throw new EndOfStreamException(errorMessage);
+            }
+        }
+        else if (header is MSV5 hdr5)
+        {
+            long sectionSize = (long)hdr5.mDefaultSectionChunkSize + hdr5.mDebugSectionChunkSize + hdr5.mAsyncSectionChunkSize;
+            if (sectionSize > fileLen - filePos)
+            {
+                throw new EndOfStreamException(errorMessage);
+            }
+        }
+    }
+
 
     public static void CheckHeader(Games game, IMetaHeader? header)
     {

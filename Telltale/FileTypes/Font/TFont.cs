@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection.PortableExecutable;
 using System.Xml;
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
@@ -150,7 +151,6 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 
     public void Parse(BinaryReader reader)
     {
-        this.ShareMetaStreamContext();
         Position = reader.BaseStream.Position;
 
         ParseMetaHeader(reader);
@@ -173,7 +173,10 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     {
         XmlElement myElement = reader.GetSingleElement(nameof(TFont), name);
         ParseBasicTypes(myElement);
+
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
+        Utils.CheckHeader(game, Header);
+
         msCtx ??= new(game);
         if (Header != null)
         {
@@ -209,7 +212,10 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     {
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(TFont));
         myElement.SetAttribute(nameof(name), name);
+
+        Utils.CheckHeader(game, Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
+
         AppendBasicTypes(myElement);
         mName.Write(myElement, nameof(mName));
         mGlyphInfos.Write(myElement, nameof(mGlyphInfos));
@@ -226,21 +232,25 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     {
         if (!rMsv6Header)
         {
+            this.ShareMetaStreamContext();
             return;
         }
 
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
+        Utils.CheckHeader(game, Header);
+        Utils.CheckSectionsV56($"The sections({nameof(TFont)} are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }
 
     public void WriteMetaHeader(BinaryWriter writer)
-    {
+    {       
         if (!wMsv6Header)
         {
             return;
         }
+        Utils.CheckHeader(game, Header);
 
         if (Header == null && rMsv6Header)
         {
@@ -249,9 +259,11 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         else if (Header == null)
         {
             //Recreate header
-            MSV6 defaultHeaderForWalkingDead3NewF = new();
-            defaultHeaderForWalkingDead3NewF.mClassNamesLength = (uint)mDefaultClassNamesWD3.Length;
-            defaultHeaderForWalkingDead3NewF.mClassNames = mDefaultClassNamesWD3;
+            MSV6 defaultHeaderForWalkingDead3NewF = new()
+            {
+                mClassNamesLength = (uint)mDefaultClassNamesWD3.Length,
+                mClassNames = mDefaultClassNamesWD3
+            };
             Header = defaultHeaderForWalkingDead3NewF;
         }
 
