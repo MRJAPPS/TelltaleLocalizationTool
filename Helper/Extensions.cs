@@ -318,34 +318,34 @@ public static class Extensions
         return [.. newPixelData.SelectMany(b => b)];
     }
 
-    public static void WriteD3DTXXML(this ID3DTX d3dtx, string fileName)
+    public static void WriteToXML(this IWriteable writeable, string fileName)
     {
         XmlDocument doc = new();
         XmlElement element = doc.CreateElement("Root");
         _ = doc.AppendChild(element);
-        d3dtx.Write(element, nameof(d3dtx));
+        writeable.Write(element, nameof(writeable));
         doc.Save(fileName);
     }
 
-    public static void LoadD3DTXXML(this ID3DTX d3dtx, string fileName)
+    public static void LoadFromXML(this IParsable parsable, string fileName)
     {
         XmlDocument doc = new();
         doc.Load(fileName);
-        d3dtx.Parse(doc.DocumentElement ?? throw new InvalidDataException("Where is your Xml element?(Root)"), nameof(d3dtx));
+        parsable.Parse(doc.DocumentElement ?? throw new InvalidDataException("Where is your Xml element?(Root)"), nameof(parsable));
     }
 
-    public static void LoadD3DTX(this ID3DTX d3dtx, string fileName)
+    public static void LoadFromFile(this IParsable parsable, string fileName)
     {
         using FileStream fileStream = new(fileName, FileMode.Open, FileAccess.Read);
         using BinaryReader reader = new(fileStream);
-        d3dtx.Parse(reader);
+        parsable.Parse(reader);
     }
 
-    public static void WriteD3DTX(this ID3DTX d3dtx, string fileName)
+    public static void WriteToFile(this IWriteable writeable, string fileName)
     {
         using FileStream fileStream = new(fileName, FileMode.Create, FileAccess.Write);
         using BinaryWriter writer = new(fileStream);
-        d3dtx.Write(writer);
+        writeable.Write(writer);
     }
 
     public static byte[] DecodeTexturePvr(this ID3DTX d3dtx, byte[] data)

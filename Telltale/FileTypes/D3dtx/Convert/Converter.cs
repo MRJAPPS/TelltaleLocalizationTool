@@ -62,12 +62,12 @@ public static class Converter
         CheckArgs(sourceFilePath, destinationFilePath);
 
         ID3DTX d3dtxFile = D3dtxFactory.CreateD3dtx(game);
-        d3dtxFile.LoadD3DTX(sourceFilePath);
+        d3dtxFile.LoadFromFile(sourceFilePath);
 
         DDS_Master ddsFile = new(d3dtxFile);
         byte[] array = ddsFile.GetData(d3dtxFile);
 
-        d3dtxFile.WriteD3DTXXML(Path.ChangeExtension(
+        d3dtxFile.WriteToXML(Path.ChangeExtension(
             options.WriteXmlAsideOutputTex ? destinationFilePath : sourceFilePath,
             options.Used3dtxXml ? Formats.d3dtxXmlExtension : Formats.xmlExtension));
 
@@ -131,7 +131,7 @@ public static class Converter
         ID3DTX d3dtxMaster = D3dtxFactory.CreateD3dtx(game);
         if (File.Exists(xmlFile))
         {
-            d3dtxMaster.LoadD3DTXXML(xmlFile);
+            d3dtxMaster.LoadFromXML(xmlFile);
         }
         else
         {
@@ -166,7 +166,7 @@ public static class Converter
             if (d3dtxMaster is D3DTXV4 d3dtxv4)
             {
                 ImportTextureV4(d3dtxv4, texture, game, format);
-                d3dtxMaster.WriteD3DTX(destinationFilePath);
+                d3dtxMaster.WriteToFile(destinationFilePath);
                 return;
             }
 
@@ -188,7 +188,7 @@ public static class Converter
             texture.Release();
         }
 
-        d3dtxMaster.WriteD3DTX(destinationFilePath);
+        d3dtxMaster.WriteToFile(destinationFilePath);
     }
 
     public static void ImportTextureV4(D3DTXV4 d3dtx, Texture texture, Games game, T3SurfaceFormat? format = null)
@@ -597,10 +597,10 @@ public static class Converter
         _ = MagicWithCompressonatorCli(ddsFile, etc2rgbaDds.Path);
         ddsData = GetD3dtxDataFormDds(etc2rgbaDds.Path, T3SurfaceFormat.ETC2_RGBA);
         d3dtx.MapDdsToD3dtx(ddsData, fontName);
-        d3dtx.WriteD3DTX(d3dtxFile);
+        d3dtx.WriteToFile(d3dtxFile);
         if (writeXml)
         {
-            d3dtx.WriteD3DTXXML(Path.ChangeExtension(d3dtxFile, Formats.xmlExtension));
+            d3dtx.WriteToXML(Path.ChangeExtension(d3dtxFile, Formats.xmlExtension));
         }
         //local methods:
         static void CheckArgsExtension(string ddsFile, string d3dtxFile)
