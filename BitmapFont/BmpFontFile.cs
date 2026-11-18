@@ -2,7 +2,6 @@
 using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.Graphics.Enums;

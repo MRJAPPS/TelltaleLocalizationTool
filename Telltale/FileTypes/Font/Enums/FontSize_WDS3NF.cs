@@ -1,7 +1,7 @@
 ﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Font.Enums;
 
 /// I don't think we actually need to use this enum — it's more of a reference note to check sizes later.
-public enum FontSize_WD3NF // mWiiScale="0.5" mFontScale="1"
+public enum FontSize_WDS3NF // mWiiScale="0.5" mFontScale="1"
 {
     // MenuBody*
     MenuBodyLarge = 90,   // 44
