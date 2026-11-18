@@ -10,7 +10,7 @@ public abstract class ReportBase
 
 #if DEBUG
     // When debugging, start with reporting ON so we don't miss the logs.
-    public static bool ReportMode { get; set; } = Debugger.IsAttached;
+    public static bool ReportMode { get; set; } = Debugger.IsAttached && false;
 #else
     public static bool ReportMode { get; set; }
 #endif

@@ -64,7 +64,7 @@ internal class ProgramTest
 
         TFont font = BmpFontFile.ToTFont(fntPath, game);
         string fontPath = Path.ChangeExtension(fntPath, Formats.fontExtension);
-        font.WriteTFont(fontPath);
+        font.WriteToFile(fontPath);
         TestFont(fontPath, game);
     }
 

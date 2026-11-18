@@ -11,6 +11,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes.StreamHeaderI
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Texture;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS.Data;
@@ -25,15 +26,27 @@ namespace TelltaleLocalizationTool.Helper;
 public static class Extensions
 {
 
-    public static bool Contains(this MSV6 header, ClassNames className) => header.mClassNames.Any(cn => cn == className);
+    public static bool Contains(this MSV6 header, ClassNames className)
+    {
+        return header.mClassNames.Any(cn => cn == className);
+    }
 
-    public static bool Contains(this MSV5 header, ClassNames className) => header.mClassNames.Any(cn => cn == className);
+    public static bool Contains(this MSV5 header, ClassNames className)
+    {
+        return header.mClassNames.Any(cn => cn == className);
+    }
 
-    public static bool Contains(this MBIN header, ClassNames className, bool unhashed = false) => unhashed ?
+    public static bool Contains(this MBIN header, ClassNames className, bool unhashed = false)
+    {
+        return unhashed ?
         header.mClassNames.Any(cn => cn == className) : throw new NotImplementedException("I've never seen this person in my life! I have no idea about unhashed, maybe I'll figure it out later. Maybe...");
+    }
 
-    public static bool Contains(this MTRE header, ClassNames className, bool unhashed = false) => unhashed ?
+    public static bool Contains(this MTRE header, ClassNames className, bool unhashed = false)
+    {
+        return unhashed ?
         header.mClassNames.Any(cn => cn == className) : throw new NotImplementedException("I've never seen this person in my life! I have no idea about unhashed, maybe I'll figure it out later. Maybe...");
+    }
 
     public static void ShareMetaStreamContext(this ITelltaleObject item, MetaStreamContext? context = null)
     {
@@ -611,19 +624,65 @@ public static class Extensions
         return reader.ReadBytes((int)(inputFs.Length - inputFs.Position));
     }
 
-    public static void WriteTFont(this TFont font, string fontPath)
+    #region Helper_WDS1
+
+    public static void ApplyWds1Reference(this TFont font, TFont reference)
     {
-        using FileStream fileStream = new(fontPath, FileMode.Create, FileAccess.Write);
-        using BinaryWriter binaryWriter = new(fileStream);
-        font.Write(binaryWriter);
+        font.mName = reference.mName;
+        font.mHeight = reference.mHeight;
+        font.mBase = reference.mBase;
+        font.mFontScale = reference.mFontScale;
+
+        if (reference.mGlyphInfos.Select(glyph => glyph.mChannel).Distinct().ToArray() is [int channel])
+        {
+            foreach (GlyphInfo glyph in font.mGlyphInfos)
+            {
+                glyph.mChannel = channel;
+            }
+        }
+
+        if (reference.mTexturePages.Count > 0)
+        {
+            for (int page = 0; page < font.mTexturePages.Count; page++)
+            {
+                D3DTXMetadata source = reference.mTexturePages[Math.Min(page, reference.mTexturePages.Count - 1)].mD3dtxMetaData;
+                D3DTXMetadata target = font.mTexturePages[page].mD3dtxMetaData;
+                target.mSamplerState = source.mSamplerState;
+                target.mPlatform = source.mPlatform;
+                target.mColorMode = source.mColorMode;
+                target.mAlphaMode = source.mAlphaMode;
+                target.mHDRLightmapScale = source.mHDRLightmapScale;
+            }
+        }
+
     }
 
-    public static void ReadTFont(this TFont font, string fontPath)
+    public static void EnsureWds1FallbackGlyphs(this TFont font)
     {
-        using FileStream fileStream = new(fontPath, FileMode.Open, FileAccess.Read);
-        using BinaryReader binaryReader = new(fileStream);
-        font.Parse(binaryReader);
+        Dictionary<uint, GlyphInfo> glyphs = font.mGlyphInfos.ToDictionary(glyph => glyph.mChar.CharCode);
+        if (!glyphs.TryGetValue('?', out GlyphInfo? questionMark) || !glyphs.TryGetValue(' ', out GlyphInfo? space))
+        {
+            throw new InvalidDataException("A WDS1 replacement font needs a space and question mark for missing glyphs!");
+        }
+
+        GlyphInfo replacement = glyphs.GetValueOrDefault(0xFFFDu, questionMark);
+        foreach (uint id in new uint[] { 0u, 0xFFFDu }.Where(id => !glyphs.ContainsKey(id)))
+        {
+            GlyphInfo source = id is not 0 and (< 0x20 or >= 0x7F and <= 0x9F) ? space : replacement;
+            glyphs.Add(id, new()
+            {
+                mChar = new() { CharCode = id },
+                mTexturePage = source.mTexturePage,
+                mChannel = source.mChannel,
+                mRect = source.mRect,
+                mGlyphSize = source.mGlyphSize,
+                mGlyphMetrics = source.mGlyphMetrics,
+            });
+        }
+        font.mGlyphInfos = [.. glyphs.OrderBy(pair => pair.Key).Select(pair => pair.Value)];
     }
+
+    #endregion
 
 #if !IFNT
     public static void Export(this TFont font, string fntPath, Games game)

@@ -304,7 +304,62 @@ public static class Converter
 
     #region NEW
 
-    public static TFont ConvertTtfToFont(string input, float glyphSize, Games game, Action<string>? report = null, CancellationToken cancellationToken = default)
+    public static TFont ConvertTtfToFont(string input, float glyphSize, Games game, Action<string>? report = null, string? fallbackTtf = null, CancellationToken cancellationToken = default)
+    {
+        DirectoryInfo tempDirectory = Directory.CreateTempSubdirectory("TelltaleTtf_");
+        try
+        {
+            BmpFontFile font = GenerateBitmapFont(input, glyphSize, tempDirectory, game, report, cancellationToken);
+            if (fallbackTtf != null)
+            {
+                DirectoryInfo fallbackDirectory = tempDirectory.CreateSubdirectory("fallback");
+                BmpFontFile fallback = GenerateBitmapFont(fallbackTtf, glyphSize, fallbackDirectory, game, report, cancellationToken);
+                AddMissingGlyphs(font, fallback, fallbackDirectory.Name);
+            }
+
+            TFont result = BmpFontFile.ToTFont(font, tempDirectory.FullName, Path.GetFileNameWithoutExtension(input), game,
+                (page, done) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    report?.Invoke($"{(done ? "Imported" : "Importing")} atlas {page.Id + 1}/{font.Pages.Count}: {page.File}");
+                });
+            cancellationToken.ThrowIfCancellationRequested();
+            return result;
+        }
+        finally
+        {
+            tempDirectory.Delete(true);
+        }
+    }
+
+    private static void AddMissingGlyphs(BmpFontFile font, BmpFontFile fallback, string fallbackDirectory)
+    {
+        BmpFontCommon common = font.Common!;
+        BmpFontCommon fallbackCommon = fallback.Common!;
+        if (common.ScaleW != fallbackCommon.ScaleW || common.ScaleH != fallbackCommon.ScaleH)
+        {
+            throw new InvalidDataException("The primary and fallback atlases must use the same dimensions!");
+        }
+
+        HashSet<int> existing = [.. font.Chars.Select(glyph => glyph.Id)];
+        List<BmpFontChar> missing = [.. fallback.Chars.Where(glyph => existing.Add(glyph.Id))];//Get missing glyphs in a cool way
+        foreach (IGrouping<int, BmpFontChar> page in missing.GroupBy(glyph => glyph.Page).OrderBy(group => group.Key))
+        {
+            BmpFontPage source = fallback.Pages.Single(item => item.Id == page.Key);
+            int pageId = font.Pages.Count;
+            font.Pages.Add(new() { Id = pageId, File = Path.Combine(fallbackDirectory, source.File) });
+            foreach (BmpFontChar glyph in page)
+            {
+                glyph.Page = pageId;
+                glyph.YOffset += common.Base - fallbackCommon.Base;
+                font.Chars.Add(glyph);
+            }
+        }
+        common.Pages = font.Pages.Count;
+        font.Chars.Sort((left, right) => left.Id.CompareTo(right.Id));
+    }
+
+    private static BmpFontFile GenerateBitmapFont(string input, float glyphSize, DirectoryInfo tempDirectory, Games game, Action<string>? report, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         if (!Path.GetExtension(input).Equals(Formats.ttfExtension, StringComparison.OrdinalIgnoreCase))
@@ -320,139 +375,127 @@ public static class Converter
         cancellationToken.ThrowIfCancellationRequested();
         string executable = Path.GetFullPath(Program.Config.BmfontPath64);
         (string fontName, bool bold, bool italic) = ReadTtfInfo(input);
-        DirectoryInfo tempDirectory = Directory.CreateTempSubdirectory("TelltaleTtf_");
+        string source = Path.Combine(tempDirectory.FullName, "source.ttf");
+        string config = Path.Combine(tempDirectory.FullName, "font.bmfc");
+        string fnt = Path.Combine(tempDirectory.FullName, "font.fnt");
+        File.Copy(input, source);
+        string chars = game == Games.WDS1
+            ? "32-126,160-255,1536-1791,1872-1919,2160-2303,8192-8303,64336-65023,65136-65279"
+            : "32-55295,57344-1114111";
+        File.WriteAllText(config, $"""
+            fileVersion=1
+            fontName={fontName}
+            fontFile=source.ttf
+            charSet=1
+            fontSize=-{(int)glyphSize}
+            aa=1
+            scaleH=100
+            useSmoothing=1
+            isBold={(bold ? 1 : 0)}
+            isItalic={(italic ? 1 : 0)}
+            useUnicode=1
+            disableBoxChars=1
+            outputInvalidCharGlyph=0
+            dontIncludeKerningPairs=1
+            useHinting=1
+            renderFromOutline=0
+            useClearType=0
+            autoFitNumPages=0
+            paddingDown=1
+            paddingUp=1
+            paddingRight=1
+            paddingLeft=1
+            spacingHoriz=1
+            spacingVert=1
+            useFixedHeight=0
+            forceZero=0
+            outWidth=1024
+            outHeight=1024
+            outBitDepth=32
+            fontDescFormat=1
+            fourChnlPacked=0
+            textureFormat=dds
+            textureCompression=0
+            alphaChnl=0
+            redChnl=4
+            greenChnl=4
+            blueChnl=4
+            invA=0
+            invR=0
+            invG=0
+            invB=0
+            outlineThickness=0
+            chars={chars}
+            """, new UTF8Encoding(false));
+
+        ProcessStartInfo psi = new()
+        {
+            FileName = executable,
+            WorkingDirectory = tempDirectory.FullName,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
+        };
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add(config);
+        psi.ArgumentList.Add("-o");
+        psi.ArgumentList.Add(fnt);
+
+        ConcurrentQueue<string> messages = new();
+        StringBuilder log = new();
+        using Process process = new() { StartInfo = psi };
+        process.OutputDataReceived += (_, message) => { if (message.Data != null) { messages.Enqueue(message.Data); } };
+        process.ErrorDataReceived += (_, message) => { if (message.Data != null) { messages.Enqueue(message.Data); } };
+        report?.Invoke($"Generating {fontName} at {glyphSize} pixels with BMFont...");
+        _ = process.Start();
         try
         {
-            string source = Path.Combine(tempDirectory.FullName, "source.ttf");
-            string config = Path.Combine(tempDirectory.FullName, "font.bmfc");
-            string fnt = Path.Combine(tempDirectory.FullName, "font.fnt");
-            File.Copy(input, source);
-            File.WriteAllText(config, $"""
-                fileVersion=1
-                fontName={fontName}
-                fontFile=source.ttf
-                charSet=1
-                fontSize=-{(int)glyphSize}
-                aa=1
-                scaleH=100
-                useSmoothing=1
-                isBold={(bold ? 1 : 0)}
-                isItalic={(italic ? 1 : 0)}
-                useUnicode=1
-                disableBoxChars=1
-                outputInvalidCharGlyph=0
-                dontIncludeKerningPairs=1
-                useHinting=1
-                renderFromOutline=0
-                useClearType=0
-                autoFitNumPages=0
-                paddingDown=1
-                paddingUp=1
-                paddingRight=1
-                paddingLeft=1
-                spacingHoriz=1
-                spacingVert=1
-                useFixedHeight=0
-                forceZero=0
-                outWidth=1024
-                outHeight=1024
-                outBitDepth=32
-                fontDescFormat=1
-                fourChnlPacked=0
-                textureFormat=dds
-                textureCompression=0
-                alphaChnl=0
-                redChnl=4
-                greenChnl=4
-                blueChnl=4
-                invA=0
-                invR=0
-                invG=0
-                invB=0
-                outlineThickness=0
-                chars=32-55295,57344-1114111
-                """, new UTF8Encoding(false));//TODO: THIS IS FOR WDS3NF, Move this to map table
-
-            ProcessStartInfo psi = new()
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            while (!process.WaitForExit(100))
             {
-                FileName = executable,
-                WorkingDirectory = tempDirectory.FullName,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
-            };
-            psi.ArgumentList.Add("-c");
-            psi.ArgumentList.Add(config);
-            psi.ArgumentList.Add("-o");
-            psi.ArgumentList.Add(fnt);
-
-            ConcurrentQueue<string> messages = new();
-            StringBuilder log = new();
-            using Process process = new() { StartInfo = psi };
-            process.OutputDataReceived += (_, message) => { if (message.Data != null) { messages.Enqueue(message.Data); } };
-            process.ErrorDataReceived += (_, message) => { if (message.Data != null) { messages.Enqueue(message.Data); } };
-            report?.Invoke($"Generating {fontName} at {glyphSize} pixels with BMFont...");
-            _ = process.Start();
-            try
-            {
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                while (!process.WaitForExit(100))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    ReportMessages();
-                }
-                process.WaitForExit();
-                ReportMessages();
                 cancellationToken.ThrowIfCancellationRequested();
+                ReportMessages();
             }
-            catch
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill(true);
-                }
-
-                process.WaitForExit();
-                throw;
-            }
-            if (process.ExitCode != 0 || !File.Exists(fnt))
-            {
-                throw new InvalidOperationException($"BMFont couldn't generate the font (exit code {process.ExitCode})!{Environment.NewLine}{log}");
-            }
-
-            report?.Invoke("Reading generated font glyphs and DDS atlases...");
-            BmpFontFile bmpFont = BmpFontLoader.LoadFromFile(fnt);
-            if (bmpFont.Info == null || bmpFont.Chars.Count == 0)
-            {
-                throw new InvalidDataException("BMFont didn't generate any usable glyphs!");
-            }
-
-            bmpFont.Info.Size = (int)glyphSize;
-            TFont font = BmpFontFile.ToTFont(bmpFont, tempDirectory.FullName, Path.GetFileNameWithoutExtension(input), game,
-                (page, done) =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    report?.Invoke($"{(done ? "Imported" : "Importing")} atlas {page.Id + 1}/{bmpFont.Pages.Count}: {page.File}");
-                });
+            process.WaitForExit();
+            ReportMessages();
             cancellationToken.ThrowIfCancellationRequested();
-            return font;
-
-            void ReportMessages()
-            {
-                while (messages.TryDequeue(out string? message))
-                {
-                    _ = log.AppendLine(message);
-                    report?.Invoke($"BMFont: {message}");
-                }
-            }
         }
-        finally
+        catch
         {
-            tempDirectory.Delete(true);
+            if (!process.HasExited)
+            {
+                process.Kill(true);
+            }
+
+            process.WaitForExit();
+            throw;
+        }
+        if (process.ExitCode != 0 || !File.Exists(fnt))
+        {
+            throw new InvalidOperationException($"BMFont couldn't generate the font (exit code {process.ExitCode})!{Environment.NewLine}{log}");
+        }
+
+        report?.Invoke("Reading generated font glyphs and DDS atlases...");
+        BmpFontFile bmpFont = BmpFontLoader.LoadFromFile(fnt);
+        if (bmpFont.Info == null || bmpFont.Common == null || bmpFont.Chars.Count == 0)
+        {
+            throw new InvalidDataException("BMFont didn't generate any usable glyphs!");
+        }
+
+        bmpFont.Info.Size = (int)glyphSize;
+        return bmpFont;
+
+        void ReportMessages()
+        {
+            while (messages.TryDequeue(out string? message))
+            {
+                _ = log.AppendLine(message);
+                report?.Invoke($"BMFont: {message}");
+            }
         }
     }
 

@@ -62,4 +62,17 @@ public class Options : CommandSettings
     [CommandOption("--glyphSize <size>", false)]
     [Description("Required for TTF import. Sets the glyph size in whole pixels; bmfont64.exe must be available.")]
     public float GlyphSize { get; set; } = -1F;//-1 IS NOT VALID, USER MUST GIVE US A SIZE!
+
+    [CommandOption("--fallback-ttf <path>")]
+    [Description("Use this TTF for glyphs missing from the primary TTF.")]
+    public string? FallbackTtf { get; set; }
+
+
+    [CommandOption("--reference-fnt <path>")]
+    [Description("Preserve the face name, font height and base from an exported FNT when replacing a font.")]
+    public string? ReferenceFnt { get; set; }
+
+    [CommandOption("--reference-font <path>")]
+    [Description("Preserve WDS1 rendering settings from the original game font when importing a TTF.")]
+    public string? ReferenceFont { get; set; }
 }

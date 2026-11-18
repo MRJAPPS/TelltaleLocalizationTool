@@ -103,6 +103,22 @@ public class CliProgram : Command<Options>
         {
             throw new ArgumentException("--glyphSize is only used for TTF import!");
         }
+        if (settings.FileType != Options.FileTypes.c_ttf && settings.ReferenceFnt != null)
+        {
+            throw new ArgumentException("--reference-fnt is only used for TTF import!");
+        }
+        if (settings.FallbackTtf != null && settings.FileType != Options.FileTypes.c_ttf)
+        {
+            throw new ArgumentException("--fallback-ttf is only used for TTF import!");
+        }
+        if (settings.ReferenceFont != null && (settings.FileType != Options.FileTypes.c_ttf || game != Games.WDS1 || settings.ReferenceFnt != null))
+        {
+            throw new ArgumentException("--reference-font requires WDS1 TTF import and replaces --reference-fnt!");
+        }
+        if ((settings.ReferenceFnt != null || settings.ReferenceFont != null) && settings.Batch)
+        {
+            throw new ArgumentException("A reference font requires a single TTF input!");
+        }
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.Input, nameof(settings.Input));
         ArgumentException.ThrowIfNullOrWhiteSpace(settings.Output, nameof(settings.Output));
         if (settings.Relative && !settings.Batch)
@@ -352,7 +368,7 @@ public class CliProgram : Command<Options>
                                 ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
                                 break;
                             case Options.FileTypes.c_ttf:
-                                ProcessTtf(input, output, settings.GlyphSize, game, ctx, current, settings.Force, cancellationToken);
+                                ProcessTtf(input, output, settings, game, ctx, current, cancellationToken);
                                 break;
                             case Options.FileTypes.c_d3dtx:
                                 ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, GetSurfaceFormat(settings.Format), settings.Force, cancellationToken);
@@ -464,24 +480,49 @@ public class CliProgram : Command<Options>
 
     #region Font
 
-    private static void ProcessTtf(string input, string output, float glyphSize, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
+    private static void ProcessTtf(string input, string output, Options settings, Games game, ProgressContext ctx, ProgressTask task, CancellationToken cancellationToken)
     {
         task.IsIndeterminate = true;
         TFont font;
         try
         {
-            font = Converter.ConvertTtfToFont(input, glyphSize, game,
-                message => ReportProgress(ctx, task, message, cancellationToken), cancellationToken);
+            font = Converter.ConvertTtfToFont(input, settings.GlyphSize, game,
+                message => ReportProgress(ctx, task, message, cancellationToken), settings.FallbackTtf, cancellationToken);
         }
         finally
         {
             task.IsIndeterminate = false;
         }
+        if (settings.ReferenceFont != null)
+        {
+            TFont reference = new(game: game);
+            reference.LoadFromFile(settings.ReferenceFont);
+            font.ApplyWds1Reference(reference);
+        }
+        else if (settings.ReferenceFnt != null)
+        {
+            BmpFontFile reference = BmpFontLoader.LoadFromFile(settings.ReferenceFnt);
+            if (reference.Info is not { Size: > 0 } info || reference.Common is not { } metrics)
+            {
+                throw new InvalidDataException("The reference FNT needs a positive font height and common metrics!");
+            }
+            font.mName = info.Face;
+            font.mHeight = info.Size;
+            font.mBase = metrics.Base;
+        }
+        if (game == Games.WDS1)
+        {
+            font.EnsureWds1FallbackGlyphs();
+            for (int page = 0; page < font.mTexturePages.Count; page++)
+            {
+                font.mTexturePages[page].mD3dtxMetaData.mName = $"{Path.GetFileNameWithoutExtension(output)}_{page}";
+            }
+        }
         task.Value = 2;
         ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
         using TempFile temp = new(output);
-        font.WriteTFont(temp.Path);
-        SaveResult(temp, output, force, cancellationToken);
+        font.WriteToFile(temp.Path);
+        SaveResult(temp, output, settings.Force, cancellationToken);
         task.Increment(1);
     }
 
@@ -563,7 +604,8 @@ public class CliProgram : Command<Options>
             ReportProgress(ctx, task, $"Importing atlas {page.Id}: {page.File}", cancellationToken);
             using TempFile tempAtlas = new(Path.ChangeExtension(page.File, Formats.ddsExtension));
             File.Copy(Path.Combine(inputDirectory, page.File), tempAtlas.Path, true);
-            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input), game, Utils.GetDefaultFormat(game)));
+            T3SurfaceFormat fontTextureFormat = game == Games.WDS1 ? T3SurfaceFormat.RGBA8 : Utils.GetDefaultFormat(game);
+            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input), game, fontTextureFormat));
             task.Increment(1);
             ctx.Refresh();
         }
@@ -757,12 +799,12 @@ public class CliProgram : Command<Options>
             ReportProgress(ctx, task, "Importing font glyphs and DDS atlases...", cancellationToken);
             font = ImportFont(bmpFont, input, game, ctx, task, cancellationToken);
             ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
-            font.WriteTFont(temp.Path);
+            font.WriteToFile(temp.Path);
         }
         else
         {
             font = new(game: game);
-            font.ReadTFont(input);
+            font.LoadFromFile(input);
             task.Increment(1);
             task.MaxValue = font.mTexturePages.Count + 3;
             ReportProgress(ctx, task, "Exporting font glyphs...", cancellationToken);
