@@ -23,23 +23,25 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 #endif
 {
     #region Private constants
-    private const uint BasicTypes = (sizeof(float) * 4) + (sizeof(bool) * 2);
+    private uint basicTypes => (uint)(game == Games.WDS1
+        ? (sizeof(float) * 3) + sizeof(bool)
+        : (sizeof(float) * 4) + (sizeof(bool) * 2));
     #endregion
 
     #region private fields
 
     private uint classSizes => mName.Size + mGlyphInfos.Size;
 
-    private uint defaultSectionChunkSize => classSizes + BasicTypes + mTexturePages.HeaderSizeSum;
+    private uint defaultSectionChunkSize => classSizes + basicTypes + mTexturePages.HeaderSizeSum;
 
     private uint asyncSectionChunkSize
     {
         get
         {
             uint size = 0;
-            foreach (D3DTXV9 d3dtxv9 in mTexturePages)
+            foreach (ID3DTX d3dtx in mTexturePages)
             {
-                size += (uint)d3dtxv9.mPixelData.Sum(item => item.Length);
+                size += (uint)d3dtx.mPixelData.Sum(item => item.Length);
             }
             return size;
         }
@@ -88,6 +90,20 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         mVersionCRC = 0x5057EA61
     }
 ];
+
+    // WDS1 fonts use an MSV5 header and these class versions (as found in the game's font files).
+    static readonly ClassName[] mDefaultClassNamesWD1 =
+    [
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Font }, mVersionCRC = 0x0349C7AC },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Font_GlyphInfo }, mVersionCRC = 0xA9A63E95 },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.TRect_float }, mVersionCRC = 0x7733F4EC },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3Texture }, mVersionCRC = 0x7638D53D },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3SamplerStateBlock }, mVersionCRC = 0xD61182EA },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.EnumPlatformType }, mVersionCRC = 0x26AB794D },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.Vector2 }, mVersionCRC = 0x2A8CD6AC },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3Texture_StreamHeader }, mVersionCRC = 0xFF6B7AF5 },
+        new() { mTypeNameCRC = new Symbol { mCrc64 = (ulong)ClassNames.T3Texture_RegionStreamHeader }, mVersionCRC = 0xC2572607 },
+    ];
 
     #endregion
 
@@ -204,11 +220,13 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         ByteFunctions.WriteBoolean(writer, mbUnicode);//TODO: USE TBOOL!!!
         writer.Write(mHeight);
         writer.Write(mBase);
-        writer.Write(mWiiScale);
+        if (game != Games.WDS1)
+            writer.Write(mWiiScale);
         writer.Write(mFontScale);
         mGlyphInfos.Write(writer);
         mTexturePages.WriteMetaData(writer);
-        ByteFunctions.WriteBoolean(writer, mIsDistanceField);
+        if (game != Games.WDS1)
+            ByteFunctions.WriteBoolean(writer, mIsDistanceField);
         mTexturePages.WritePixelData(writer);
 
         Report(this, true);
@@ -263,13 +281,10 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         }
         else if (Header == null)
         {
-            //Recreate header
-            MSV6 defaultHeaderForWalkingDead3NewF = new()
-            {
-                mClassNamesLength = (uint)mDefaultClassNamesWD3.Length,
-                mClassNames = mDefaultClassNamesWD3
-            };
-            Header = defaultHeaderForWalkingDead3NewF;
+            // Recreate the game's matching font header.
+            Header = game == Games.WDS1
+                ? new MSV5 { mClassNamesLength = (uint)mDefaultClassNamesWD1.Length, mClassNames = mDefaultClassNamesWD1 }
+                : new MSV6 { mClassNamesLength = (uint)mDefaultClassNamesWD3.Length, mClassNames = mDefaultClassNamesWD3 };
         }
         Utils.CheckHeader(game, Header);
 
