@@ -4,6 +4,7 @@ using TelltaleLocalizationTool.Helper;
 using TelltaleLocalizationTool.Localize;
 using TelltaleLocalizationTool.Telltale.FileTypes.Abs;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
+using TelltaleLocalizationTool.Telltale.FileTypes.Ldb.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.DData;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LangDB;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB.LandbTypes.LnagRes;
@@ -18,7 +19,7 @@ using TelltaleLocalizationTool.Telltale.TTypes;
 namespace TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 
 [Description("Process the whole landb file")]
-public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ITelltaleFile
+public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header = true, bool wMsv6Header = true) : ReportBase, ITelltaleFile
 {
     private const int OffsetDefDataLen = 0x4;
     private const int OffsetDefDebugDataLen = OffsetDefDataLen + 0x4;
@@ -137,7 +138,7 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 
     public void Parse(XmlElement reader, string name)
     {
-        XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name));
+        XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name), textTransform);
 
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
         Utils.CheckHeader(game, Header);
@@ -185,7 +186,7 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Landb));
         myElement.SetAttribute(nameof(name), name);
         XmlElement textTransform = element.OwnerDocument.CreateElement("textTransform");
-        textTransform.SetAttribute("mode", "none");
+        textTransform.SetAttribute("mode", textTransform.ToString());
         _ = myElement.AppendChild(textTransform);
 
         Utils.CheckHeader(game, Header);
@@ -206,22 +207,25 @@ public class Landb(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
 
     #region XML
 
-    private static XmlElement ApplyTextTransform(XmlElement element)
+    private static XmlElement ApplyTextTransform(XmlElement element, TextTransformMode textTransform)
     {
-        XmlNodeList transforms = element.SelectNodes("textTransform")!;
+        XmlNodeList transforms = element.SelectNodes(nameof(textTransform))!;
         if (transforms.Count > 1)
-            throw new FormatException("Only one textTransform is allowed!");
-
-        string mode = transforms.Count == 0 ? "none" : ((XmlElement)transforms[0]!).GetAttribute("mode");
-        if (mode == "none")
+            throw new FormatException($"Only one {nameof(textTransform)} is allowed!");
+        TextTransformMode mode;
+        if (textTransform == TextTransformMode.@null)
+            mode = transforms.Count == 0 ? TextTransformMode.none : Enum.Parse<TextTransformMode>(((XmlElement)transforms[0]!).GetAttribute("mode"));
+        else
+            mode = textTransform;
+        if (mode == TextTransformMode.none)
             return element;
-        if (mode != "shaped" && mode != "logical")
+        if (mode != TextTransformMode.shaped && mode != TextTransformMode.logical)
             throw new FormatException($"Unknown textTransform mode: {mode}");
 
         XmlElement result = (XmlElement)element.CloneNode(true);
         XmlNodeList texts = result.SelectNodes("LanguageResources/TextCollection/TextItem/ResolvedLocalData/TString[@name='mText'] | LanguageResources/TextCollection/TextItem/LocalDataCollection/LocalDataItem/TString[@name='mText']")!;
         foreach (XmlElement text in texts)
-            text.InnerText = mode == "shaped" ? text.InnerText.FixPersian() : text.InnerText.NormalizePersian();
+            text.InnerText = mode == TextTransformMode.shaped ? text.InnerText.FixPersian() : text.InnerText.NormalizePersian();
 
         return result;
     }

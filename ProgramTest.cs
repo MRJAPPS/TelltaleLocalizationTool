@@ -285,7 +285,7 @@ internal class ProgramTest
         XmlElement root = landbXmlDoc.DocumentElement ?? throw new InvalidDataException("The input XML file has no elements!");
         using FileStream outputLandbStream = new(outputLandb, FileMode.Create, FileAccess.Write);
         using BinaryWriter outputBinStreamWriter = new(outputLandbStream);
-        Landb landb = new(game, false);
+        Landb landb = new(game, Telltale.FileTypes.Ldb.LandbTypes.Enum.TextTransformMode.shaped, false);
         landb.Parse(root, nameof(landb));
         if (fixStrings)
         {
@@ -310,7 +310,7 @@ internal class ProgramTest
         using BinaryReader inputLansbBinStreamReader = new(inputLandbStream);
         using FileStream outputLandbStream = new(outputLandb, FileMode.Create, FileAccess.Write);
         using BinaryWriter outputBinStreamWriter = new(outputLandbStream);
-        Landb landb = new(game);
+        Landb landb = new(game, Telltale.FileTypes.Ldb.LandbTypes.Enum.TextTransformMode.shaped);
         landb.Parse(inputLansbBinStreamReader);
         landb.Write(outputBinStreamWriter);
         XmlDocument doc = new();

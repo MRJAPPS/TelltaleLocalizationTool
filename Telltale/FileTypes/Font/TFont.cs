@@ -160,7 +160,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
     {
         CheckImportExportArgs(fntPath, true);
         mName = Path.GetFileNameWithoutExtension(fntPath);
-        mTexturePages.ImportTextures(mName, Path.GetDirectoryName(fntPath)!, bmfontMode: true);
+        mTexturePages.ImportTextures(mName, Path.GetDirectoryName(fntPath)!,game, bmfontMode: true);
         //Next step: Map fnt file to font
     }
 #endif

@@ -1,5 +1,6 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
+using System.Linq;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
@@ -9,6 +10,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
+using TelltaleLocalizationTool.Telltale.FileTypes.Ldb.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 using TelltaleLocalizationTool.Telltale.Graphics;
 using TelltaleLocalizationTool.Telltale.Graphics.DDS;
@@ -164,6 +166,10 @@ public class CliProgram : Command<Options>
             {
                 throw new ArgumentException("The output must be a file path! Use --batch if you want to process folders.");
             }
+        }
+        if (settings.FileType is not Options.FileTypes.c_landb && string.Join(" ", Environment.GetCommandLineArgs()).Contains("--text_mode"))
+        {
+            throw new ArgumentException("You can only use text-mode when you're importing or exporting one or more landb files!");
         }
     }
 
@@ -362,7 +368,7 @@ public class CliProgram : Command<Options>
                         switch (settings.FileType)
                         {
                             case Options.FileTypes.c_landb:
-                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
+                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, settings.TextTransform, ctx, current, settings.Force, cancellationToken);
                                 break;
                             case Options.FileTypes.c_font:
                                 ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
@@ -428,9 +434,9 @@ public class CliProgram : Command<Options>
 
     #region Landb
 
-    private static void ProcessLandb(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
+    private static void ProcessLandb(string input, string output, bool import, Games game, TextTransformMode textTransform, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
     {
-        Landb landb = new(rMsv6Header: !import, game: game);
+        Landb landb = new(game, textTransform, rMsv6Header: !import);
         XmlDocument doc = new();
         ReportProgress(ctx, task, $"Reading {Path.GetFileName(input)}...", cancellationToken);
         if (import)

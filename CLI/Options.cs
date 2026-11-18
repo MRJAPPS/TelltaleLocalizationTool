@@ -1,6 +1,7 @@
 ﻿using Spectre.Console.Cli;
 using System.ComponentModel;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font.Enums;
+using TelltaleLocalizationTool.Telltale.FileTypes.Ldb.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
 
 namespace TelltaleLocalizationTool.CLI;
@@ -75,4 +76,8 @@ public class Options : CommandSettings
     [CommandOption("--reference-font <path>")]
     [Description("Preserve WDS1 rendering settings from the original game font when importing a TTF.")]
     public string? ReferenceFont { get; set; }
+
+    [CommandOption("--text_transform")]
+    [Description($"Using this flag, you can control how texts are read or converted from Landb XMLs. Options: {nameof(TextTransformMode.shaped)}, {nameof(TextTransformMode.logical)}, {nameof(TextTransformMode.none)} (default: {nameof(TextTransformMode.@null)}). For more information, check the docs and code on [link=https://github.com/MRJAPPS/TelltaleLocalizationTool]Github[/].")]
+    public TextTransformMode TextTransform { get; set; } = TextTransformMode.@null;
 }
