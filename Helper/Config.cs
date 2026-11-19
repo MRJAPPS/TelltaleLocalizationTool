@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 
 namespace TelltaleLocalizationTool.Helper;
@@ -31,6 +32,23 @@ public class Config
     }
 
     public Config() : this(appsettingsDefault) { }
+
+    #region Options props
+
+    public int TestFntBaseCharCode => GetRequired<int>(nameof(TestFntBaseCharCode), "I couldn't read TestFntBaseCharCode! can you tell me exactly which character I should start labeling the fonts from?");
+
+    public string TestFntFilePath
+    {
+        get
+        {
+            string ret = config[nameof(TestFntFilePath)];
+            return !File.Exists(ret)
+                ? throw new FileNotFoundException($"Set a valid {nameof(TestFntFilePath)} in appsettings.json!")
+                : ret;
+        }
+    }
+
+    #endregion
 
     #region Props v9 wds3nf android
 
