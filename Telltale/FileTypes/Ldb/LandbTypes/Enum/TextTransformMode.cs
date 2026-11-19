@@ -1,7 +1,7 @@
 ﻿namespace TelltaleLocalizationTool.Telltale.FileTypes.Ldb.LandbTypes.Enum;
 public enum TextTransformMode
 {
-    @null,
+    Def,
     none,
     shaped,
     logical,

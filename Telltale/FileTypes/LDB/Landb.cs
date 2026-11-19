@@ -213,7 +213,7 @@ public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header
         if (transforms.Count > 1)
             throw new FormatException($"Only one {nameof(textTransform)} is allowed!");
         TextTransformMode mode;
-        if (textTransform == TextTransformMode.@null)
+        if (textTransform == TextTransformMode.Def)
             mode = transforms.Count == 0 ? TextTransformMode.none : Enum.Parse<TextTransformMode>(((XmlElement)transforms[0]!).GetAttribute("mode"));
         else
             mode = textTransform;

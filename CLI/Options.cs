@@ -68,7 +68,6 @@ public class Options : CommandSettings
     [Description("Use this TTF for glyphs missing from the primary TTF.")]
     public string? FallbackTtf { get; set; }
 
-
     [CommandOption("--reference-fnt <path>")]
     [Description("Preserve the face name, font height and base from an exported FNT when replacing a font.")]
     public string? ReferenceFnt { get; set; }
@@ -78,6 +77,7 @@ public class Options : CommandSettings
     public string? ReferenceFont { get; set; }
 
     [CommandOption("--text_transform")]
-    [Description($"Using this flag, you can control how texts are read or converted from Landb XMLs. Options: {nameof(TextTransformMode.shaped)}, {nameof(TextTransformMode.logical)}, {nameof(TextTransformMode.none)} (default: {nameof(TextTransformMode.@null)}). For more information, check the docs and code on [link=https://github.com/MRJAPPS/TelltaleLocalizationTool]Github[/].")]
-    public TextTransformMode TextTransform { get; set; } = TextTransformMode.@null;
+    [Description($"Using this flag, you can control how texts are read or converted from Landb XMLs. Options: {nameof(TextTransformMode.shaped)}, {nameof(TextTransformMode.logical)}, {nameof(TextTransformMode.none)} (default: {nameof(TextTransformMode.Def)}). For more information, check the docs and code on [link=https://github.com/MRJAPPS/TelltaleLocalizationTool]Github[/].")]
+    public TextTransformMode TextTransform { get; set; } = TextTransformMode.Def;
+
 }
