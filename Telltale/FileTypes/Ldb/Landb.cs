@@ -185,9 +185,10 @@ public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header
     {
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(Landb));
         myElement.SetAttribute(nameof(name), name);
-        XmlElement textTransform = element.OwnerDocument.CreateElement("textTransform");
-        textTransform.SetAttribute("mode", textTransform.ToString());
-        _ = myElement.AppendChild(textTransform);
+        XmlElement transformElement = element.OwnerDocument.CreateElement(nameof(textTransform));
+        TextTransformMode mode = textTransform == TextTransformMode.Def ? TextTransformMode.none : textTransform;
+        transformElement.SetAttribute("mode", mode.ToString());
+        _ = myElement.AppendChild(transformElement);
 
         Utils.CheckHeader(game, Header, rMsv6Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
