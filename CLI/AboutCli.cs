@@ -54,7 +54,7 @@ internal static class AboutCli
         ("[green]bmfont64[/]",
          "To save myself [grey]the headache[/] of implementing [orange1]TTF parsing[/] from scratch, I leaned on [link=https://www.angelcode.com/products/bmfont/][green]bmfont64[/][/]. It's [grey]not mandatory[/] here [grey]—[/] but the input format is always [cyan]FNT (XML flavor)[/], which bmfont64 generates for you."),
         ("[green]@ByteAndPlay[/]",
-         "All of these tools are also downloadable from my Telegram channel: [link=https://t.me/ByteAndPlay][green]@ByteAndPlay[/][/]."),
+         "All of these tools are also downloadable from my Telegram channel: \"[link=https://t.me/ByteAndPlay][green]@ByteAndPlay[/][/]\"."),
         ];
 
         ShowRows(creditsTable, creditsRows, 120);
