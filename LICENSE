@@ -1,78 +1,42 @@
-TelltaleLocalizationTool Custom License
-Version 1.1
+# TelltaleLocalizationTool — Simple License
 
-Copyright (c) 2026 ByteAndPlay and the respective contributors, for their
-original contributions.
+**Short version:** Use it freely. If you make money with it, give credit. Donations are optional.
 
-SCOPE
+## What you can do
 
-This license applies only to original material in TelltaleLocalizationTool
-that its respective copyright holder has the right to license. It does not
-apply to third-party material identified in THIRD-PARTY-NOTICES.md. Each
-third-party component remains under its own license, which controls if it
-conflicts with this license.
+You can use, copy, modify, and share TelltaleLocalizationTool for personal or commercial work.
 
-1. Permission
+## Credit for commercial use
 
-Subject to this license, the copyright holders grant you a worldwide,
-royalty-free, nonexclusive license to use, copy, modify, and distribute
-covered material in source or executable form, for personal or commercial
-purposes.
+If you use this tool to make or provide a commercial translation, mod, asset, or service, please credit it to your customers.
 
-2. Credit for commercial use
+For public sales or downloads, put the credit on your sales/download page — **or preferably show the ByteAndPlay logo/image at the start of the game (splash screen).**
 
-If you use covered material from this project to prepare or provide a
-commercial translation, mod, asset, or service, you must credit the tool
-to your customers. Put the credit on the sales or download page. For
-private client work without a public listing, include it in the written
-handoff.
+For private client work without a public listing, include the credit in the written handoff.
 
-The credit must identify TelltaleLocalizationTool and ByteAndPlay and link
-to the project:
+Use this credit text:
 
-    Created using TelltaleLocalizationTool by ByteAndPlay.
-    https://github.com/MRJAPPS/TelltaleLocalizationTool
+> Created using TelltaleLocalizationTool by ByteAndPlay.  
+> https://github.com/MRJAPPS/TelltaleLocalizationTool
 
-This condition applies only to material covered by this license; it does
-not add restrictions to third-party material.
+That’s it — just let people know the tool helped you.
 
-3. Redistribution and authorship
+## Redistribution
 
-When redistributing covered source or binaries, include this license and
-preserve existing copyright, license, and attribution notices. Identify
-modified versions clearly. You may claim credit and rights for your own
-original contributions, but you may not claim authorship or exclusive
-ownership of the original project or other contributors' work, or register
-that work as exclusively yours. Do not use project names or logos to imply
-endorsement or official status.
+If you share the source or binaries, keep this license and the existing copyright/attribution notices. If you modified it, make that clear. You can claim credit for your own changes, but not for the original project or other contributors’ work.
 
-4. Your work and external material
+## Your work stays yours
 
-This license does not transfer ownership of your original translations or
-other original output to the project contributors, and does not require
-you to publish your output or its source. Section 2 still applies when your
-commercial use relies on covered project material.
+Your translations and other original output belong to you. You don’t have to publish them. This license doesn’t give you rights to game files, fonts, external tools, or other third-party material — check those licenses yourself.
 
-This license grants no rights to game files, fonts, external tools, or
-other third-party material. You are responsible for following the terms
-that apply to those materials.
+## Donations
 
-5. Donations
+Donations are completely optional. No donation, royalty, or share of sales is required. If you feel like supporting the project, thank you — it’s appreciated.
 
-Donations are entirely optional. No donation, royalty, or share of sales
-is required.
+## No warranty
 
-6. Termination and cure
+The tool is provided “as is,” without warranty of any kind. Use it at your own risk.
 
-Your permissions under this license terminate if you violate its terms.
-They are automatically reinstated if you correct the violation within
-30 days after you first become aware of it. This clause does not alter any
-third-party license or its remedies.
+---
 
-7. Disclaimer
-
-THE COVERED MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR
-A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. TO THE EXTENT PERMITTED BY
-APPLICABLE LAW, THE COPYRIGHT HOLDERS AND CONTRIBUTORS ARE NOT LIABLE FOR
-ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE MATERIAL OR ITS USE.
+*This is a plain-English summary of the project’s custom license. The full license text controls if there is any conflict.*
