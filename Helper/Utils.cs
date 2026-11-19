@@ -1,6 +1,5 @@
-﻿using System.Reflection.PortableExecutable;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.D3dtxTypes;
-using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
+﻿using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.Meta;
 using TelltaleLocalizationTool.Telltale.Meta.Enums;
 using TelltaleLocalizationTool.Telltale.Meta.Versions;
@@ -71,6 +70,42 @@ public static class Utils
 
     #endregion
 
+    #region GlyphMath
+
+    public static TRect GlyTCalcRect(int x, int y, int width, int height, int scaleW, int scaleH)
+    {
+        return scaleW <= 0 || scaleH <= 0
+            ? throw new ArgumentException("ScaleW/ScaleH must be greater than zero.")
+            : new TRect
+            {
+                Left = x / (float)scaleW,
+                Top = y / (float)scaleH,
+                Right = (x + width) / (float)scaleW,
+                Bottom = (y + height) / (float)scaleH
+            };
+    }
+
+    public static GlyphMetrics GlyTCalcMetrics(int xOffset, int yOffset, int xAdvance)
+    {
+        return new GlyphMetrics
+        {
+            mXOffset = xOffset,
+            mYOffset = yOffset,
+            mXAdvance = xAdvance
+        };
+    }
+
+    public static GlyphSize GlyTCalcSize(int width, int height)
+    {
+        return new GlyphSize
+        {
+            mWidth = width,
+            mHeight = height
+        };
+    }
+
+    #endregion
+
     #region Checking
 
     public static void CheckSectionsV56(string errorMessage, IMetaHeader? header, long fileLen, long filePos)
@@ -97,7 +132,11 @@ public static class Utils
 
     public static void CheckHeader(Games game, IMetaHeader? header, bool required)
     {
-        if (!required) return;
+        if (!required)
+        {
+            return;
+        }
+
         switch (game)
         {
             case Games.WDS3NF:
