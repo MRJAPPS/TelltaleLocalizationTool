@@ -13,9 +13,10 @@ public class Options : CommandSettings
         public const string c_export = "export";
         public const string c_import = "import";
         public const string c_about = "about";
+        public const string c_generateTestFonts = "test_font";
     }
     [CommandArgument(0, "<mode>")]
-    [Description($"The mode you want to use [green]{Modes.c_export}[/] OR [green]{Modes.c_import}[/] OR [blue]about[/]")]
+    [Description($"The mode you want to use [green]{Modes.c_export}[/] OR [green]{Modes.c_import}[/] OR [green]{Modes.c_generateTestFonts}[/] [blue]about[/]")]
     public string Mode { get; set; } = string.Empty;
 
     public static class FileTypes

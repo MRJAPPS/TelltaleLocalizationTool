@@ -1,2 +1,2 @@
 # TelltaleLocalizationTool
-![ByteAndPlayTelltaleLocalizationTool](imgs/ReadMeImg.png)
+![ByteAndPlayTelltaleLocalizationTool](res/imgs/ReadMeImg.png)

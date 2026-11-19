@@ -1,6 +1,6 @@
-﻿using Spectre.Console;
+﻿//TODO: This file really needs to be reviewed and refactored!
+using Spectre.Console;
 using Spectre.Console.Cli;
-using System.Linq;
 using System.Xml;
 using TelltaleLocalizationTool.BitmapFont;
 using TelltaleLocalizationTool.Helper;
@@ -10,6 +10,7 @@ using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Convert;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Enums;
 using TelltaleLocalizationTool.Telltale.FileTypes.D3dtx.Versions;
 using TelltaleLocalizationTool.Telltale.FileTypes.Font;
+using TelltaleLocalizationTool.Telltale.FileTypes.Font.Glyph;
 using TelltaleLocalizationTool.Telltale.FileTypes.Ldb.LandbTypes.Enum;
 using TelltaleLocalizationTool.Telltale.FileTypes.LDB;
 using TelltaleLocalizationTool.Telltale.Graphics;
@@ -21,6 +22,7 @@ namespace TelltaleLocalizationTool.CLI;
 public class CliProgram : Command<Options>
 {
     private const StringComparison oic = StringComparison.OrdinalIgnoreCase;
+    private static readonly string[] outputTexExtensions = [Formats.ddsExtension, Formats.pngExtension, Formats.jpegExtension, Formats.bmpExtension, Formats.tifExtension, Formats.tgaExtension, Formats.hdrExtension];
 
     public override int Execute(CommandContext context, Options settings, CancellationToken cancellationToken)
     {
@@ -28,14 +30,22 @@ public class CliProgram : Command<Options>
         {
             settings.Mode = settings.Mode.ToLowerInvariant();
             settings.FileType = settings.FileType.ToLowerInvariant();
+            Games game;
+            PrepareConfiguration();
             switch (settings.Mode)
             {
+                case Options.Modes.c_generateTestFonts:
+                    game = GetGame(settings.Game);
+                    PrepareGenrateTestFonts(settings);
+                    CheckArgs(settings, game);
+                    return ProcessFiles(settings, game, cancellationToken);
+
                 case Options.Modes.c_export:
                 case Options.Modes.c_import:
-                    Games game = GetGame(settings.Game, settings.FileType);
+                    game = GetGame(settings.Game);
                     CheckArgs(settings, game);
-                    PrepareConfiguration();
                     return ProcessFiles(settings, game, cancellationToken);
+
                 case Options.Modes.c_about:
                     ShowAbout();
                     return 0;
@@ -60,9 +70,20 @@ public class CliProgram : Command<Options>
         }
     }
 
+    #region GenTestFont
+
+    private static void PrepareGenrateTestFonts(Options settings)
+    {
+        settings.FileType = Options.FileTypes.c_font;
+        settings.Relative = true;
+        settings.Batch = true;
+    }
+
+    #endregion
+
     #region Error Checking
 
-    private static Games GetGame(string game, string fileType)
+    private static Games GetGame(string game)
     {
         game = game.Trim().ToUpper();
         return game.Contains(',') || !Enum.TryParse(game, true, out Games value) || !Enum.IsDefined(value)
@@ -76,7 +97,7 @@ public class CliProgram : Command<Options>
         {
             if (game != Games.WDS1 || settings.FileType != Options.FileTypes.c_d3dtx || settings.Mode != Options.Modes.c_import)
             {
-                throw new ArgumentException("--format is only used for WDS1 d3dtx import!");
+                throw new ArgumentException($"--format is only used for WDS1 d3dtx import({nameof(T3SurfaceFormat.ARGB8)},{nameof(T3SurfaceFormat.ARGB4)},{nameof(T3SurfaceFormat.ETC1_RGB)})!");
             }
             _ = GetSurfaceFormat(settings.Format);
         }
@@ -204,9 +225,10 @@ public class CliProgram : Command<Options>
 
     #region File Processing
 
-    private static IEnumerable<string> EnumerateFontImportFiles(
+    private static IEnumerable<string> EnumerateImportFiles(
         string inputDirectory,
         bool recursive,
+        string[] extensions,
         CancellationToken cancellationToken)
     {
         EnumerationOptions options = new()
@@ -217,10 +239,13 @@ public class CliProgram : Command<Options>
             AttributesToSkip = FileAttributes.ReparsePoint
         };
 
-        foreach (string file in Directory.EnumerateFiles(inputDirectory, $"*{Formats.fntExtension}", options))
+        foreach (string file in Directory.EnumerateFiles(inputDirectory, $"*", options))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            yield return file;
+            if (extensions.Contains(Path.GetExtension(file)))
+            {
+                yield return file;
+            }
         }
     }
 
@@ -239,7 +264,7 @@ public class CliProgram : Command<Options>
         if (settings.FileType is Options.FileTypes.c_font or Options.FileTypes.c_d3dtx or Options.FileTypes.c_ttf)
         {
             string fileDir = relativeDirectory != "." &&
-                (settings.Mode == Options.Modes.c_import || Path.GetFileName(relativeDirectory).Equals(relativeName, oic))
+                (settings.Mode == Options.Modes.c_import || settings.Mode == Options.Modes.c_generateTestFonts || Path.GetFileName(relativeDirectory).Equals(relativeName, oic))
                 ? Path.Combine(settings.Output, relativeDirectory)
                 : Path.Combine(settings.Output, relativeDirectory, relativeName);
             return Path.Combine(fileDir, relativeName + GetExtension(settings, false));
@@ -251,6 +276,11 @@ public class CliProgram : Command<Options>
 
     private static string GetExtension(Options settings, bool input)
     {
+        if (settings.Mode == Options.Modes.c_generateTestFonts)
+        {
+            return Formats.fontExtension;
+        }
+
         bool binary = settings.Mode == Options.Modes.c_export ? input : !input;
         return settings.FileType switch
         {
@@ -276,38 +306,17 @@ public class CliProgram : Command<Options>
                 List<string> files = [];
                 if (settings.Batch)
                 {
-                    if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_d3dtx)
+                    if (settings.Mode == Options.Modes.c_generateTestFonts)
                     {
-                        EnumerationOptions options = new()
-                        {
-                            RecurseSubdirectories = true,
-                            MaxRecursionDepth = settings.Relative ? int.MaxValue : 1,
-                            IgnoreInaccessible = false,
-                            AttributesToSkip = FileAttributes.ReparsePoint
-                        };
-
-                        foreach (string file in Directory.EnumerateFiles(settings.Input, "*", options))
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            string extension = Path.GetExtension(file).ToLowerInvariant();
-                            if (!IsOutputTexFormat(extension))
-                            {
-                                continue;
-                            }
-                            files.Add(file);
-                            total.Description = $"Found {files.Count} input file(s)";
-                            ctx.Refresh();
-                        }
+                        AddBatchFiles(settings, [Formats.fontExtension], ctx, total, files, cancellationToken);//font->testfonts
                     }
-                    else if (settings.Mode == Options.Modes.c_import &&
-                        settings.FileType == Options.FileTypes.c_font)
+                    else if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_d3dtx)
                     {
-                        foreach (string file in EnumerateFontImportFiles(settings.Input, settings.Relative, cancellationToken))
-                        {
-                            files.Add(file);
-                            total.Description = $"Found {files.Count} input file(s)";
-                            ctx.Refresh();
-                        }
+                        AddBatchFiles(settings, outputTexExtensions, ctx, total, files, cancellationToken);//image->d3dtx
+                    }
+                    else if (settings.Mode == Options.Modes.c_import && settings.FileType == Options.FileTypes.c_font)
+                    {
+                        AddBatchFiles(settings, [Formats.fntExtension], ctx, total, files, cancellationToken);//fnt->font
                     }
                     else
                     {
@@ -351,8 +360,9 @@ public class CliProgram : Command<Options>
                 total.Description = $"{settings.Mode}: 0/{files.Count} file(s)";
                 ProgressTask? current = null;
                 SimpleAnsiConsole.ShowInfo($"Found {files.Count} file(s). Let's {settings.Mode} them!");
-                foreach (string input in files)
+                for (int i = 0; i < files.Count; i++)
                 {
+                    string input = files[i];
                     cancellationToken.ThrowIfCancellationRequested();
                     string output = GetOutputPath(settings, input);
                     if (current != null)
@@ -365,20 +375,27 @@ public class CliProgram : Command<Options>
                     {
                         CheckOutput(output, settings.Force);
                         SimpleAnsiConsole.ShowInfo($"{settings.Mode}: \"{input}\"");
-                        switch (settings.FileType)
+                        if (settings.Mode.Equals(Options.Modes.c_generateTestFonts, oic))
                         {
-                            case Options.FileTypes.c_landb:
-                                ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, settings.TextTransform, ctx, current, settings.Force, cancellationToken);
-                                break;
-                            case Options.FileTypes.c_font:
-                                ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
-                                break;
-                            case Options.FileTypes.c_ttf:
-                                ProcessTtf(input, output, settings, game, ctx, current, cancellationToken);
-                                break;
-                            case Options.FileTypes.c_d3dtx:
-                                ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, GetSurfaceFormat(settings.Format), settings.Force, cancellationToken);
-                                break;
+                            ProcessTestFont(i, output, game, ctx, current, settings.Force, cancellationToken);
+                        }
+                        else
+                        {
+                            switch (settings.FileType)
+                            {
+                                case Options.FileTypes.c_landb:
+                                    ProcessLandb(input, output, settings.Mode == Options.Modes.c_import, game, settings.TextTransform, ctx, current, settings.Force, cancellationToken);
+                                    break;
+                                case Options.FileTypes.c_font:
+                                    ProcessFont(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, settings.Force, cancellationToken);
+                                    break;
+                                case Options.FileTypes.c_ttf:
+                                    ProcessTtf(input, output, settings, game, ctx, current, cancellationToken);
+                                    break;
+                                case Options.FileTypes.c_d3dtx:
+                                    ProcessD3dtx(input, output, settings.Mode == Options.Modes.c_import, game, ctx, current, GetSurfaceFormat(settings.Format), settings.Force, cancellationToken);
+                                    break;
+                            }
                         }
                         success++;
                         current.Description = $"[green]Saved:[/] {Markup.Escape(Path.GetFileName(output))}";
@@ -410,6 +427,17 @@ public class CliProgram : Command<Options>
                     ctx.Refresh();
                 }
                 total.Description = failed == 0 ? "[green]All files processed![/]" : "[yellow]Finished with errors![/]";
+
+                //local methods:
+                static void AddBatchFiles(Options settings, string[] extensions, ProgressContext ctx, ProgressTask total, List<string> files, CancellationToken cancellationToken)
+                {
+                    foreach (string file in EnumerateImportFiles(settings.Input, settings.Relative, extensions, cancellationToken))
+                    {
+                        files.Add(file);
+                        total.Description = $"Found {files.Count} input file(s)";
+                        ctx.Refresh();
+                    }
+                }
             });
         SimpleAnsiConsole.ShowInfo($"Done! {success} succeeded, {failed} failed.");
         return failed == 0 ? 0 : 1;
@@ -579,43 +607,41 @@ public class CliProgram : Command<Options>
             {
                 throw new InvalidDataException($"Glyph {bmpChar.Id} refers to a font page that doesn't exist!");
             }
-            font.mGlyphInfos.Add(new()
-            {
-                mChar = new() { CharCode = (uint)bmpChar.Id },
-                mTexturePage = bmpChar.Page,
-                mChannel = bmpChar.Channel,
-                mRect = new()
-                {
-                    Left = bmpChar.X / (float)bmpFont.Common.ScaleW,
-                    Top = bmpChar.Y / (float)bmpFont.Common.ScaleH,
-                    Right = (bmpChar.X + bmpChar.Width) / (float)bmpFont.Common.ScaleW,
-                    Bottom = (bmpChar.Y + bmpChar.Height) / (float)bmpFont.Common.ScaleH
-                },
-                mGlyphMetrics = new()
-                {
-                    mXOffset = bmpChar.XOffset,
-                    mYOffset = bmpChar.YOffset,
-                    mXAdvance = bmpChar.XAdvance
-                },
-                mGlyphSize = new()
-                {
-                    mWidth = bmpChar.Width,
-                    mHeight = bmpChar.Height
-                }
-            });
+
+            font.mGlyphInfos.Add(CreateTGlyphInfo(bmpChar, bmpFont.Common.ScaleW, bmpFont.Common.ScaleH));
+
         }
         task.Increment(1);
+        ImportFontTextures(Path.GetFileNameWithoutExtension(input), game, ctx, task, pages, inputDirectory, font, cancellationToken);
+        return font;
+    }
+
+    private static GlyphInfo CreateTGlyphInfo(BmpFontChar bmpChar, int scaleW, int scaleH)
+    {
+        return new GlyphInfo
+        {
+            mChar = new() { CharCode = (uint)bmpChar.Id },
+            mTexturePage = bmpChar.Page,
+            mChannel = bmpChar.Channel,
+            mRect = Utils.GlyTCalcRect(bmpChar.X, bmpChar.Y, bmpChar.Width, bmpChar.Height, scaleW, scaleH),
+            mGlyphMetrics = Utils.GlyTCalcMetrics(bmpChar.XOffset, bmpChar.YOffset, bmpChar.XAdvance),
+            mGlyphSize = Utils.GlyTCalcSize(bmpChar.Width, bmpChar.Height)
+        };
+    }
+
+    private static void ImportFontTextures(string fontName, Games game, ProgressContext ctx, ProgressTask task, List<BmpFontPage> pages, string inputDirectory, TFont font, CancellationToken cancellationToken)
+    {
         foreach (BmpFontPage page in pages)
         {
             ReportProgress(ctx, task, $"Importing atlas {page.Id}: {page.File}", cancellationToken);
             using TempFile tempAtlas = new(Path.ChangeExtension(page.File, Formats.ddsExtension));
             File.Copy(Path.Combine(inputDirectory, page.File), tempAtlas.Path, true);
-            T3SurfaceFormat fontTextureFormat = game == Games.WDS1 ? T3SurfaceFormat.RGBA8 : Utils.GetDefaultFormat(game);
-            font.mTexturePages.Add(Converter.ConvertDdsToD3dtx(tempAtlas.Path, Path.GetFileNameWithoutExtension(input), game, fontTextureFormat));
+            T3SurfaceFormat fontTextureFormat = Utils.GetDefaultFormat(game);
+            ID3DTX d3dtx = Converter.ConvertDdsToD3dtx(tempAtlas.Path, fontName, game, fontTextureFormat);
+            font.mTexturePages.Add(d3dtx);
             task.Increment(1);
             ctx.Refresh();
         }
-        return font;
     }
 
     #endregion
@@ -648,8 +674,7 @@ public class CliProgram : Command<Options>
 
     private static bool IsOutputTexFormat(string extension)
     {
-        return extension is Formats.ddsExtension or Formats.pngExtension or Formats.jpegExtension or
-            Formats.bmpExtension or Formats.tifExtension or Formats.tgaExtension or Formats.hdrExtension;
+        return outputTexExtensions.Contains(extension);
     }
 
     private static void CheckOutputTexFormat(string fileNameOrFormat)
@@ -789,6 +814,47 @@ public class CliProgram : Command<Options>
 
     #endregion
 
+    #region TestFont
+
+    private static void ProcessTestFont(int number, string output, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
+    {
+        string fontFileName = Path.GetFileName(output);
+        int testChar = number + Program.Config.TestFntBaseCharCode;
+        string testFntFilePath = Program.Config.TestFntFilePath;
+        string testFntDir = Path.GetDirectoryName(testFntFilePath) ?? throw new NullReferenceException($"How do I get the directory for this path???\n{testFntFilePath}");
+
+        ReportProgress(ctx, task, $"Genrating test for {fontFileName}... ({testChar}, \"{(char)testChar}\")", cancellationToken);
+        TFont font;
+        using TempFile temp = new(output);
+        BmpFontFile bmpFont = BmpFontLoader.LoadFromFile(testFntFilePath);
+        if (bmpFont.Common is null)
+        {
+            throw new NullReferenceException($"Your {nameof(Config.TestFntFilePath)} file doesn't include {nameof(bmpFont.Common.ScaleW)} and {nameof(bmpFont.Common.ScaleH)} info!");
+        }
+
+        task.Increment(1);
+        task.MaxValue = bmpFont.Pages.Count + 3;
+        ReportProgress(ctx, task, "Importing font glyphs and DDS atlases...", cancellationToken);
+        font = ImportFont(bmpFont, testFntFilePath, game, ctx, task, cancellationToken);
+        ReportProgress(ctx, task, $"Saving {Path.GetFileName(output)}...", cancellationToken);
+
+
+        //my work:
+        GlyphInfo ginfo = (from g in font.mGlyphInfos where g.mChar.CharCode == (number + '0') select g).Single();
+
+        for (int i = 0; i < font.mGlyphInfos.Count; ++i)
+        {
+            font.mGlyphInfos[i].mTexturePage = ginfo.mTexturePage;
+            font.mGlyphInfos[i].mRect = ginfo.mRect;
+        }
+        font.WriteToFile(temp.Path);
+
+        SaveResult(temp, output, force, cancellationToken);
+        task.Increment(1);
+    }
+
+    #endregion
+
     #region Font
 
     private static void ProcessFont(string input, string output, bool import, Games game, ProgressContext ctx, ProgressTask task, bool force, CancellationToken cancellationToken)
@@ -900,6 +966,7 @@ public class CliProgram : Command<Options>
         ("[cyan]github[/]",  $"[bold green underline]{Config.GithubPage}[/]"),
         ("[cyan]landb[/]",   "export .landb to XML, then import your translated XML back to .landb."),
         ("[cyan]font[/]",    "export .font to .fnt (XML) and DDS atlases, then import .fnt back to .font."),
+        ("[cyan]test_font[/]", "Recursively creates same-named test .font files for input .font files, using TestFntFilePath; each file maps one sequential character to every glyph."),
         ("[cyan]ttf[/]",     "import a .ttf with a chosen font size; bmfont64.exe generates .fnt files into a folder, then the tool converts them to .font."),
         ("[cyan]d3dtx[/]",   "export .d3dtx to DDS, PNG, JPEG, BMP, TIFF (.tif), TGA or HDR with .d3dtx.xml metadata, then import the image and its metadata back to .d3dtx."),
         ("[grey]info[/]",    "[grey]D3dtx batch export uses DDS. Batch import reads all supported image formats from the input folder and each texture's subfolder.[/]"),
