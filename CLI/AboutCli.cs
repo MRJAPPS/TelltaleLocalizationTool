@@ -24,11 +24,11 @@ internal static class AboutCli
         ("[cyan]d3dtx[/]",   "export .d3dtx to DDS, PNG, JPEG, BMP, TIFF (.tif), TGA or HDR with .d3dtx.xml metadata, then import the image and its metadata back to .d3dtx."),
         ("[grey]info[/]",    "[grey]D3dtx batch export uses DDS. Batch import reads all supported image formats from the input folder and each texture's subfolder.[/]"),
         ("[grey]format[/]",  "[grey]WDS1 import automatically selects ETC1 for opaque images, ARGB4 for exact 4-bit RGBA, or ARGB8. Override with --format ETC1, ARGB8 or ARGB4. ETC1 discards alpha.[/]"),
-        ("[orange1]warn[/]", "[orange1]Font import needs Compressonator CLI 4.5.52.[/] Set [bold]CompressonatorPath[/] in appsettings.json!"),
+        ("[orange1]warn[/]", "[orange1]Font import needs Compressonator CLI 4.5.52 (tested version) or later.[/] Set [bold]CompressonatorPath[/] in appsettings.json!"),
         ("[orange1]warn[/]", "[orange1]TTF import needs bmfont64.exe and --glyphSize <size>.[/] Set [bold]BmfontPath64[/] in appsettings.json!"),
         ("[grey]info[/]",    "[grey]Use --batch for folders and --relative to include subfolders and keep their paths.[/]"),
         ("[grey]game[/]",    "[grey]Use --game or -g with WDS3NF (0) or WDS1 (1). WDS1 supports d3dtx version 4.[/]"),
-        ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them.[/]"),
+        ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them or use --force flag![/]"),
         ];
 
         ShowRows(commandsTable, commandsRows, 70);

@@ -58,7 +58,7 @@ public class Config
         {
             string ret = config[nameof(CompressonatorPath)];
             return !File.Exists(ret)
-                ? throw new FileNotFoundException($"Set a valid {nameof(CompressonatorPath)} in appsettings.json! Keep in mind, this app can't do a thing without compressonatorcli version 4.5.52!")
+                ? throw new FileNotFoundException($"Set a valid {nameof(CompressonatorPath)} in appsettings.json! Keep in mind, this app can't do a thing without compressonatorcli version 4.5.52 (tested version)!")
                 : ret;
         }
     }
