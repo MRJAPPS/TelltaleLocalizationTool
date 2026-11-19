@@ -141,7 +141,7 @@ public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header
         XmlElement myElement = ApplyTextTransform(reader.GetSingleElement(nameof(Landb), name), textTransform);
 
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
 
         msCtx ??= new(game);
         if (Header != null)
@@ -189,7 +189,7 @@ public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header
         textTransform.SetAttribute("mode", textTransform.ToString());
         _ = myElement.AppendChild(textTransform);
 
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
 
         mLanguageDB.Write(myElement, nameof(mLanguageDB));
@@ -256,7 +256,7 @@ public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
         Utils.CheckSectionsV56($"The sections({nameof(D3DTXV4)} are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }
@@ -282,7 +282,7 @@ public class Landb(Games game, TextTransformMode textTransform, bool rMsv6Header
             };
             Header = defaultHeaderForWalkingDead3NewF;
         }
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
 
         uint asyncSectionChunkSize = Header.mAsyncSectionChunkSize;
         Header.SetMetaSectionChunkSizes(defaultSectionChunkSize, debugSectionChunkSize, asyncSectionChunkSize);

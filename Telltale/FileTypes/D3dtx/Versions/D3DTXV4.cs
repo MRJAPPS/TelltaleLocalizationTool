@@ -97,9 +97,9 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         XmlElement myElement = reader.GetSingleElement(nameof(D3DTXV4), name);
 
         ParseBasicTypes(myElement);
-        
+
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv5Header);
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv5Header);
 
         msCtx ??= new(game);
         if (Header != null)
@@ -154,7 +154,7 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
 
         AppendBasicTypes(myElement);
 
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv5Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv5Header);
 
         AppendPixelData(myElement);
@@ -241,7 +241,7 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
             };
             Header = defaultHeaderForWalkingDead1;
         }
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv5Header);
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(mD3dtxMetaData.Size, debugSectionChunkSize, asyncSectionChunkSize);
@@ -262,7 +262,7 @@ public class D3DTXV4(Games game, bool autoPixelData = true, bool rMsv5Header = t
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv5Header);
         Utils.CheckSectionsV56($"The sections({nameof(D3DTXV4)} are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }

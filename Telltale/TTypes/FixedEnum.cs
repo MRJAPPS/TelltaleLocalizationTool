@@ -157,7 +157,7 @@ public class FixedEnum<T> : ReportBase, ITelltaleObject
     private bool CanIParseMyself()
     {
         if (msCtx is null) throw new NullReferenceException($"Where did I or you screw up that you're seeing this error? Either your files are messed up or the auto-assignment to {nameof(msCtx)} part! You can report this bug to me. (We are in FixedEnum)");
-        Utils.CheckHeader(msCtx.Game, msCtx.Header);
+        Utils.CheckHeader(msCtx.Game, msCtx.Header, msCtx.Header != null);
 
         if (!msCtx.ContainsAt(0, Meta.Enums.ClassNames.LanguageDB)) //This particular filter needs to be applied to landb files!
             return true;

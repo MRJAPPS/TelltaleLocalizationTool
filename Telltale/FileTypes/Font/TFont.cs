@@ -197,7 +197,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         ParseBasicTypes(myElement);
 
         Header = MetaHeaderXml.ParseHeader(myElement, rMsv6Header);
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
 
         msCtx ??= new(game);
         if (Header != null)
@@ -237,7 +237,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         XmlElement myElement = element.OwnerDocument.CreateElement(nameof(TFont));
         myElement.SetAttribute(nameof(name), name);
 
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
         MetaHeaderXml.AppendHeader(myElement, Header, rMsv6Header);
 
         AppendBasicTypes(myElement);
@@ -263,7 +263,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
         Header = MetaHeaderFactory.ReadMetaHeader(reader);
         msCtx ??= new(game);
         msCtx.Header = Header;
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
         Utils.CheckSectionsV56($"The sections({nameof(TFont)} are incomplete bro!", Header, reader.BaseStream.Length, reader.BaseStream.Position);
         this.ShareMetaStreamContext();
     }
@@ -286,7 +286,7 @@ public class TFont(Games game, bool rMsv6Header = true, bool wMsv6Header = true)
                 ? new MSV5 { mClassNamesLength = (uint)mDefaultClassNamesWD1.Length, mClassNames = mDefaultClassNamesWD1 }
                 : new MSV6 { mClassNamesLength = (uint)mDefaultClassNamesWD3.Length, mClassNames = mDefaultClassNamesWD3 };
         }
-        Utils.CheckHeader(game, Header);
+        Utils.CheckHeader(game, Header, rMsv6Header);
 
         uint debugSectionChunkSize = Header.mDebugSectionChunkSize;
         Header.SetMetaSectionChunkSizes(defaultSectionChunkSize, debugSectionChunkSize, asyncSectionChunkSize);

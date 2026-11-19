@@ -95,8 +95,9 @@ public static class Utils
     }
 
 
-    public static void CheckHeader(Games game, IMetaHeader? header)
+    public static void CheckHeader(Games game, IMetaHeader? header, bool required)
     {
+        if (!required) return;
         switch (game)
         {
             case Games.WDS3NF:
