@@ -28,7 +28,7 @@ internal static class AboutCli
         ("[orange1]warn[/]", "[orange1]TTF import needs bmfont64.exe and --glyphSize <size>.[/] Set [bold]BmfontPath64[/] in appsettings.json!"),
         ("[grey]info[/]",    "[grey]Use --batch for folders and --relative to include subfolders and keep their paths.[/]"),
         ("[grey]game[/]",    "[grey]Use --game or -g with WDS3NF (0) or WDS1 (1). WDS1 supports d3dtx version 4.[/]"),
-        ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them.[/]"),
+        ("[grey]info[/]",    "[grey]Existing output files are kept. Choose a new output path if you've already exported or imported them or use --force flag![/]"),
         ];
 
         ShowRows(commandsTable, commandsRows, 70);
